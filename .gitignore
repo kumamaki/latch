@@ -1,0 +1,14 @@
+.build/
+.swiftpm/
+*.xcodeproj
+*.xcworkspace
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Beads / Dolt — local machine wiring only.
+.beads/
+.dolt/
+*.db
+.beads-credential-key
