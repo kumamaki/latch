@@ -17,8 +17,9 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
     func screenshot(window: String) async throws -> String
 }
 
-/// Default ops: catalog + in-process AX + screenshot. Window show/hide
-/// and boot state stay with the host unless it overrides them.
+/// Default ops: catalog drive, unlabeled AX dump, screenshot.
+/// Window show/hide and boot state stay with the host unless it
+/// overrides them.
 @MainActor
 public final class LatchDefaultOps: LatchOpsProviding {
     private let boot: @MainActor () -> String
@@ -73,8 +74,6 @@ public final class LatchDefaultOps: LatchOpsProviding {
     public func axFind(id: String) async throws -> LatchAXNode {
         do {
             return try LatchCatalogDump.node(id: id)
-        } catch LatchCatalog.Error.notFound {
-            return try LatchAX.find(id: id).node
         } catch let error as LatchCatalog.Error {
             throw LatchError(error)
         }
@@ -83,8 +82,6 @@ public final class LatchDefaultOps: LatchOpsProviding {
     public func axPress(id: String, action: String?) async throws {
         do {
             try LatchCatalog.press(id: id, action: action)
-        } catch LatchCatalog.Error.notFound {
-            try LatchAX.press(id: id, action: action)
         } catch let error as LatchCatalog.Error {
             throw LatchError(error)
         }
@@ -93,8 +90,6 @@ public final class LatchDefaultOps: LatchOpsProviding {
     public func axSet(id: String, value: String) async throws {
         do {
             try LatchCatalog.set(id: id, value: value)
-        } catch LatchCatalog.Error.notFound {
-            try LatchAX.setValue(id: id, value: value)
         } catch let error as LatchCatalog.Error {
             throw LatchError(error)
         }

@@ -4,6 +4,14 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Catalog as the tool model
+
+- Press / set / find are catalog-only. A miss names nearby ids and
+  tells the agent to register. Unlabeled `ax dump` stays a probe.
+- Snapshot nodes advertise `kind`, optional `choices`, and optional
+  `description`. `enabled` is read live on snapshot.
+- CLI `latch catalog` flattens labeled dump. No new kernel command.
+
 ### First-run reliability
 
 - `.latchWindow("main")` sets the AppKit identifier and registers

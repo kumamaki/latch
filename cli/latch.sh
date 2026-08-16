@@ -30,6 +30,7 @@ Commands:
   ax find <id>
   ax press <id> [action]
   ax set <id> <value>
+  catalog [window]
   screenshot <window>
 EOF
     exit 64
@@ -291,6 +292,51 @@ case "$command" in
                 ;;
             *) usage ;;
         esac
+        ;;
+    catalog)
+        window="${1-}"
+        if [[ -n "$window" ]]; then
+            response="$(round_trip axDump "$(printf '{"window":%s,"labeled":true}' "$(json_escape "$window")")")"
+        else
+            response="$(round_trip axDump '{"labeled":true}')"
+        fi
+        python3 - "$response" <<'PY'
+import json, sys
+
+def walk(node, out):
+    if not isinstance(node, dict):
+        return
+    ident = node.get("id")
+    if ident:
+        item = {
+            "id": ident,
+            "role": node.get("role"),
+            "enabled": node.get("enabled"),
+            "actions": node.get("actions") or [],
+        }
+        for key in ("title", "value", "window", "kind", "choices", "description"):
+            val = node.get(key)
+            if val not in (None, [], ""):
+                item[key] = val
+        out.append(item)
+    for child in node.get("children") or []:
+        walk(child, out)
+
+raw = sys.argv[1]
+try:
+    envelope = json.loads(raw)
+except json.JSONDecodeError:
+    print(f"protocol: unparseable response: {raw}", file=sys.stderr)
+    sys.exit(1)
+if not envelope.get("ok"):
+    err = envelope.get("error") or {}
+    print(f"{err.get('code', 'error')}: {err.get('message', 'unknown error')}", file=sys.stderr)
+    sys.exit(1)
+items = []
+walk((envelope.get("data") or {}).get("root") or {}, items)
+items.sort(key=lambda node: node["id"])
+print(json.dumps(items, indent=2))
+PY
         ;;
     screenshot)
         [[ $# -ge 1 ]] || usage

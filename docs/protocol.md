@@ -35,7 +35,7 @@ Success:
 Failure:
 
 ```json
-{"ok":false,"error":{"code":"notFound","message":"No catalog or accessibility element with id editor.save."}}
+{"ok":false,"error":{"code":"notFound","message":"No catalog entry with id editor.sav. Nearby: editor.save. Register it with .latch. Do not pin AX."}}
 ```
 
 Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavailable` · `protocol`.
@@ -71,6 +71,11 @@ No synonyms. `yes`, `1`, and `on` fail.
 
 ## Catalog vs AX
 
-Labeled dump / find / press / set go through the catalog first. Unlabeled
-`ax dump` walks the in-process AX tree as a probe. A control is driveable
-when it is registered. `.accessibilityIdentifier` alone is not enough.
+Find / press / set and labeled dump use the catalog only. Unlabeled
+`ax dump` walks the in-process AX tree as a probe. A miss names nearby
+catalog ids and tells the agent to register. `.accessibilityIdentifier`
+alone is not enough.
+
+Catalog nodes may include `kind`, `choices`, and `description`. AX probe
+nodes omit them. There is no `catalog` kernel command; `latch catalog`
+is a CLI flatten of labeled dump.

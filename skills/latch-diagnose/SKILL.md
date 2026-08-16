@@ -40,24 +40,24 @@ ls -l ~/Library/Application\ Support/<slug>-dev/latch.sock \
 ## Catalog miss
 
 ```sh
-bash <latch>/cli/latch.sh --app <slug> ax dump --labeled
+bash <latch>/cli/latch.sh --app <slug> catalog
 bash <latch>/cli/latch.sh --app <slug> ax find <id>
 ```
 
 1. Window visible? `query windows` / `wait window`.
 2. Host that mounts the control pressed? (tab rail, sheet, mode).
-3. `ax find` the id. Not found → not registered. Follow
-   `skills/latch-register/SKILL.md`.
+3. `ax find` the id. Not found → not registered. The message lists
+   nearby catalog ids. Follow `skills/latch-register/SKILL.md`.
 4. Do not add an AX pin.
 
-Unlabeled `ax dump` is a probe. SwiftUI ids often do not appear there.
-Catalog is the contract.
+Unlabeled `ax dump` is a probe. Press / set / find never fall through
+to it. Catalog is the contract.
 
 ## Press / set fail
 
 | Error | Meaning |
 |---|---|
-| `notFound` | Id is not registered and AX cannot see it |
+| `notFound` | Id is not registered. Nearby ids are a hint to register. |
 | `actionUnavailable` | Registered, but no press/set handler, or unknown named action |
 | `invalidValue` | Encoding wrong (`yes` instead of `true`) |
 

@@ -246,7 +246,7 @@ If Q3 includes AGENTS.md, add a short pointer, not a second full skill:
 
 DEBUG agent drive. Slug: `<slug>`.
 CLI: `bash <latch>/cli/latch.sh --app <slug> …`
-Do not click the GUI. Catalog first. See the `latch-drive` skill if present.
+Do not click the GUI. Catalog is the driver. See the `latch-drive` skill if present.
 ```
 
 If they use an agent whose skill path you do not know, AGENTS.md is
@@ -292,7 +292,7 @@ under `~/Library/Application Support/<slug>-dev/`.
 
 Hard rules (max 6 lines):
 
-1. Catalog is the model. `.accessibilityIdentifier` is not enough.
+1. Catalog is the driver. Press / set / find never fall through to AX.
 2. `.latch` compiles in every build. `Latch.start` does not.
 3. Bool wire is `true` / `false`. No `yes`.
 4. Wait lives in the CLI. In-app drive uses `Latch.snapshot` / `press` / `set`.

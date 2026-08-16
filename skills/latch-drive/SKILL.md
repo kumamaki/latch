@@ -46,12 +46,12 @@ bash <latch>/cli/latch.sh --app <app> ping
 
 | Command | Hits |
 |---|---|
-| `ax dump --labeled` | Scene catalog (registered handlers) |
-| `ax find` / `press` / `set` | Catalog first; AX only if the id is unregistered |
+| `catalog` / `ax dump --labeled` | Scene catalog (registered handlers) |
+| `ax find` / `press` / `set` | Catalog only. A miss names nearby ids. |
 | `ax dump` (no `--labeled`) | In-process AX probe. Not the driver. |
 
 A control is driveable only when it is registered.
-`.accessibilityIdentifier` alone is not enough.
+`.accessibilityIdentifier` alone is not enough. Do not pin AX.
 
 ## Encoding
 
@@ -87,7 +87,7 @@ Latch checkout used by this project: *(absolute path)*.
 ```bash
 bash <latch>/cli/latch.sh --app <app> window show main
 bash <latch>/cli/latch.sh --app <app> wait window main
-bash <latch>/cli/latch.sh --app <app> ax dump --labeled
+bash <latch>/cli/latch.sh --app <app> catalog
 bash <latch>/cli/latch.sh --app <app> ax find <id>
 bash <latch>/cli/latch.sh --app <app> ax set <id> <value>
 bash <latch>/cli/latch.sh --app <app> ax press <id>
@@ -98,6 +98,6 @@ bash <latch>/cli/latch.sh --app <app> screenshot main
 
 1. Confirm the window is visible (`query windows` / `wait window`).
 2. Press the host that mounts it.
-3. `ax find` the id. If not found, it is not registered.
-4. Do not add an AX pin. Register it — follow the Latch repo
-   `skills/latch-register/SKILL.md`.
+3. `ax find` the id. If not found, register the nearby suggestion or
+   a new id. Follow the Latch repo `skills/latch-register/SKILL.md`.
+4. Do not add an AX pin.

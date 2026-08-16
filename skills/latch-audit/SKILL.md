@@ -34,16 +34,16 @@ Expected chrome comes from, in order:
 5. If the Debug app is running:
 
    ```sh
-   bash <latch>/cli/latch.sh --app <slug> ax dump --labeled
+   bash <latch>/cli/latch.sh --app <slug> catalog
    ```
 
-   Compare to the list.
+   Compare to the list. Nodes should carry `kind`.
 
 ## Fail
 
 | Finding | Why |
 |---|---|
-| Id only on `.accessibilityIdentifier` | Catalog will miss it. Register. |
+| Id only on `.accessibilityIdentifier` | Press/set/find miss it. Register. |
 | `.latch` on a parent stack | Press/set hit the wrong owner. Move it to the control. |
 | Off-tab interiors stay registered | Hidden chrome must vanish on disappear. |
 | Live telemetry labeled | Chunk cells, FPS, graphs stay unlabeled. |

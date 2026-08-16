@@ -25,7 +25,7 @@ NotesRoot()
 bash cli/latch.sh --app notes ping
 bash cli/latch.sh --app notes wait boot --state ready
 bash cli/latch.sh --app notes window show main
-bash cli/latch.sh --app notes ax dump --labeled
+bash cli/latch.sh --app notes catalog
 bash cli/latch.sh --app notes ax set prefs.appearance.dark true
 bash cli/latch.sh --app notes ax press editor.save
 bash cli/latch.sh --app notes screenshot main
@@ -82,7 +82,8 @@ itself.
 - **Screenshots stay in-process.** `cacheDisplay` renders this app's own
   windows to PNG. Screen Recording permission never comes up.
 - **AX is a probe.** An unlabeled `ax dump` walks the in-process AX tree
-  for orientation. The catalog stays the contract.
+  for orientation. Press, set, and find never fall through to it. A miss
+  means register the control.
 
 Encodings fail loud. A bool is `true` or `false` on the wire; `yes`,
 `1`, and `on` are errors, so an agent learns the contract instead of

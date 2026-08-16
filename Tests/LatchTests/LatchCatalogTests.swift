@@ -149,8 +149,15 @@ struct LatchCatalogTests {
         let token = LatchCatalog.Token()
         try LatchCatalog.register(
             id: "editor.save", role: "button", window: "main", token: token)
-        #expect(throws: LatchCatalog.Error.notFound(id: "window.main")) {
-            try LatchCatalog.find(id: "window.main")
+        do {
+            _ = try LatchCatalog.find(id: "window.main")
+            Issue.record("expected window.main to be missing")
+        } catch let error as LatchCatalog.Error {
+            guard case .notFound(let id, _) = error else {
+                Issue.record("expected notFound, got \(error)")
+                return
+            }
+            #expect(id == "window.main")
         }
         let tree = LatchCatalogDump.tree(window: nil, title: "Notes")
         #expect(tree.children.map(\.id) == ["editor.save"])
@@ -186,5 +193,151 @@ struct LatchCatalogTests {
         try Latch.set(id: "editor.title", value: "Hello")
         #expect(try Latch.find(id: "editor.title").value == "Hello")
         #expect(Latch.snapshot().map(\.id) == ["editor.title"])
+    }
+
+    @Test("kind choices and description round-trip on snapshot")
+    @MainActor
+    func kindChoicesDescriptionRoundTrip() throws {
+        enum Appearance: String, CaseIterable {
+            case light, dark
+        }
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "prefs.appearance",
+            role: "popup",
+            title: "Appearance",
+            description: "Color scheme",
+            value: { Appearance.dark.rawValue },
+            actions: ["set"],
+            window: "main",
+            kind: .enum,
+            choices: LatchCatalog.enumChoices(Appearance.self),
+            token: token
+        )
+        let node = try LatchCatalog.find(id: "prefs.appearance")
+        #expect(node.kind == .enum)
+        #expect(node.choices == ["light", "dark"])
+        #expect(node.description == "Color scheme")
+        let leaf = try LatchCatalogDump.node(id: "prefs.appearance")
+        #expect(leaf.kind == .enum)
+        #expect(leaf.choices == ["light", "dark"])
+        #expect(leaf.description == "Color scheme")
+    }
+
+    @Test("snapshot reads live enabled without re-register")
+    @MainActor
+    func liveEnabledFlips() throws {
+        let token = LatchCatalog.Token()
+        var canSave = false
+        try LatchCatalog.register(
+            id: "editor.save",
+            role: "button",
+            enabled: { canSave },
+            actions: ["press"],
+            kind: .action,
+            token: token,
+            press: { _ in }
+        )
+        #expect(try LatchCatalog.find(id: "editor.save").enabled == false)
+        canSave = true
+        #expect(try LatchCatalog.find(id: "editor.save").enabled)
+        #expect(LatchCatalog.snapshot().first?.enabled == true)
+    }
+
+    @Test("notFound names nearby catalog ids")
+    @MainActor
+    func nearbyMissNamesRegisteredID() {
+        let token = LatchCatalog.Token()
+        try? LatchCatalog.register(
+            id: "editor.save", role: "button", kind: .action, token: token)
+        do {
+            _ = try LatchCatalog.find(id: "editor.sav")
+            Issue.record("expected editor.sav to miss")
+        } catch let error as LatchCatalog.Error {
+            guard case .notFound(let id, let nearby) = error else {
+                Issue.record("expected notFound, got \(error)")
+                return
+            }
+            #expect(id == "editor.sav")
+            #expect(nearby.contains("editor.save"))
+            #expect(error.description.contains("editor.save"))
+            #expect(error.description.contains("Register it with .latch"))
+        } catch {
+            Issue.record("expected LatchCatalog.Error, got \(error)")
+        }
+    }
+
+    @Test("unregistered id fails as a catalog miss")
+    @MainActor
+    func unregisteredIdFailsAsCatalogMiss() async {
+        let token = LatchCatalog.Token()
+        try? LatchCatalog.register(
+            id: "editor.save", role: "button", kind: .action, token: token,
+            press: { _ in })
+        let ops = LatchDefaultOps(appName: "notes")
+        do {
+            _ = try await ops.axFind(id: "ghost.button")
+            Issue.record("expected catalog miss")
+        } catch let error as LatchError {
+            #expect(error.description.contains("No catalog entry with id ghost.button"))
+            #expect(error.description.contains("Register it with .latch"))
+        } catch {
+            Issue.record("expected LatchError, got \(error)")
+        }
+        do {
+            try await ops.axPress(id: "ghost.button", action: nil)
+            Issue.record("expected press miss")
+        } catch let error as LatchError {
+            #expect(error.description.contains("No catalog entry"))
+        } catch {
+            Issue.record("expected LatchError, got \(error)")
+        }
+        do {
+            try await ops.axSet(id: "ghost.button", value: "x")
+            Issue.record("expected set miss")
+        } catch let error as LatchError {
+            #expect(error.description.contains("No catalog entry"))
+        } catch {
+            Issue.record("expected LatchError, got \(error)")
+        }
+    }
+
+    @Test("unlabeled dump walks AX")
+    @MainActor
+    func unlabeledDumpWalksAX() async {
+        let ops = LatchDefaultOps(appName: "notes")
+        do {
+            _ = try await ops.axDump(window: nil, labeled: false)
+            Issue.record("expected AX dump to fail without windows")
+        } catch let error as LatchError {
+            #expect(
+                error.description.contains("No windows to dump")
+                    || error.description.contains("Unknown window")
+            )
+        } catch {
+            Issue.record("expected LatchError, got \(error)")
+        }
+    }
+
+    @Test("catalog AX node omits empty optional fields")
+    func catalogAXNodeOmitsEmptyOptionals() throws {
+        let node = LatchAXNode(
+            id: "editor.save",
+            role: "button",
+            title: "Save",
+            value: nil,
+            enabled: true,
+            actions: ["press"],
+            frame: .zero,
+            children: []
+        )
+        let data = try JSONEncoder().encode(node)
+        let object = try JSONSerialization.jsonObject(with: data)
+        let dict = try #require(object as? [String: Any])
+        #expect(dict["kind"] == nil)
+        #expect(dict["choices"] == nil)
+        #expect(dict["description"] == nil)
+        #expect(dict["window"] == nil)
+        #expect(dict["role"] as? String == "button")
     }
 }

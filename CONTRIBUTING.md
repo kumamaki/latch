@@ -14,7 +14,8 @@ macOS 15+, Swift 6.
 
 ## Rules
 
-- Catalog is the model. Press and set call registered handlers.
+- Catalog is the driver. Press / set / find hit registered handlers
+  only. Unlabeled `ax dump` is a probe.
 - Kernel verbs only: ping, boot, windows, `ax *`, screenshot. Product
   verbs stay in the host app.
 - Socket is DEBUG-only. Do not ship it as a product feature.

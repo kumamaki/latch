@@ -59,7 +59,11 @@ public enum LatchCatalogDump {
             enabled: node.enabled,
             actions: node.actions,
             frame: .zero,
-            children: children
+            children: children,
+            window: node.window,
+            kind: node.kind,
+            choices: node.choices,
+            description: node.description
         )
     }
 }

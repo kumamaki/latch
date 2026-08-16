@@ -20,7 +20,7 @@ app without computer-use or Screen Recording.
 ## Interface (locked — do not casually reopen)
 
 1. **Catalog is the model.** Press and set call registered handlers. `.accessibilityIdentifier` alone is not enough.
-2. **Catalog first, AX second.** Unlabeled `ax dump` is a probe, not the driver.
+2. **Catalog is the driver.** Press / set / find hit registered handlers only. Unlabeled `ax dump` is a probe. A miss means register, never fall through to AX.
 3. **Newline-JSON, one-shot.** Wait lives in the CLI so the server never pins a Task.
 4. **File token.** `0600` sibling of the socket. No Keychain, no pairing.
 5. **Socket is DEBUG-only.** `Latch.start` is a no-op in Release. `.latch` and the catalog compile in every build.

@@ -5,8 +5,9 @@ description: Register a Latch catalog control on a SwiftUI or AppKit view. Use w
 
 # Register a Latch control
 
-A control is driveable when it is on `LatchCatalog`. SwiftUI
-`.accessibilityIdentifier` is not enough.
+A control is driveable when it is on `LatchCatalog`. Press / set /
+find never fall through to AX. SwiftUI `.accessibilityIdentifier`
+is not enough.
 
 Works in any coding agent. Shared rules: [docs/agent-contract.md](../../docs/agent-contract.md).
 
@@ -34,16 +35,20 @@ only nests a dump node; it does not create the window row.
 
 ## Wrappers
 
-| Need | Call |
-|---|---|
-| Window root | `.latchWindow("main")` |
-| Host / label (dump only) | `.latch("id", role:title:window:)` |
-| Button | `.latch("id", press: { … })` |
-| Field | `.latch("id", value: { … }, set: { … })` |
-| Switch | `.latch("id", bool: $binding)` |
-| Popup / option group | `.latch("id", selection: $binding)` |
-| Integer field | `.latch("id", integer: $binding)` |
-| Named row actions | `.latch("id", actions: […], press: { action in … })` |
+| Need | Call | Kind |
+|---|---|---|
+| Window root | `.latchWindow("main")` | `window` |
+| Host / label (dump only) | `.latch("id", role:title:window:)` | `label` |
+| Button | `.latch("id", press: { … })` | `action` |
+| Field | `.latch("id", value: { … }, set: { … })` | `text` |
+| Switch | `.latch("id", bool: $binding)` | `bool` |
+| Popup / option group | `.latch("id", selection: $binding)` | `enum` |
+| Integer field | `.latch("id", integer: $binding)` | `int` |
+| Named row actions | `.latch("id", actions: […], press: { action in … })` | `action` |
+
+`enabled:` is live (`() -> Bool`). Pass `enabled: model.canSave` so
+snapshot reads the current value. Optional `description:` is help
+text. `CaseIterable` selections expose `choices`.
 
 Bool / enum / int wrappers call `LatchCatalog.parse*`. Do not invent
 encodings. Bad values throw `invalidValue`.

@@ -19,7 +19,7 @@ public enum LatchError: Error, Sendable, CustomStringConvertible {
     case windowNotVisible(name: String)
     case windowEmpty(name: String)
     case screenshotFailed(reason: String)
-    case elementNotFound(id: String)
+    case elementNotFound(id: String, nearby: [String] = [])
     case actionUnavailable(id: String, action: String)
     case invalidValue(id: String, value: String, expected: String)
     case coreNotReady
@@ -61,8 +61,8 @@ public enum LatchError: Error, Sendable, CustomStringConvertible {
             return "Window \(name) has no content to photograph."
         case .screenshotFailed(let reason):
             return "Screenshot failed: \(reason)."
-        case .elementNotFound(let id):
-            return "No catalog or accessibility element with id \(id)."
+        case .elementNotFound(let id, let nearby):
+            return LatchCatalog.notFoundMessage(id: id, nearby: nearby)
         case .actionUnavailable(let id, let action):
             return "Element \(id) cannot \(action)."
         case .invalidValue(let id, let value, let expected):
@@ -78,8 +78,8 @@ public enum LatchError: Error, Sendable, CustomStringConvertible {
 extension LatchError {
     public init(_ error: LatchCatalog.Error) {
         switch error {
-        case .notFound(let id):
-            self = .elementNotFound(id: id)
+        case .notFound(let id, let nearby):
+            self = .elementNotFound(id: id, nearby: nearby)
         case .actionUnavailable(let id, let action):
             self = .actionUnavailable(id: id, action: action)
         case .invalidValue(let id, let value, let expected):

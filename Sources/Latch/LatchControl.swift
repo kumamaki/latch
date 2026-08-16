@@ -7,10 +7,13 @@ public struct LatchControl: ViewModifier {
     private let id: String
     private let role: String
     private let title: String?
+    private let description: String?
     private let value: () -> String?
-    private let enabled: Bool
+    private let enabled: () -> Bool
     private let actions: [String]
     private let window: String?
+    private let kind: LatchCatalog.Kind?
+    private let choices: [String]?
     private let press: ((String?) throws -> Void)?
     private let set: ((String) throws -> Void)?
     @State private var token = LatchCatalog.Token()
@@ -19,20 +22,26 @@ public struct LatchControl: ViewModifier {
         id: String,
         role: String,
         title: String? = nil,
+        description: String? = nil,
         value: @escaping () -> String? = { nil },
-        enabled: Bool = true,
+        enabled: @escaping () -> Bool = { true },
         actions: [String] = [],
         window: String? = nil,
+        kind: LatchCatalog.Kind? = nil,
+        choices: [String]? = nil,
         press: ((String?) throws -> Void)? = nil,
         set: ((String) throws -> Void)? = nil
     ) {
         self.id = id
         self.role = role
         self.title = title
+        self.description = description
         self.value = value
         self.enabled = enabled
         self.actions = actions
         self.window = window
+        self.kind = kind
+        self.choices = choices
         self.press = press
         self.set = set
     }
@@ -43,7 +52,7 @@ public struct LatchControl: ViewModifier {
             .onChange(of: id) { _, _ in publish() }
             .onChange(of: role) { _, _ in publish() }
             .onChange(of: title) { _, _ in publish() }
-            .onChange(of: enabled) { _, _ in publish() }
+            .onChange(of: description) { _, _ in publish() }
             .onChange(of: actions) { _, _ in publish() }
             .onDisappear {
                 LatchCatalog.unregister(id: id, token: token)
@@ -56,10 +65,13 @@ public struct LatchControl: ViewModifier {
                 id: id,
                 role: role,
                 title: title,
+                description: description,
                 value: value,
                 enabled: enabled,
                 actions: actions,
                 window: window,
+                kind: kind,
+                choices: choices,
                 token: token,
                 press: press,
                 set: set
@@ -76,8 +88,9 @@ extension View {
         _ id: String,
         role: String,
         title: String? = nil,
+        description: String? = nil,
         value: @escaping @autoclosure () -> String? = nil,
-        enabled: Bool = true,
+        enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil
     ) -> some View {
         modifier(
@@ -85,9 +98,11 @@ extension View {
                 id: id,
                 role: role,
                 title: title,
+                description: description,
                 value: value,
                 enabled: enabled,
-                window: window
+                window: window,
+                kind: .label
             )
         )
     }
@@ -97,8 +112,9 @@ extension View {
         _ id: String,
         role: String = "button",
         title: String? = nil,
+        description: String? = nil,
         value: @escaping @autoclosure () -> String? = nil,
-        enabled: Bool = true,
+        enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
         press: @escaping () -> Void
     ) -> some View {
@@ -107,10 +123,12 @@ extension View {
                 id: id,
                 role: role,
                 title: title,
+                description: description,
                 value: value,
                 enabled: enabled,
                 actions: ["press"],
                 window: window,
+                kind: .action,
                 press: { _ in press() }
             )
         )
@@ -121,8 +139,9 @@ extension View {
         _ id: String,
         role: String = "textfield",
         title: String? = nil,
+        description: String? = nil,
         value: @escaping () -> String?,
-        enabled: Bool = true,
+        enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
         set: @escaping (String) throws -> Void
     ) -> some View {
@@ -131,10 +150,12 @@ extension View {
                 id: id,
                 role: role,
                 title: title,
+                description: description,
                 value: value,
                 enabled: enabled,
                 actions: ["set"],
                 window: window,
+                kind: .text,
                 set: { try set($0) }
             )
         )
@@ -144,7 +165,8 @@ extension View {
     public func latch(
         _ id: String,
         title: String? = nil,
-        enabled: Bool = true,
+        description: String? = nil,
+        enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
         bool: Binding<Bool>
     ) -> some View {
@@ -153,10 +175,12 @@ extension View {
                 id: id,
                 role: "checkbox",
                 title: title,
+                description: description,
                 value: { LatchCatalog.formatBool(bool.wrappedValue) },
                 enabled: enabled,
                 actions: ["set"],
                 window: window,
+                kind: .bool,
                 set: { bool.wrappedValue = try LatchCatalog.parseBool(id: id, $0) }
             )
         )
@@ -166,7 +190,8 @@ extension View {
     public func latch<Value: RawRepresentable>(
         _ id: String,
         title: String? = nil,
-        enabled: Bool = true,
+        description: String? = nil,
+        enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
         selection: Binding<Value>
     ) -> some View where Value.RawValue == String {
@@ -175,10 +200,40 @@ extension View {
                 id: id,
                 role: "popup",
                 title: title,
+                description: description,
                 value: { selection.wrappedValue.rawValue },
                 enabled: enabled,
                 actions: ["set"],
                 window: window,
+                kind: .enum,
+                set: {
+                    selection.wrappedValue = try LatchCatalog.parseEnum(id: id, $0)
+                }
+            )
+        )
+    }
+
+    /// Popup / option group: enum rawValue plus `CaseIterable` choices.
+    public func latch<Value: RawRepresentable & CaseIterable>(
+        _ id: String,
+        title: String? = nil,
+        description: String? = nil,
+        enabled: @escaping @autoclosure () -> Bool = true,
+        window: String? = nil,
+        selection: Binding<Value>
+    ) -> some View where Value.RawValue == String {
+        modifier(
+            LatchControl(
+                id: id,
+                role: "popup",
+                title: title,
+                description: description,
+                value: { selection.wrappedValue.rawValue },
+                enabled: enabled,
+                actions: ["set"],
+                window: window,
+                kind: .enum,
+                choices: LatchCatalog.enumChoices(Value.self),
                 set: {
                     selection.wrappedValue = try LatchCatalog.parseEnum(id: id, $0)
                 }
@@ -190,7 +245,8 @@ extension View {
     public func latch(
         _ id: String,
         title: String? = nil,
-        enabled: Bool = true,
+        description: String? = nil,
+        enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
         integer: Binding<Int>
     ) -> some View {
@@ -199,10 +255,12 @@ extension View {
                 id: id,
                 role: "textfield",
                 title: title,
+                description: description,
                 value: { String(integer.wrappedValue) },
                 enabled: enabled,
                 actions: ["set"],
                 window: window,
+                kind: .int,
                 set: { integer.wrappedValue = try LatchCatalog.parseInt(id: id, $0) }
             )
         )
@@ -213,8 +271,9 @@ extension View {
         _ id: String,
         role: String,
         title: String? = nil,
+        description: String? = nil,
         value: @escaping @autoclosure () -> String? = nil,
-        enabled: Bool = true,
+        enabled: @escaping @autoclosure () -> Bool = true,
         actions: [String],
         window: String? = nil,
         press: @escaping (String?) throws -> Void
@@ -224,10 +283,12 @@ extension View {
                 id: id,
                 role: role,
                 title: title,
+                description: description,
                 value: value,
                 enabled: enabled,
                 actions: actions,
                 window: window,
+                kind: .action,
                 press: press
             )
         )

@@ -10,7 +10,8 @@ try Latch.press(id: "editor.save")
 ```
 
 `.latch` compiles in Release. The model only sees what you registered.
-Hidden views vanish. Live telemetry stays unlabeled.
+Hidden views vanish. Live telemetry stays unlabeled. A miss is a catalog
+miss; there is no AX fallback in-process.
 
 The app owns the allow-list and the model. Latch is the hand.
 

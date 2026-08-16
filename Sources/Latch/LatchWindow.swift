@@ -43,6 +43,7 @@ public struct LatchWindow: ViewModifier {
                 role: "window",
                 title: LatchWindowIdentity.title(for: name),
                 window: name,
+                kind: .window,
                 token: token
             )
         } catch {

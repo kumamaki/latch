@@ -35,7 +35,8 @@ any other coding agent can run them.
 
 ## Product boundary
 
-- Catalog is the model. `.accessibilityIdentifier` is not enough.
+- Catalog is the driver. Press / set / find never fall through to AX.
+  `.accessibilityIdentifier` is not enough.
 - `.latch` compiles in every build. The socket does not.
 - In-app assistant: `Latch.snapshot` / `press` / `set`. No socket.
 - Product verbs stay in the app.

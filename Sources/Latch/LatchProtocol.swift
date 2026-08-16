@@ -181,6 +181,10 @@ public struct LatchAXNode: Sendable, Encodable, Equatable {
     public let actions: [String]
     public let frame: LatchAXFrame
     public let children: [Self]
+    public let window: String?
+    public let kind: LatchCatalog.Kind?
+    public let choices: [String]?
+    public let description: String?
 
     public init(
         id: String?,
@@ -190,7 +194,11 @@ public struct LatchAXNode: Sendable, Encodable, Equatable {
         enabled: Bool,
         actions: [String],
         frame: LatchAXFrame,
-        children: [Self]
+        children: [Self],
+        window: String? = nil,
+        kind: LatchCatalog.Kind? = nil,
+        choices: [String]? = nil,
+        description: String? = nil
     ) {
         self.id = id
         self.role = role
@@ -200,6 +208,31 @@ public struct LatchAXNode: Sendable, Encodable, Equatable {
         self.actions = actions
         self.frame = frame
         self.children = children
+        self.window = window
+        self.kind = kind
+        self.choices = choices
+        self.description = description
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, role, title, value, enabled, actions, frame, children
+        case window, kind, choices, description
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(role, forKey: .role)
+        try container.encode(title, forKey: .title)
+        try container.encode(value, forKey: .value)
+        try container.encode(enabled, forKey: .enabled)
+        try container.encode(actions, forKey: .actions)
+        try container.encode(frame, forKey: .frame)
+        try container.encode(children, forKey: .children)
+        try container.encodeIfPresent(window, forKey: .window)
+        try container.encodeIfPresent(kind, forKey: .kind)
+        try container.encodeIfPresent(choices, forKey: .choices)
+        try container.encodeIfPresent(description, forKey: .description)
     }
 }
 

@@ -5,6 +5,21 @@ import Foundation
 /// socket reads the same table; it does not own it.
 @MainActor
 public enum LatchCatalog {
+    /// Value schema. Distinct from `role`, which is chrome.
+    public enum Kind: String, Sendable, Codable, Equatable {
+        case bool
+        case `enum`
+        case int
+        case uint64
+        case double
+        case text
+        case time
+        case weekdays
+        case action
+        case window
+        case label
+    }
+
     public struct Node: Equatable, Sendable {
         public let id: String
         public let role: String
@@ -13,6 +28,9 @@ public enum LatchCatalog {
         public let enabled: Bool
         public let actions: [String]
         public let window: String?
+        public let kind: Kind?
+        public let choices: [String]?
+        public let description: String?
 
         public init(
             id: String,
@@ -21,7 +39,10 @@ public enum LatchCatalog {
             value: String? = nil,
             enabled: Bool = true,
             actions: [String] = [],
-            window: String? = nil
+            window: String? = nil,
+            kind: Kind? = nil,
+            choices: [String]? = nil,
+            description: String? = nil
         ) {
             self.id = id
             self.role = role
@@ -30,12 +51,15 @@ public enum LatchCatalog {
             self.enabled = enabled
             self.actions = actions
             self.window = window
+            self.kind = kind
+            self.choices = choices
+            self.description = description
         }
     }
 
     public enum Error: Swift.Error, Equatable, CustomStringConvertible {
         case duplicate(id: String)
-        case notFound(id: String)
+        case notFound(id: String, nearby: [String] = [])
         case actionUnavailable(id: String, action: String)
         case invalidValue(id: String, value: String, expected: String)
 
@@ -43,8 +67,8 @@ public enum LatchCatalog {
             switch self {
             case .duplicate(let id):
                 return "Catalog already has id \(id) from another owner."
-            case .notFound(let id):
-                return "No catalog entry with id \(id)."
+            case .notFound(let id, let nearby):
+                return LatchCatalog.notFoundMessage(id: id, nearby: nearby)
             case .actionUnavailable(let id, let action):
                 return "Catalog entry \(id) cannot \(action)."
             case .invalidValue(let id, let value, let expected):
@@ -67,10 +91,13 @@ public enum LatchCatalog {
             id: String,
             role: String,
             title: String? = nil,
+            description: String? = nil,
             value: @escaping () -> String? = { nil },
-            enabled: Bool = true,
+            enabled: @escaping @autoclosure () -> Bool = true,
             actions: [String] = [],
             window: String? = nil,
+            kind: Kind? = nil,
+            choices: [String]? = nil,
             press: ((String?) throws -> Void)? = nil,
             set: ((String) throws -> Void)? = nil
         ) {
@@ -83,10 +110,13 @@ public enum LatchCatalog {
                     id: id,
                     role: role,
                     title: title,
+                    description: description,
                     value: value,
                     enabled: enabled,
                     actions: actions,
                     window: window,
+                    kind: kind,
+                    choices: choices,
                     token: token,
                     press: press,
                     set: set
@@ -107,6 +137,7 @@ public enum LatchCatalog {
         let token: ObjectIdentifier
         var node: Node
         var value: () -> String?
+        var enabled: () -> Bool
         var press: ((String?) throws -> Void)?
         var set: ((String) throws -> Void)?
     }
@@ -122,10 +153,13 @@ public enum LatchCatalog {
         id: String,
         role: String,
         title: String? = nil,
+        description: String? = nil,
         value: @escaping () -> String? = { nil },
-        enabled: Bool = true,
+        enabled: @escaping () -> Bool = { true },
         actions: [String] = [],
         window: String? = nil,
+        kind: Kind? = nil,
+        choices: [String]? = nil,
         token: Token,
         press: ((String?) throws -> Void)? = nil,
         set: ((String) throws -> Void)? = nil
@@ -134,6 +168,7 @@ public enum LatchCatalog {
         if let existing = entries[id], existing.token != owner {
             throw Error.duplicate(id: id)
         }
+        let resolvedChoices = (choices?.isEmpty == true) ? nil : choices
         entries[id] = Entry(
             token: owner,
             node: Node(
@@ -141,11 +176,15 @@ public enum LatchCatalog {
                 role: role,
                 title: title,
                 value: nil,
-                enabled: enabled,
+                enabled: true,
                 actions: actions,
-                window: window
+                window: window,
+                kind: kind,
+                choices: resolvedChoices,
+                description: description
             ),
             value: value,
+            enabled: enabled,
             press: press,
             set: set
         )
@@ -168,7 +207,7 @@ public enum LatchCatalog {
     }
 
     public static func find(id: String) throws -> Node {
-        guard let entry = entries[id] else { throw Error.notFound(id: id) }
+        guard let entry = entries[id] else { throw missing(id: id) }
         return resolved(entry)
     }
 
@@ -178,14 +217,17 @@ public enum LatchCatalog {
             role: entry.node.role,
             title: entry.node.title,
             value: entry.value(),
-            enabled: entry.node.enabled,
+            enabled: entry.enabled(),
             actions: entry.node.actions,
-            window: entry.node.window
+            window: entry.node.window,
+            kind: entry.node.kind,
+            choices: entry.node.choices,
+            description: entry.node.description
         )
     }
 
     public static func press(id: String, action: String? = nil) throws {
-        guard let entry = entries[id] else { throw Error.notFound(id: id) }
+        guard let entry = entries[id] else { throw missing(id: id) }
         let wanted = action ?? "press"
         guard let press = entry.press else {
             throw Error.actionUnavailable(id: id, action: wanted)
@@ -202,7 +244,7 @@ public enum LatchCatalog {
     }
 
     public static func set(id: String, value: String) throws {
-        guard let entry = entries[id] else { throw Error.notFound(id: id) }
+        guard let entry = entries[id] else { throw missing(id: id) }
         guard let set = entry.set else {
             throw Error.actionUnavailable(id: id, action: "set")
         }
@@ -239,6 +281,7 @@ public enum LatchCatalog {
                 role: "window",
                 title: window.title.isEmpty ? nil : window.title,
                 window: name,
+                kind: .window,
                 token: token
             )
         }
@@ -341,6 +384,67 @@ public enum LatchCatalog {
             days.insert(part)
         }
         return days
+    }
+
+    public static func enumChoices<Value: CaseIterable>(
+        _ type: Value.Type
+    ) -> [String] where Value: RawRepresentable, Value.RawValue == String {
+        type.allCases.map(\.rawValue)
+    }
+
+    nonisolated public static func notFoundMessage(id: String, nearby: [String]) -> String {
+        var message = "No catalog entry with id \(id)."
+        if !nearby.isEmpty {
+            message += " Nearby: \(nearby.joined(separator: ", "))."
+        }
+        message += " Register it with .latch. Do not pin AX."
+        return message
+    }
+
+    private static func missing(id: String) -> Error {
+        .notFound(id: id, nearby: nearbyIDs(for: id))
+    }
+
+    static func nearbyIDs(for wanted: String, limit: Int = 5) -> [String] {
+        let ids = entries.keys.sorted()
+        var prefix: [String] = []
+        var rest: [String] = []
+        for id in ids {
+            if id.hasPrefix(wanted) || wanted.hasPrefix(id) {
+                prefix.append(id)
+            } else {
+                rest.append(id)
+            }
+        }
+        let ranked = rest.sorted { lhs, rhs in
+            let left = editDistance(lhs, wanted)
+            let right = editDistance(rhs, wanted)
+            if left != right { return left < right }
+            return lhs < rhs
+        }
+        return Array((prefix + ranked).prefix(limit))
+    }
+
+    private static func editDistance(_ first: String, _ second: String) -> Int {
+        let firstChars = Array(first)
+        let secondChars = Array(second)
+        if firstChars.isEmpty { return secondChars.count }
+        if secondChars.isEmpty { return firstChars.count }
+        var previous = Array(0...secondChars.count)
+        var current = Array(repeating: 0, count: secondChars.count + 1)
+        for i in 1...firstChars.count {
+            current[0] = i
+            for j in 1...secondChars.count {
+                let cost = firstChars[i - 1] == secondChars[j - 1] ? 0 : 1
+                current[j] = min(
+                    previous[j] + 1,
+                    current[j - 1] + 1,
+                    previous[j - 1] + cost
+                )
+            }
+            swap(&previous, &current)
+        }
+        return previous[secondChars.count]
     }
 
     private static func windowCatalogID(_ window: NSWindow) -> String? {
