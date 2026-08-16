@@ -30,9 +30,8 @@ struct NotesRoot: View {
                 .latch(
                     "editor.title",
                     title: "Title",
-                    value: { title },
                     window: "main",
-                    set: { title = $0 }
+                    text: $title
                 )
             Toggle("Dark mode", isOn: $dark)
                 .latch(

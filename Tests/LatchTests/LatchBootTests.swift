@@ -53,6 +53,19 @@ struct LatchBootTests {
         #expect(FileManager.default.fileExists(atPath: socket.path))
     }
 
+    @Test("preview process does not bind the socket")
+    func previewStartDoesNotBind() async throws {
+        Latch.previewProcessOverride = true
+        defer { Latch.previewProcessOverride = nil }
+
+        let app = uniqueApp()
+        defer { cleanup(app: app) }
+        Latch.start(app: app, ops: FakeLatchOps())
+        #expect(Latch.socketPhase == .idle)
+        let socket = try LatchPaths.socket(app: app)
+        #expect(!FileManager.default.fileExists(atPath: socket.path))
+    }
+
     @Test("failed bind reports failed and does not look ready")
     func failedStartReportsFailed() async throws {
         // sun_path is 104 bytes on Darwin. A long slug makes bind fail
@@ -90,5 +103,6 @@ extension Latch {
         await waitForLifecycle()
         socketPhase = .idle
         failLoudOnStartFailure = true
+        previewProcessOverride = nil
     }
 }

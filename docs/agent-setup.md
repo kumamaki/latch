@@ -299,7 +299,7 @@ Hard rules (max 6 lines):
 1. Catalog is the driver. Press / set / find never fall through to AX.
 2. `.latch` compiles in every build. `Latch.start` does not.
 3. Bool wire is `true` / `false`. No `yes`.
-4. Wait lives in the CLI. In-app drive uses `Latch.snapshot` / `press` / `set`.
+4. Wait lives in the CLI. In-app drive uses `Latch.snapshot` / `updates` / `press` / `set`.
 5. DEBUG-only socket. No Screen Recording. No System Events.
 6. Missing id → register, do not add an AX pin.
 

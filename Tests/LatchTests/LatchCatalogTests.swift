@@ -1,13 +1,15 @@
 import AppKit
+import SwiftUI
 import Testing
 
 @testable import Latch
 
-@Suite
+@Suite(.serialized)
 @MainActor
 struct LatchCatalogTests {
     init() {
         LatchCatalog.reset()
+        Latch.previewProcessOverride = nil
     }
 
     @Test("register then find and set")
@@ -110,6 +112,13 @@ struct LatchCatalogTests {
             try LatchCatalog.parseBool(id: "x", "yes")
         }
         #expect(try LatchCatalog.parseInt(id: "n", "12") == 12)
+        #expect(try LatchCatalog.parseDouble(id: "n", "1.25") == 1.25)
+        #expect(
+            throws: LatchCatalog.Error.invalidValue(
+                id: "n", value: "loud", expected: "a number")
+        ) {
+            try LatchCatalog.parseDouble(id: "n", "loud")
+        }
         let time = try LatchCatalog.parseTime(id: "t", "09:30")
         #expect(time.hour == 9)
         #expect(time.minute == 30)
@@ -339,5 +348,87 @@ struct LatchCatalogTests {
         #expect(dict["description"] == nil)
         #expect(dict["window"] == nil)
         #expect(dict["role"] as? String == "button")
+    }
+
+    @Test("text binding set writes the string")
+    func textBindingRoundTrips() throws {
+        var title = "old"
+        let text = Binding(get: { title }, set: { title = $0 })
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "editor.title",
+            role: "textfield",
+            title: "Title",
+            value: { text.wrappedValue },
+            actions: ["set"],
+            window: "main",
+            kind: .text,
+            token: token,
+            set: { text.wrappedValue = $0 }
+        )
+
+        try Latch.set(id: "editor.title", value: "Hello")
+        let node = try Latch.find(id: "editor.title")
+        #expect(node.value == "Hello")
+        #expect(node.kind == .text)
+        #expect(title == "Hello")
+    }
+
+    @Test("double binding parses and rejects non-numbers")
+    func doubleBindingParses() throws {
+        var volume = 0.5
+        let value = Binding(get: { volume }, set: { volume = $0 })
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "prefs.volume",
+            role: "textfield",
+            value: { String(value.wrappedValue) },
+            actions: ["set"],
+            kind: .double,
+            token: token,
+            set: {
+                value.wrappedValue = try LatchCatalog.parseDouble(
+                    id: "prefs.volume", $0)
+            }
+        )
+
+        try Latch.set(id: "prefs.volume", value: "1.25")
+        #expect(volume == 1.25)
+        #expect(try Latch.find(id: "prefs.volume").kind == .double)
+        #expect(
+            throws: LatchCatalog.Error.invalidValue(
+                id: "prefs.volume", value: "loud", expected: "a number")
+        ) {
+            try Latch.set(id: "prefs.volume", value: "loud")
+        }
+        #expect(volume == 1.25)
+    }
+
+    @Test("preview process does not register catalog ids")
+    func previewDoesNotRegister() {
+        Latch.previewProcessOverride = true
+        defer { Latch.previewProcessOverride = nil }
+
+        let binding = LatchCatalog.Binding()
+        let id = "preview.isolation"
+        binding.publish(id: id, role: "textfield")
+        #expect(LatchCatalog.snapshot().contains { $0.id == id } == false)
+    }
+
+    @Test("updates yields the initial list then one coalesced emit")
+    func updatesCoalesceTwoRegisters() async throws {
+        let stream = Latch.updates()
+        var iterator = stream.makeAsyncIterator()
+        let initial = await iterator.next()
+        #expect(initial != nil)
+
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(id: "sugar.a", role: "button", token: token)
+        try LatchCatalog.register(id: "sugar.b", role: "button", token: token)
+
+        let next = await iterator.next()
+        let ids = next?.map(\.id) ?? []
+        #expect(ids.contains("sugar.a"))
+        #expect(ids.contains("sugar.b"))
     }
 }

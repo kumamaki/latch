@@ -37,6 +37,7 @@ public struct LatchWindow: ViewModifier {
     }
 
     private func publish() {
+        guard !Latch.isPreviewProcess else { return }
         do {
             try LatchCatalog.register(
                 id: LatchWindowIdentity.catalogID(name: name),

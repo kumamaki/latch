@@ -4,6 +4,15 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Host sugar
+
+- `.latch("id", text: $binding)` and `.latch("id", double: $binding)`
+  register string and floating-point fields. `double:` uses `parseDouble`.
+- SwiftUI preview processes (`XCODE_RUNNING_FOR_PREVIEWS=1`) do not
+  register catalog ids and do not bind the DEBUG socket.
+- In-process `Latch.updates(window:)` yields the current snapshot, then
+  one coalesced emit per turn after register or unregister.
+
 ### Daily agent loop
 
 - `ping` now reports `boot`, `windows`, and `catalog` alongside `status`.

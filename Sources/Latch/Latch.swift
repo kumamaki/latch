@@ -3,7 +3,7 @@ import Foundation
 /// Process-wide Latch host.
 ///
 /// Two uses, one catalog:
-/// - In-process: `snapshot` / `find` / `press` / `set` — always available.
+/// - In-process: `snapshot` / `updates` / `find` / `press` / `set`.
 /// - Outside agent: `start(app:)` binds a DEBUG-only unix socket.
 @MainActor
 public enum Latch {
@@ -12,6 +12,15 @@ public enum Latch {
     private static var lifecycleTask: Task<Void, Never>?
     static var socketPhase: LatchSocketPhase = .idle
     static var failLoudOnStartFailure = true
+    static var previewProcessOverride: Bool?
+
+    /// SwiftUI preview processes must not publish into the host catalog
+    /// or bind the adopter socket.
+    static var isPreviewProcess: Bool {
+        if let previewProcessOverride { return previewProcessOverride }
+        return ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
+            == "1"
+    }
 
     /// Bind the DEBUG socket. Release is a no-op. Does not affect the catalog.
     ///
@@ -22,6 +31,7 @@ public enum Latch {
         ops: (any LatchOpsProviding)? = nil
     ) {
         #if DEBUG
+            if isPreviewProcess { return }
             switch socketPhase {
             case .starting, .listening:
                 return
@@ -96,5 +106,15 @@ public enum Latch {
 
     public static func set(id: String, value: String) throws {
         try LatchCatalog.set(id: id, value: value)
+    }
+
+    /// Live catalog snapshots. Yields immediately, then once per turn
+    /// after register or unregister. `window` matches `snapshot(window:)`.
+    ///
+    /// In-process wait. Coding-agent wait stays in the CLI.
+    public static func updates(window: String? = nil) -> AsyncStream<
+        [LatchCatalog.Node]
+    > {
+        LatchCatalog.updates(window: window)
     }
 }

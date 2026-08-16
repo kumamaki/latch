@@ -40,7 +40,8 @@ only nests a dump node; it does not create the window row.
 | Window root | `.latchWindow("main")` | `window` |
 | Host / label (dump only) | `.latch("id", role:title:window:)` | `label` |
 | Button | `.latch("id", press: { … })` | `action` |
-| Field | `.latch("id", value: { … }, set: { … })` | `text` |
+| Field | `.latch("id", text: $binding)` | `text` |
+| Number field | `.latch("id", double: $binding)` | `double` |
 | Switch | `.latch("id", bool: $binding)` | `bool` |
 | Popup / option group | `.latch("id", selection: $binding)` | `enum` |
 | Integer field | `.latch("id", integer: $binding)` | `int` |
@@ -50,8 +51,9 @@ only nests a dump node; it does not create the window row.
 snapshot reads the current value. Optional `description:` is help
 text. `CaseIterable` selections expose `choices`.
 
-Bool / enum / int wrappers call `LatchCatalog.parse*`. Do not invent
-encodings. Bad values throw `invalidValue`.
+Bool / enum / int / double wrappers call `LatchCatalog.parse*`. Do not
+invent encodings. Bad values throw `invalidValue`. Use `value:` + `set:`
+when the host has no `Binding`.
 
 ```swift
 Toggle("Dark mode", isOn: $dark)
@@ -61,13 +63,15 @@ Button("Save") { save() }
     .latch("editor.save", title: "Save", window: "main", press: save)
 
 TextField("Title", text: $title)
-    .latch("editor.title", title: "Title", window: "main", value: { title }, set: { title = $0 })
+    .latch("editor.title", title: "Title", window: "main", text: $title)
 ```
 
 ## Lifetime
 
 The modifier registers on appear and unregisters on disappear. Hidden or
-off-tab controls must vanish.
+off-tab controls must vanish. SwiftUI previews
+(`XCODE_RUNNING_FOR_PREVIEWS=1`) do not register and do not bind the
+socket.
 
 Duplicate id from another owner fails loud. Same owner may upsert.
 

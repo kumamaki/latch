@@ -60,6 +60,7 @@ public struct LatchControl: ViewModifier {
     }
 
     private func publish() {
+        guard !Latch.isPreviewProcess else { return }
         do {
             try LatchCatalog.register(
                 id: id,
@@ -130,6 +131,31 @@ extension View {
                 window: window,
                 kind: .action,
                 press: { _ in press() }
+            )
+        )
+    }
+
+    /// Field: `Binding<String>`.
+    public func latch(
+        _ id: String,
+        title: String? = nil,
+        description: String? = nil,
+        enabled: @escaping @autoclosure () -> Bool = true,
+        window: String? = nil,
+        text: Binding<String>
+    ) -> some View {
+        modifier(
+            LatchControl(
+                id: id,
+                role: "textfield",
+                title: title,
+                description: description,
+                value: { text.wrappedValue },
+                enabled: enabled,
+                actions: ["set"],
+                window: window,
+                kind: .text,
+                set: { text.wrappedValue = $0 }
             )
         )
     }
@@ -262,6 +288,33 @@ extension View {
                 window: window,
                 kind: .int,
                 set: { integer.wrappedValue = try LatchCatalog.parseInt(id: id, $0) }
+            )
+        )
+    }
+
+    /// Number field: floating-point.
+    public func latch(
+        _ id: String,
+        title: String? = nil,
+        description: String? = nil,
+        enabled: @escaping @autoclosure () -> Bool = true,
+        window: String? = nil,
+        double: Binding<Double>
+    ) -> some View {
+        modifier(
+            LatchControl(
+                id: id,
+                role: "textfield",
+                title: title,
+                description: description,
+                value: { String(double.wrappedValue) },
+                enabled: enabled,
+                actions: ["set"],
+                window: window,
+                kind: .double,
+                set: {
+                    double.wrappedValue = try LatchCatalog.parseDouble(id: id, $0)
+                }
             )
         )
     }

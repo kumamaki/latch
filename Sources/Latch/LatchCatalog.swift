@@ -101,6 +101,7 @@ public enum LatchCatalog {
             press: ((String?) throws -> Void)? = nil,
             set: ((String) throws -> Void)? = nil
         ) {
+            guard !Latch.isPreviewProcess else { return }
             if currentID != id {
                 clear()
                 currentID = id
@@ -144,9 +145,53 @@ public enum LatchCatalog {
 
     private static var entries: [String: Entry] = [:]
     private static let windowSyncToken = Token()
+    private static var updateSubscribers: [UUID: UpdateSubscriber] = [:]
+    private static var updateFlushScheduled = false
+    private static var updateGeneration = 0
+
+    private struct UpdateSubscriber {
+        let window: String?
+        let continuation: AsyncStream<[Node]>.Continuation
+    }
 
     public static func reset() {
         entries.removeAll()
+        updateFlushScheduled = false
+        updateGeneration += 1
+        for subscriber in updateSubscribers.values {
+            subscriber.continuation.finish()
+        }
+        updateSubscribers.removeAll()
+    }
+
+    static func updates(window: String? = nil) -> AsyncStream<[Node]> {
+        let id = UUID()
+        let (stream, continuation) = AsyncStream<[Node]>.makeStream(
+            bufferingPolicy: .bufferingNewest(1)
+        )
+        updateSubscribers[id] = UpdateSubscriber(
+            window: window, continuation: continuation)
+        continuation.yield(snapshot(window: window))
+        continuation.onTermination = { _ in
+            Task { @MainActor in
+                updateSubscribers.removeValue(forKey: id)
+            }
+        }
+        return stream
+    }
+
+    private static func notifyChanged() {
+        guard !updateSubscribers.isEmpty else { return }
+        guard !updateFlushScheduled else { return }
+        updateFlushScheduled = true
+        let generation = updateGeneration
+        Task { @MainActor in
+            guard generation == updateGeneration else { return }
+            updateFlushScheduled = false
+            for subscriber in updateSubscribers.values {
+                subscriber.continuation.yield(snapshot(window: subscriber.window))
+            }
+        }
     }
 
     public static func register(
@@ -188,12 +233,14 @@ public enum LatchCatalog {
             press: press,
             set: set
         )
+        notifyChanged()
     }
 
     public static func unregister(id: String, token: Token) {
         guard let existing = entries[id] else { return }
         guard existing.token == ObjectIdentifier(token) else { return }
         entries.removeValue(forKey: id)
+        notifyChanged()
     }
 
     public static func snapshot(window: String? = nil) -> [Node] {
