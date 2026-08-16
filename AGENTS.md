@@ -42,3 +42,12 @@ bash cli/latch.sh --help
 `~/Library/Application Support/<app>-dev/latch.token`
 
 `<app>` is the slug passed to `Latch.start(app:)`.
+
+## Issue tracking
+
+- `bd` is the sole tracker for durable work. Create before implementation,
+  claim when starting, close only after verification.
+- Beads is **local-only and Dolt-native** — all of `.beads/` is git-ignored and
+  never committed.
+- `bd prime` = beads CLI cheat sheet (SessionStart / local `.beads/PRIME.md`).
+- Memory is **mem0** (`mem search` / `mem add`; `-g` only for cross-project). Not beads KV.
