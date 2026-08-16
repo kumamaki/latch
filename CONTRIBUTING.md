@@ -5,10 +5,15 @@ Latch is a small kernel. Keep it one.
 ## Develop
 
 ```sh
-just test    # unit tests
-just check   # tests + swift-format lint + shellcheck
-just demo    # launch examples/Notes
+just test            # unit tests
+just check           # tests + swift-format lint + shellcheck
+just demo            # launch examples/Notes
+just release minor   # dry-run the next tag; agents stop here
 ```
+
+`just ship` is USER-only. It stamps the changelog and SwiftPM pins,
+pushes `main`, tags `vX.Y.Z`, and creates the GitHub Release. The
+first cut is `just ship minor` → `v0.1.0`.
 
 macOS 15+, Swift 6.
 

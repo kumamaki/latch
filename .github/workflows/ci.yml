@@ -22,4 +22,4 @@ jobs:
       - name: swift-format lint
         run: swift format lint --strict --recursive Sources Tests examples Package.swift
       - name: ShellCheck
-        run: shellcheck cli/latch.sh
+        run: shellcheck cli/latch.sh scripts/release.sh

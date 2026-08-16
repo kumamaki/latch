@@ -16,6 +16,7 @@ app without computer-use or Screen Recording.
 | `docs/agent-contract.md` | Agent-agnostic ask / CLI / runbook rules |
 | `docs/agent-setup.md` | Paste-to-agent install (any coding agent) |
 | `examples/Notes` | Buildable Notes demo (`just demo`) |
+| `scripts/release.sh` | Tag + GitHub Release (`just release` / `just ship`) |
 
 ## Interface (locked — do not casually reopen)
 
@@ -33,8 +34,12 @@ app without computer-use or Screen Recording.
 ```sh
 just test
 just check
+just release minor    # dry-run plan; agents stop here
 bash cli/latch.sh --help
 ```
+
+`just ship` is USER-only. It pushes `main`, tags `vX.Y.Z`, and creates
+the GitHub Release. Agents never run it.
 
 ## Socket
 

@@ -41,9 +41,7 @@ All notable changes to Latch live here.
 - CLI `wait` polls until the socket exists, so `wait boot --state ready`
   is not a race against `start`.
 
-## 0.1.0 — 2026-08-16
-
-First public kernel.
+### Kernel
 
 - Catalog-first control model. `.latch` registers press and set handlers.
   `.accessibilityIdentifier` alone is not enough.
@@ -56,3 +54,9 @@ First public kernel.
   No `screencapture`.
 - Agent-agnostic skills: setup, register, audit, diagnose, plus a
   project `drive` template.
+
+### Release
+
+- `just release <major|minor|patch>` prints the plan. `just ship` stamps
+  the changelog and SwiftPM pins, tags `vX.Y.Z`, and cuts a GitHub
+  Release. Agents never run `just ship`.
