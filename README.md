@@ -102,9 +102,9 @@ ping, boot, windows, `ax *`, and screenshot, and nothing else.
 
    ```swift
    // Package.swift
-   .package(url: "https://github.com/kumamaki/latch", branch: "main")
+   .package(url: "https://github.com/kumamaki/latch", from: "0.1.0")
    // target dependency:
-   .product(name: "Latch", package: "latch")
+   .product(name: "Latch", package: "Latch")
    ```
 
 2. Bind the socket at Debug boot.
@@ -196,8 +196,8 @@ just check   # tests + swift-format lint + shellcheck
 ```
 
 Status: 0.1. The kernel covers the catalog, the DEBUG socket, the CLI,
-and the skills.
+and the skills. See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT.
+MIT. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).

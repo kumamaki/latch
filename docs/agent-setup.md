@@ -11,9 +11,8 @@ Factory tool, a slash command, or a particular skill directory.
 **Do not edit the app yet.** Run the intake. Wait for answers. Restate.
 Get a go-ahead. Then install.
 
-Canonical tree: the Latch repo the human pointed you at (often
-`~/Work/latch`). After setup, day-to-day drive is the project runbook you
-write in **their** repo.
+Canonical tree: the Latch repo the human pointed you at. After setup,
+day-to-day drive is the project runbook you write in **their** repo.
 
 ---
 
@@ -115,8 +114,8 @@ AGENTS.md is the portable floor.
 
 | Option | When |
 |--------|------|
-| **Path** | Latch already on disk (default if `~/Work/latch` or a path they gave exists) |
-| **Git** | They want a remote dependency (only if they give a URL) |
+| **Path** | Latch already on disk (default if a path they gave exists) |
+| **Git** | Remote package from `https://github.com/kumamaki/latch` |
 | **This repo** | cwd is already the Latch clone — do not nest it inside itself |
 
 ### Q5 — Debug boot site (if Q0 is 1 or 3)
@@ -188,7 +187,13 @@ into a web or GPUI project.
 .product(name: "Latch", package: "Latch")
 ```
 
-**Git**: use the URL they gave. Do not invent a GitHub remote.
+**Git**:
+
+```swift
+.package(url: "https://github.com/kumamaki/latch", from: "0.1.0")
+// target:
+.product(name: "Latch", package: "Latch")
+```
 
 Import `Latch` in every build that registers controls. Only wrap
 `Latch.start` in `#if DEBUG`.
