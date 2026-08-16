@@ -22,14 +22,19 @@ NotesRoot()
 ```
 
 ```sh
-bash cli/latch.sh --app notes ping
+bash cli/latch.sh --app notes doctor
 bash cli/latch.sh --app notes wait boot --state ready
 bash cli/latch.sh --app notes window show main
 bash cli/latch.sh --app notes catalog
 bash cli/latch.sh --app notes ax set prefs.appearance.dark true
+bash cli/latch.sh --app notes wait ax prefs.appearance.dark --value true
 bash cli/latch.sh --app notes ax press editor.save
 bash cli/latch.sh --app notes screenshot main
 ```
+
+`--app` is optional once a `.latch.json` of `{"app":"notes"}` sits in
+the project (or an ancestor). `examples/Notes` ships one. Keep the
+`--app` form when no slug file exists.
 
 ## The problem
 
@@ -134,7 +139,7 @@ ping, boot, windows, `ax *`, and screenshot, and nothing else.
 4. Run the Debug app, then drive it.
 
    ```sh
-   bash cli/latch.sh --app notes ping
+   bash cli/latch.sh --app notes doctor
    bash cli/latch.sh --app notes wait boot --state ready
    bash cli/latch.sh --app notes window show main
    bash cli/latch.sh --app notes ax press editor.save
@@ -166,7 +171,8 @@ and hidden views vanish from the snapshot. See
 ~/Library/Logs/<app>-dev/latch/<window>-<stamp>.png
 ```
 
-`<app>` is the slug you pass to `Latch.start(app:)` and to `--app`.
+`<app>` is the slug you pass to `Latch.start(app:)`. The CLI takes
+it from `--app`, `LATCH_APP`, or `.latch.json`.
 
 ## Limits
 

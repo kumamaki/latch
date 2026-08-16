@@ -21,6 +21,15 @@ struct LatchServerTests {
         )
         let json = try #require(Self.parse(response))
         #expect(json["ok"] as? Bool == true)
+        let data = try #require(json["data"] as? [String: Any])
+        #expect(data["status"] as? String == "ok")
+        #expect(data["boot"] as? String == "ready")
+        #expect(data["windows"] as? Int == 1)
+        #expect(data["catalog"] as? Int == 3)
+        let dumps = await ops.dumpCalls
+        #expect(dumps.count == 1)
+        #expect(dumps[0].window == nil)
+        #expect(dumps[0].labeled)
     }
 
     @Test("wrong token is unauthenticated")
@@ -176,28 +185,95 @@ actor FakeLatchOps: LatchOpsProviding {
     var screenshotPath = "/tmp/shot.png"
     var screenshotWindows: [String] = []
     var lastPressed: (id: String, action: String?)?
+    var dumpCalls: [(window: String?, labeled: Bool)] = []
+    var bootState = "ready"
+    var windowItems = [
+        LatchWindowStatus(name: "main", visible: true, exists: true)
+    ]
+    var dumpRoot = LatchAXNode(
+        id: nil,
+        role: "application",
+        title: "Notes",
+        value: nil,
+        enabled: true,
+        actions: [],
+        frame: .zero,
+        children: [
+            LatchAXNode(
+                id: "window.main", role: "window", title: "Notes", value: nil,
+                enabled: true, actions: [], frame: .zero,
+                children: [
+                    LatchAXNode(
+                        id: "editor.title", role: "textfield", title: "Title",
+                        value: "", enabled: true, actions: ["set"], frame: .zero,
+                        children: []),
+                    LatchAXNode(
+                        id: "prefs.appearance.dark", role: "checkbox",
+                        title: "Dark mode", value: "false", enabled: true,
+                        actions: ["set"], frame: .zero, children: []),
+                ]
+            )
+        ]
+    )
 
     func setScreenshotPath(_ path: String) { screenshotPath = path }
+    func setBootState(_ state: String) { bootState = state }
+    func setWindowItems(_ items: [LatchWindowStatus]) { windowItems = items }
+    func setDumpRoot(_ root: LatchAXNode) { dumpRoot = root }
 
-    func queryBoot() async -> String { "ready" }
-    func queryWindows() async -> [LatchWindowStatus] { [] }
+    func queryBoot() async -> String { bootState }
+    func queryWindows() async -> [LatchWindowStatus] { windowItems }
     func showWindow(_ name: String) async throws {}
     func hideWindow(_ name: String) async throws {}
     func axDump(window: String?, labeled: Bool) async throws -> LatchAXNode {
-        LatchAXNode(
-            id: nil, role: "application", title: "Notes", value: nil, enabled: true,
-            actions: [], frame: .zero, children: [])
+        dumpCalls.append((window, labeled))
+        return dumpRoot
     }
     func axFind(id: String) async throws -> LatchAXNode {
-        throw LatchError.elementNotFound(id: id)
+        guard let node = dumpRoot.first(id: id) else {
+            throw LatchError.elementNotFound(id: id)
+        }
+        return node
     }
     func axPress(id: String, action: String?) async throws {
         lastPressed = (id, action)
     }
-    func axSet(id: String, value: String) async throws {}
+    func axSet(id: String, value: String) async throws {
+        guard dumpRoot.first(id: id) != nil else {
+            throw LatchError.elementNotFound(id: id)
+        }
+        dumpRoot = dumpRoot.replacing(id: id, value: value)
+    }
     func screenshot(window: String) async throws -> String {
         screenshotWindows.append(window)
         return screenshotPath
+    }
+}
+
+extension LatchAXNode {
+    func first(id: String) -> LatchAXNode? {
+        if self.id == id { return self }
+        for child in children {
+            if let found = child.first(id: id) { return found }
+        }
+        return nil
+    }
+
+    func replacing(id: String, value: String) -> LatchAXNode {
+        LatchAXNode(
+            id: self.id,
+            role: role,
+            title: title,
+            value: self.id == id ? value : self.value,
+            enabled: enabled,
+            actions: actions,
+            frame: frame,
+            children: children.map { $0.replacing(id: id, value: value) },
+            window: window,
+            kind: kind,
+            choices: choices,
+            description: description
+        )
     }
 }
 

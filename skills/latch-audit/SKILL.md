@@ -34,6 +34,8 @@ Expected chrome comes from, in order:
 5. If the Debug app is running:
 
    ```sh
+   bash <latch>/cli/latch.sh --app <slug> doctor
+   bash <latch>/cli/latch.sh --app <slug> ids
    bash <latch>/cli/latch.sh --app <slug> catalog
    ```
 

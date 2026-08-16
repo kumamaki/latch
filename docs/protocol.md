@@ -14,7 +14,9 @@ In-app assistants do not use this file. They call
 ~/Library/Application Support/<app>-dev/latch.token
 ```
 
-`<app>` is the slug passed to `Latch.start(app:)`. Token file is `0600`.
+`<app>` is the slug passed to `Latch.start(app:)`. The CLI
+resolves it from `--app`, then `LATCH_APP`, then a cwd-to-root
+`.latch.json` of `{"app":"<slug>"}`. Token file is `0600`.
 Socket file is `0600`. Parent dir is `0700`.
 
 ## Envelope
@@ -29,7 +31,7 @@ Request:
 Success:
 
 ```json
-{"ok":true,"data":{"status":"ok"}}
+{"ok":true,"data":{"status":"ok","boot":"ready","windows":1,"catalog":3}}
 ```
 
 Failure:
@@ -44,7 +46,7 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 
 | Command | Args | Data |
 |---|---|---|
-| `ping` | — | `{status: ok}` |
+| `ping` | — | `{status: ok, boot, windows, catalog}` |
 | `queryBoot` | — | `{state}` (`starting` until the socket listens, then the host state, default `ready`; `failed` on bind error) |
 | `queryWindows` | — | `{items:[{name,visible,exists}]}` |
 | `windowShow` | `{window}` | `{}` |
@@ -78,4 +80,6 @@ alone is not enough.
 
 Catalog nodes may include `kind`, `choices`, and `description`. AX probe
 nodes omit them. There is no `catalog` kernel command; `latch catalog`
-is a CLI flatten of labeled dump.
+is a CLI flatten of labeled dump. `doctor` and `ids` are
+CLI-only. `ping.catalog` counts labeled nodes except the
+synthetic application root.

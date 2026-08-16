@@ -96,11 +96,52 @@ struct LatchProtocolTests {
 
     @Test("success envelope encodes ok:true")
     func successEnvelope() throws {
-        let data = try JSONEncoder().encode(LatchResponse.success(.pong))
+        let data = try JSONEncoder().encode(
+            LatchResponse.success(.pong(boot: "ready", windows: 1, catalog: 3))
+        )
         let object = try JSONSerialization.jsonObject(with: data)
         let dict = try #require(object as? [String: Any])
         #expect(dict["ok"] as? Bool == true)
         let payload = try #require(dict["data"] as? [String: Any])
         #expect(payload["status"] as? String == "ok")
+        #expect(payload["boot"] as? String == "ready")
+        #expect(payload["windows"] as? Int == 1)
+        #expect(payload["catalog"] as? Int == 3)
+    }
+
+    @Test("catalogCount skips the application root")
+    func catalogCountSkipsApplicationRoot() {
+        let leaf = LatchAXNode(
+            id: "editor.save",
+            role: "button",
+            title: "Save",
+            value: nil,
+            enabled: true,
+            actions: ["press"],
+            frame: .zero,
+            children: []
+        )
+        let window = LatchAXNode(
+            id: "window.main",
+            role: "window",
+            title: "Notes",
+            value: nil,
+            enabled: true,
+            actions: [],
+            frame: .zero,
+            children: [leaf]
+        )
+        let root = LatchAXNode(
+            id: nil,
+            role: "application",
+            title: "Notes",
+            value: nil,
+            enabled: true,
+            actions: [],
+            frame: .zero,
+            children: [window]
+        )
+        #expect(root.catalogCount == 2)
+        #expect(window.catalogCount == 2)
     }
 }

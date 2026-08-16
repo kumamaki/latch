@@ -26,13 +26,14 @@ bash <latch>/cli/latch.sh --app <app> <command>
 ```
 
 Replace `<app>` and `<latch>` when this file is copied.
+Drop `--app` when this repo has `.latch.json` or `LATCH_APP` is set.
 
-If ping fails, wait for boot, then ping again:
+If ping fails, wait for boot, then doctor again:
 
 ```bash
-bash <latch>/cli/latch.sh --app <app> ping
+bash <latch>/cli/latch.sh --app <app> doctor
 bash <latch>/cli/latch.sh --app <app> wait boot --state ready
-bash <latch>/cli/latch.sh --app <app> ping
+bash <latch>/cli/latch.sh --app <app> doctor
 ```
 
 ## Forbidden
@@ -87,9 +88,11 @@ Latch checkout used by this project: *(absolute path)*.
 ```bash
 bash <latch>/cli/latch.sh --app <app> window show main
 bash <latch>/cli/latch.sh --app <app> wait window main
+bash <latch>/cli/latch.sh --app <app> ids
 bash <latch>/cli/latch.sh --app <app> catalog
 bash <latch>/cli/latch.sh --app <app> ax find <id>
 bash <latch>/cli/latch.sh --app <app> ax set <id> <value>
+bash <latch>/cli/latch.sh --app <app> wait ax <id> --value <value>
 bash <latch>/cli/latch.sh --app <app> ax press <id>
 bash <latch>/cli/latch.sh --app <app> screenshot main
 ```

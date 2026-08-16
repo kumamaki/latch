@@ -20,10 +20,12 @@ CLI:
 bash <latch>/cli/latch.sh --app <slug> <command>
 ```
 
+Drop `--app` when `.latch.json` or `LATCH_APP` already names the slug.
+
 ## Socket / token
 
 ```sh
-bash <latch>/cli/latch.sh --app <slug> ping
+bash <latch>/cli/latch.sh --app <slug> doctor
 ls -l ~/Library/Application\ Support/<slug>-dev/latch.sock \
       ~/Library/Application\ Support/<slug>-dev/latch.token
 ```
@@ -40,6 +42,7 @@ ls -l ~/Library/Application\ Support/<slug>-dev/latch.sock \
 ## Catalog miss
 
 ```sh
+bash <latch>/cli/latch.sh --app <slug> ids
 bash <latch>/cli/latch.sh --app <slug> catalog
 bash <latch>/cli/latch.sh --app <slug> ax find <id>
 ```

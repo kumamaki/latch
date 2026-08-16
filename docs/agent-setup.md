@@ -239,6 +239,10 @@ Copy `skills/latch-drive/SKILL.md` only where Q3 said.
 Always replace `<app>`, the id table, window list, and boot states.
 Do not leave template ids.
 
+When Q0 is 1 or 3, write `APP_ROOT/.latch.json` as
+`{"app":"<slug>"}` so later CLI calls can drop `--app`. Keep the
+`--app` form in the runbook for agents that have no slug file.
+
 If Q3 includes AGENTS.md, add a short pointer, not a second full skill:
 
 ```markdown
@@ -262,10 +266,10 @@ not require that for smoke.
 The Debug app must be running.
 
 ```sh
-bash <latch>/cli/latch.sh --app <slug> ping
+bash <latch>/cli/latch.sh --app <slug> doctor
 bash <latch>/cli/latch.sh --app <slug> wait boot --state ready
 bash <latch>/cli/latch.sh --app <slug> window show main
-bash <latch>/cli/latch.sh --app <slug> ax dump --labeled
+bash <latch>/cli/latch.sh --app <slug> ids
 bash <latch>/cli/latch.sh --app <slug> ax find <first-id>
 ```
 
@@ -281,9 +285,9 @@ Leave them with a recipe that matches Q2, not the full protocol.
 **Agent (Q2 = A or C)**
 
 ```sh
-bash <latch>/cli/latch.sh --app <slug> ping
+bash <latch>/cli/latch.sh --app <slug> doctor
 bash <latch>/cli/latch.sh --app <slug> wait boot --state ready
-bash <latch>/cli/latch.sh --app <slug> ax dump --labeled
+bash <latch>/cli/latch.sh --app <slug> ids
 bash <latch>/cli/latch.sh --app <slug> ax press <first-id>
 ```
 
@@ -309,6 +313,7 @@ Hard rules (max 6 lines):
 [ ] Restate + proceed confirmation
 [ ] Package added
 [ ] Latch.start(app:) only if Q0 is 1 or 3
+[ ] `.latch.json` written if Q0 is 1 or 3
 [ ] Window root has `.latchWindow`
 [ ] One control registered
 [ ] Runbook written where they asked (or deliberate skip)

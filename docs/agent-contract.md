@@ -17,6 +17,8 @@ any other coding agent can run them.
 
 - Drive the app with `bash <latch>/cli/latch.sh --app <slug> …`.
   `<latch>` is the Latch checkout the human pointed at.
+  Drop `--app` only when `.latch.json` or `LATCH_APP` already
+  names the slug. Keep the `--app` form otherwise.
 - `latch` on PATH is optional. Do not require a brew install to proceed.
 - Read and search the repo with whatever file tools the host has.
 - Do not click the GUI. Do not photograph the screen. Do not grant

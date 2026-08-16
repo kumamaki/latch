@@ -119,7 +119,7 @@ enum LatchResponse: Sendable, Encodable {
 
 enum LatchResponseData: Sendable, Encodable {
     case empty
-    case pong
+    case pong(boot: String, windows: Int, catalog: Int)
     case boot(state: String)
     case windows(items: [LatchWindowStatus])
     case axTree(root: LatchAXNode)
@@ -131,9 +131,12 @@ enum LatchResponseData: Sendable, Encodable {
         case .empty:
             var container = encoder.singleValueContainer()
             try container.encode([String: String]())
-        case .pong:
+        case .pong(let boot, let windows, let catalog):
             var container = encoder.container(keyedBy: PongKeys.self)
             try container.encode("ok", forKey: .status)
+            try container.encode(boot, forKey: .boot)
+            try container.encode(windows, forKey: .windows)
+            try container.encode(catalog, forKey: .catalog)
         case .boot(let state):
             var container = encoder.container(keyedBy: BootKeys.self)
             try container.encode(state, forKey: .state)
@@ -152,7 +155,9 @@ enum LatchResponseData: Sendable, Encodable {
         }
     }
 
-    private enum PongKeys: String, CodingKey { case status }
+    private enum PongKeys: String, CodingKey {
+        case status, boot, windows, catalog
+    }
     private enum BootKeys: String, CodingKey { case state }
     private enum WindowsKeys: String, CodingKey { case items }
     private enum TreeKeys: String, CodingKey { case root }
@@ -233,6 +238,13 @@ public struct LatchAXNode: Sendable, Encodable, Equatable {
         try container.encodeIfPresent(kind, forKey: .kind)
         try container.encodeIfPresent(choices, forKey: .choices)
         try container.encodeIfPresent(description, forKey: .description)
+    }
+
+    /// Labeled-dump size as advertised on ping: every node except the
+    /// synthetic application root.
+    var catalogCount: Int {
+        let own = (id == nil && role == "application") ? 0 : 1
+        return children.reduce(own) { $0 + $1.catalogCount }
     }
 }
 

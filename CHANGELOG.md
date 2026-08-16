@@ -4,6 +4,16 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Daily agent loop
+
+- `ping` now reports `boot`, `windows`, and `catalog` alongside `status`.
+- CLI resolves the slug from `--app`, then `LATCH_APP`, then cwd-to-root
+  `.latch.json`. Invalid JSON or a missing `app` key fails loud.
+- `latch doctor` prints a key:value health report. Exit 0 only if ping
+  works and boot is not `failed`.
+- `wait ax <id>` accepts `--value`, `--enabled`, and `--disabled`.
+- `latch ids` prints a live markdown id table. No new kernel command.
+
 ### Catalog as the tool model
 
 - Press / set / find are catalog-only. A miss names nearby ids and

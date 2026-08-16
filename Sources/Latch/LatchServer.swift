@@ -137,7 +137,16 @@ public actor LatchServer {
         }
         switch command {
         case .ping:
-            return .success(.pong)
+            let boot = await ops.queryBoot()
+            let windows = await ops.queryWindows()
+            let root = try await ops.axDump(window: nil, labeled: true)
+            return .success(
+                .pong(
+                    boot: boot,
+                    windows: windows.count,
+                    catalog: root.catalogCount
+                )
+            )
         case .queryBoot:
             return .success(.boot(state: await ops.queryBoot()))
         case .queryWindows:
