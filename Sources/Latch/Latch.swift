@@ -9,16 +9,32 @@ import Foundation
 public enum Latch {
     private static var server: LatchServer?
     private static var retainedOps: (any LatchOpsProviding)?
+    private static var lifecycleTask: Task<Void, Never>?
+    static var socketPhase: LatchSocketPhase = .idle
+    static var failLoudOnStartFailure = true
 
     /// Bind the DEBUG socket. Release is a no-op. Does not affect the catalog.
+    ///
+    /// Idempotent while starting or listening. Boot stays `starting` until
+    /// the socket is up; a failed bind reports `failed`.
     public static func start(
         app: String,
         ops: (any LatchOpsProviding)? = nil
     ) {
         #if DEBUG
+            switch socketPhase {
+            case .starting, .listening:
+                return
+            case .idle, .failed:
+                break
+            }
+            socketPhase = .starting
             let resolved = ops ?? LatchDefaultOps(appName: app)
-            retainedOps = resolved
-            Task {
+            let gated = LatchBootGatedOps(inner: resolved)
+            retainedOps = gated
+            let previous = lifecycleTask
+            lifecycleTask = Task {
+                await previous?.value
                 do {
                     // The token is written before the server ensures the
                     // directory, so a first run must create it here.
@@ -28,11 +44,15 @@ public enum Latch {
                     let token = try LatchToken.loadOrGenerate(at: tokenURL)
                     let socketPath = try LatchPaths.socket(app: app)
                     let server = LatchServer(
-                        ops: resolved, token: token, socketPath: socketPath)
+                        ops: gated, token: token, socketPath: socketPath)
                     try await server.start()
                     self.server = server
+                    self.socketPhase = .listening
                 } catch {
-                    assertionFailure("Latch failed to start: \(error)")
+                    self.socketPhase = .failed
+                    if failLoudOnStartFailure {
+                        assertionFailure("Latch failed to start: \(error)")
+                    }
                 }
             }
         #endif
@@ -41,12 +61,24 @@ public enum Latch {
     /// Stop the socket. Safe to call when Latch never started.
     public static func stop() {
         #if DEBUG
-            Task {
+            socketPhase = .idle
+            let server = self.server
+            self.server = nil
+            retainedOps = nil
+            let previous = lifecycleTask
+            lifecycleTask = Task {
+                await previous?.value
                 await server?.stop()
-                server = nil
-                retainedOps = nil
             }
         #endif
+    }
+
+    static func resolvedBoot(host: String) -> String {
+        socketPhase.resolvedBoot(host: host)
+    }
+
+    static func waitForLifecycle() async {
+        await lifecycleTask?.value
     }
 
     /// Live catalog. Same nodes an outside agent would see in labeled dump.

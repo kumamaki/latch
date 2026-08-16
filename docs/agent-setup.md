@@ -20,7 +20,8 @@ day-to-day drive is the project runbook you write in **their** repo.
 
 In your own words, cover:
 
-- The app registers named controls with `.latch` (every build).
+- The app registers named controls with `.latch` (every build) and
+  marks each window root with `.latchWindow`.
 - A **coding agent** drives them over a **DEBUG unix socket**. No
   computer-use. No Screen Recording. No Accessibility permission.
 - An **in-app assistant** calls `Latch.snapshot` / `press` / `set`.
@@ -136,9 +137,9 @@ Do not insert `start` in a preview, a test, or a Release-only path.
 > What is the first control to register? One is enough.
 
 Ask for: a short id (`editor.save`), the view (button / toggle / field),
-and the window name (`main`). If they say "you pick", open the main
-window's primary button or a single obvious field, propose the id, and
-wait.
+and the window name (`main`). Put `.latchWindow` on that window's root.
+If they say "you pick", open the main window's primary button or a
+single obvious field, propose the id, and wait.
 
 Do not register a whole screen on the first pass.
 
@@ -151,7 +152,7 @@ Store as `APP_ROOT`.
 ### After answers
 
 1. Restate in bullets: slug, who drives, runbook targets, package source,
-   boot file, first control id.
+   boot file, window name, first control id.
 2. One line on fit: "Debug socket at `<slug>-dev`; agents will
    `latch --app <slug> ax press <id>` instead of clicking."
 3. Ask: **Proceed with install?** Continue only on yes / implicit
@@ -211,14 +212,22 @@ Latch.start(app: "<slug>")
 ```
 
 Release `start` is a no-op. `.latch` is not. Do not wrap the modifier
-in `#if DEBUG`.
+in `#if DEBUG`. Boot is `starting` until the socket listens, then the
+host state (default `ready`).
 
-### 4.3 First control
+### 4.3 Window and first control
+
+Mark the window root with `.latchWindow`. That sets the AppKit
+identifier and registers `window.<name>`. Control `window:` only nests
+a dump node.
 
 On the **interactive** view, not a parent stack. See
 `skills/latch-register/SKILL.md`.
 
 ```swift
+NotesRoot()
+    .latchWindow("main")
+
 Button("Save") { save() }
     .latch("editor.save", title: "Save", window: "main", press: save)
 ```
@@ -254,6 +263,8 @@ The Debug app must be running.
 
 ```sh
 bash <latch>/cli/latch.sh --app <slug> ping
+bash <latch>/cli/latch.sh --app <slug> wait boot --state ready
+bash <latch>/cli/latch.sh --app <slug> window show main
 bash <latch>/cli/latch.sh --app <slug> ax dump --labeled
 bash <latch>/cli/latch.sh --app <slug> ax find <first-id>
 ```
@@ -298,6 +309,7 @@ Hard rules (max 6 lines):
 [ ] Restate + proceed confirmation
 [ ] Package added
 [ ] Latch.start(app:) only if Q0 is 1 or 3
+[ ] Window root has `.latchWindow`
 [ ] One control registered
 [ ] Runbook written where they asked (or deliberate skip)
 [ ] Smoke or explained why the app is not running

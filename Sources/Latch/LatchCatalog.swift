@@ -210,23 +210,29 @@ public enum LatchCatalog {
     }
 
     /// Refresh `window.*` entries from the live `NSApp` window list.
+    ///
+    /// Only owns rows this helper registered. `.latchWindow` keeps its
+    /// own token, so a dump cannot steal `window.main` out from under it.
     public static func syncWindows() {
         let app = NSApplication.shared
         guard app.isRunning else { return }
         let token = windowSyncToken
+        let owner = ObjectIdentifier(token)
         let liveIDs = Set(
             app.windows.compactMap { window -> String? in
                 guard window.isVisible || window.isMiniaturized else { return nil }
                 return windowCatalogID(window)
             }
         )
-        for entry in entries.values where entry.node.role == "window" {
+        for entry in entries.values
+        where entry.node.role == "window" && entry.token == owner {
             if !liveIDs.contains(entry.node.id) {
                 unregister(id: entry.node.id, token: token)
             }
         }
         for window in app.windows where window.isVisible || window.isMiniaturized {
             guard let id = windowCatalogID(window) else { continue }
+            if entries[id] != nil { continue }
             let name = String(id.dropFirst("window.".count))
             try? register(
                 id: id,

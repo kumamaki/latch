@@ -15,7 +15,7 @@ app without computer-use or Screen Recording.
 | `docs/in-process.md` | In-app assistant (no socket) |
 | `docs/agent-contract.md` | Agent-agnostic ask / CLI / runbook rules |
 | `docs/agent-setup.md` | Paste-to-agent install (any coding agent) |
-| `examples/NotesHost.swift` | One-screen host sketch (not a buildable target) |
+| `examples/Notes` | Buildable Notes demo (`just demo`) |
 
 ## Interface (locked — do not casually reopen)
 

@@ -7,6 +7,7 @@ Latch is a small kernel. Keep it one.
 ```sh
 just test    # unit tests
 just check   # tests + swift-format lint + shellcheck
+just demo    # launch examples/Notes
 ```
 
 macOS 15+, Swift 6.

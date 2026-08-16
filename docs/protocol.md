@@ -45,7 +45,7 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 | Command | Args | Data |
 |---|---|---|
 | `ping` | — | `{status: ok}` |
-| `queryBoot` | — | `{state}` |
+| `queryBoot` | — | `{state}` (`starting` until the socket listens, then the host state, default `ready`; `failed` on bind error) |
 | `queryWindows` | — | `{items:[{name,visible,exists}]}` |
 | `windowShow` | `{window}` | `{}` |
 | `windowHide` | `{window}` | `{}` |

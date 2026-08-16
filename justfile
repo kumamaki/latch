@@ -20,3 +20,7 @@ check:
 # Print the CLI usage.
 cli-help:
     bash cli/latch.sh --help
+
+# Build and launch the Notes demo (GUI, Debug).
+demo:
+    swift run --package-path examples/Notes Notes

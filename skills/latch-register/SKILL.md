@@ -28,10 +28,15 @@ was hard to find.
 Put `.latch` on the interactive view, not a parent stack. The modifier
 compiles in Release. Do not wrap it in `#if DEBUG`.
 
+Mark the window root with `.latchWindow("main")`. That sets
+`NSWindow.identifier` and registers `window.main`. Control `window:`
+only nests a dump node; it does not create the window row.
+
 ## Wrappers
 
 | Need | Call |
 |---|---|
+| Window root | `.latchWindow("main")` |
 | Host / label (dump only) | `.latch("id", role:title:window:)` |
 | Button | `.latch("id", press: { … })` |
 | Field | `.latch("id", value: { … }, set: { … })` |

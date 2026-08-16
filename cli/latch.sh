@@ -121,8 +121,13 @@ wait_until() {
     exit 1
 }
 
+socket_ready() {
+    [[ -S "$socket_path" && -f "$token_path" ]]
+}
+
 boot_ready() {
     local wanted="$1"
+    socket_ready || return 1
     local response
     response="$(round_trip queryBoot)"
     python3 - "$response" "$wanted" <<'PY'
@@ -137,6 +142,7 @@ PY
 window_ready() {
     local name="$1"
     local want_visible="$2"
+    socket_ready || return 1
     local response
     response="$(round_trip queryWindows)"
     python3 - "$response" "$name" "$want_visible" <<'PY'
@@ -155,6 +161,7 @@ PY
 
 ax_ready() {
     local identifier="$1"
+    socket_ready || return 1
     local response
     response="$(round_trip axFind "$(printf '{"id":%s}' "$(json_escape "$identifier")")")"
     python3 - "$response" <<'PY'

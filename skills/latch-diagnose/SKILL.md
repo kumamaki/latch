@@ -31,7 +31,9 @@ ls -l ~/Library/Application\ Support/<slug>-dev/latch.sock \
 | Symptom | Cause | Fix |
 |---|---|---|
 | token missing | Debug app never started Latch | `Latch.start(app:)` in DEBUG boot |
-| socket not listening | Release build, or start raced before boot | Rebuild Debug; wait; ping again |
+| socket not listening | Release build, or start still binding | `wait boot --state ready`; rebuild Debug if it stays down |
+| boot stays `starting` | Socket has not reached listen | Wait; if it never flips, start failed before listen |
+| boot is `failed` | Bind/listen error | Check path length / leftover socket; restart Debug |
 | `unauthenticated` | CLI reading a stale token | Restart the app so it rewrites `latch.token` |
 | slug mismatch | `--app notes` vs `Latch.start(app: "Notes")` | Same slug both sides |
 

@@ -27,8 +27,8 @@ Expected chrome comes from, in order:
 1. Confirm `Latch.start(app:)` is DEBUG-only and the slug matches
    `--app`.
 2. List durable chrome the agent must reach (tabs, primary buttons,
-   fields, window names).
-3. Search for `.latch(` / `LatchCatalog.register` / `LatchCatalog.Binding`.
+   fields, window names). Confirm each window root has `.latchWindow`.
+3. Search for `.latch(` / `.latchWindow(` / `LatchCatalog.register` / `LatchCatalog.Binding`.
 4. Search for `.accessibilityIdentifier` without a matching `.latch`.
    Those are probes, not drivers.
 5. If the Debug app is running:
@@ -51,6 +51,7 @@ Expected chrome comes from, in order:
 | Product verbs in the kernel | Keep them in the app ops type. |
 | Socket started in Release | `Latch.start` is DEBUG-only. |
 | `.latch` wrapped in `#if DEBUG` | Catalog must exist in Release for in-app drive. |
+| Window named only on control `window:` | `window show` / screenshot miss it. Add `.latchWindow`. |
 
 ## Report
 

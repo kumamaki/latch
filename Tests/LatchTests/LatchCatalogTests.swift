@@ -1,3 +1,4 @@
+import AppKit
 import Testing
 
 @testable import Latch
@@ -140,6 +141,33 @@ struct LatchCatalogTests {
         #expect(tree.children[0].id == "window.main")
         #expect(tree.children[0].children.map(\.id) == ["editor.title"])
         #expect(tree.children[0].children[0].value == "Hello")
+    }
+
+    @Test("control window: nests under its window without a window row")
+    @MainActor
+    func controlWindowNestsWithoutWindowRow() throws {
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "editor.save", role: "button", window: "main", token: token)
+        #expect(throws: LatchCatalog.Error.notFound(id: "window.main")) {
+            try LatchCatalog.find(id: "window.main")
+        }
+        let tree = LatchCatalogDump.tree(window: nil, title: "Notes")
+        #expect(tree.children.map(\.id) == ["editor.save"])
+    }
+
+    @Test("latchWindow identity matches name and window.name")
+    @MainActor
+    func latchWindowIdentityMatches() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: true
+        )
+        LatchWindowIdentity.apply(name: "main", to: window)
+        #expect(window.identifier?.rawValue == "main")
+        #expect(LatchAX.windowMatches(window, name: "main"))
     }
 
     @Test("in-process Latch surface matches the catalog")

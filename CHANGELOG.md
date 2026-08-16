@@ -2,6 +2,18 @@
 
 All notable changes to Latch live here.
 
+## Unreleased
+
+### First-run reliability
+
+- `.latchWindow("main")` sets the AppKit identifier and registers
+  `window.main`. Control `window:` still only nests dump nodes.
+- `Latch.start` stays sync. Boot is `starting` until the socket listens,
+  then the host state (default `ready`). A failed bind reports `failed`.
+- `examples/Notes` is a buildable sibling app. `just demo` launches it.
+- CLI `wait` polls until the socket exists, so `wait boot --state ready`
+  is not a race against `start`.
+
 ## 0.1.0 — 2026-08-16
 
 First public kernel.

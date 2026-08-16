@@ -78,7 +78,7 @@ template ids.
 
 Windows this app can `window show`: *(list them)*.
 
-Boot states: *(booting · ready · failed — or this app's set)*.
+Boot states: `starting` until the socket listens, then *(ready · failed — or this app's set)*.
 
 Latch checkout used by this project: *(absolute path)*.
 

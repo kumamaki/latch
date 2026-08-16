@@ -16,11 +16,15 @@ Toggle("Dark mode", isOn: $dark)
 
 Button("Save") { save() }
     .latch("editor.save", press: save)
+
+NotesRoot()
+    .latchWindow("main")
 ```
 
 ```sh
 bash cli/latch.sh --app notes ping
 bash cli/latch.sh --app notes wait boot --state ready
+bash cli/latch.sh --app notes window show main
 bash cli/latch.sh --app notes ax dump --labeled
 bash cli/latch.sh --app notes ax set prefs.appearance.dark true
 bash cli/latch.sh --app notes ax press editor.save
@@ -115,9 +119,13 @@ ping, boot, windows, `ax *`, and screenshot, and nothing else.
    #endif
    ```
 
-3. Register a control on the interactive view, without `#if DEBUG`.
+3. Mark the window root, then register a control on the interactive
+   view, without `#if DEBUG`.
 
    ```swift
+   NotesRoot()
+       .latchWindow("main")
+
    Button("Save") { save() }
        .latch("editor.save", title: "Save", window: "main", press: save)
    ```
@@ -126,10 +134,12 @@ ping, boot, windows, `ax *`, and screenshot, and nothing else.
 
    ```sh
    bash cli/latch.sh --app notes ping
+   bash cli/latch.sh --app notes wait boot --state ready
+   bash cli/latch.sh --app notes window show main
    bash cli/latch.sh --app notes ax press editor.save
    ```
 
-`examples/NotesHost.swift` sketches a one-screen host. For a guided
+`just demo` launches `examples/Notes`, a one-window host. For a guided
 install, point your agent at [docs/agent-setup.md](docs/agent-setup.md).
 
 ## In-app assistants
@@ -193,6 +203,7 @@ and Cursor can all follow them; the shared rules live in
 ```sh
 just test    # unit tests
 just check   # tests + swift-format lint + shellcheck
+just demo    # launch examples/Notes
 ```
 
 Status: 0.1. The kernel covers the catalog, the DEBUG socket, the CLI,
