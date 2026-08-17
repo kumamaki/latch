@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.0.1 — 2026-08-17
+
 ### Host sugar
 
 - `.latch("id", text: $binding)` and `.latch("id", double: $binding)`
