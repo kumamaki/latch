@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.1.1 — 2026-08-17
+
 ### Catalog
 
 - Same-role register from another token takes over the id. SwiftUI
