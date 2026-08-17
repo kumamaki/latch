@@ -211,7 +211,12 @@ public enum LatchCatalog {
     ) throws {
         let owner = ObjectIdentifier(token)
         if let existing = entries[id], existing.token != owner {
-            throw Error.duplicate(id: id)
+            // SwiftUI often appears the new owner before the old one
+            // disappears. Same role is that remount. A role clash is a leak.
+            guard existing.node.role == role else {
+                throw Error.duplicate(id: id)
+            }
+            entries.removeValue(forKey: id)
         }
         let resolvedChoices = (choices?.isEmpty == true) ? nil : choices
         entries[id] = Entry(
@@ -335,7 +340,14 @@ public enum LatchCatalog {
     }
 
     public static func actionAliases(for wanted: String) -> Set<String> {
-        [wanted]
+        switch wanted {
+        case "start", "tryagain":
+            return ["start", "tryagain"]
+        case "revealinfinder", "showinfinder":
+            return ["revealinfinder", "showinfinder"]
+        default:
+            return [wanted]
+        }
     }
 
     public static func normalizeActionName(_ name: String) -> String {
@@ -495,10 +507,12 @@ public enum LatchCatalog {
     }
 
     private static func windowCatalogID(_ window: NSWindow) -> String? {
-        guard let raw = window.identifier?.rawValue else { return nil }
-        if raw.hasPrefix("window.") {
-            return raw
-        }
-        return "window.\(raw)"
+        let accessibility = window.accessibilityIdentifier()
+        let raw =
+            accessibility.isEmpty
+            ? window.identifier?.rawValue
+            : accessibility
+        guard let raw, !raw.isEmpty else { return nil }
+        return "window.\(LatchAX.catalogName(from: raw))"
     }
 }

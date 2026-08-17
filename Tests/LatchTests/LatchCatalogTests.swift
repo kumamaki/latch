@@ -34,16 +34,32 @@ struct LatchCatalogTests {
         #expect(stored == "Hello")
     }
 
-    @Test("duplicate id from another owner fails loud")
+    @Test("same-role remount takes the id")
     @MainActor
-    func duplicateFails() throws {
+    func sameRoleTakeover() throws {
+        let first = LatchCatalog.Token()
+        let second = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "editor.save", role: "button", title: "Old", token: first,
+            press: { _ in })
+        try LatchCatalog.register(
+            id: "editor.save", role: "button", title: "New", token: second,
+            press: { _ in })
+        #expect(try LatchCatalog.find(id: "editor.save").title == "New")
+        LatchCatalog.unregister(id: "editor.save", token: first)
+        #expect(try LatchCatalog.find(id: "editor.save").title == "New")
+    }
+
+    @Test("role clash from another owner fails loud")
+    @MainActor
+    func roleClashFails() throws {
         let first = LatchCatalog.Token()
         let second = LatchCatalog.Token()
         try LatchCatalog.register(
             id: "editor.save", role: "button", token: first, press: { _ in })
         #expect(throws: LatchCatalog.Error.duplicate(id: "editor.save")) {
             try LatchCatalog.register(
-                id: "editor.save", role: "button", token: second, press: { _ in })
+                id: "editor.save", role: "textfield", token: second)
         }
     }
 
@@ -184,6 +200,22 @@ struct LatchCatalogTests {
         LatchWindowIdentity.apply(name: "main", to: window)
         #expect(window.identifier?.rawValue == "main")
         #expect(LatchAX.windowMatches(window, name: "main"))
+    }
+
+    @Test("namespaced window identifiers still match the short name")
+    @MainActor
+    func namespacedWindowIdentifiersMatch() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: true
+        )
+        window.identifier = NSUserInterfaceItemIdentifier("pulli.window.fetchBox")
+        window.setAccessibilityIdentifier("window.fetchBox")
+        #expect(LatchAX.windowMatches(window, name: "fetchBox"))
+        #expect(LatchAX.catalogName(from: "pulli.window.fetchBox") == "fetchBox")
+        #expect(LatchAX.catalogName(from: "window.fetchBox") == "fetchBox")
     }
 
     @Test("in-process Latch surface matches the catalog")

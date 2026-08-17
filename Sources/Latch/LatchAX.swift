@@ -93,9 +93,21 @@ public enum LatchAX {
     @MainActor
     public static func windowMatches(_ window: NSWindow, name: String) -> Bool {
         if Lens.window(window).identifier == "window.\(name)" { return true }
-        if window.identifier?.rawValue == "window.\(name)" { return true }
-        if window.identifier?.rawValue == name { return true }
+        if let raw = window.identifier?.rawValue, catalogName(from: raw) == name {
+            return true
+        }
         return false
+    }
+
+    /// `main`, `window.main`, and `app.window.main` all name `main`.
+    static func catalogName(from raw: String) -> String {
+        if raw.hasPrefix("window.") {
+            return String(raw.dropFirst("window.".count))
+        }
+        if let range = raw.range(of: ".window.") {
+            return String(raw[range.upperBound...])
+        }
+        return raw
     }
 
     @MainActor

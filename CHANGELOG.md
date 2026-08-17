@@ -4,6 +4,16 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Catalog
+
+- Same-role register from another token takes over the id. SwiftUI
+  appear-before-disappear remounts no longer throw `duplicate`. A role
+  clash from another owner still fails loud.
+- Window show / dump match namespaced identifiers (`app.window.main`)
+  and `window.main` accessibility ids without rewriting the AppKit
+  identifier.
+- `start` accepts `Try again`; `revealInFinder` accepts `Show in Finder`.
+
 ## 0.1.0 — 2026-08-17
 
 ### Host sugar
