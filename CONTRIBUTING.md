@@ -12,8 +12,7 @@ just release minor   # dry-run the next tag; agents stop here
 ```
 
 `just ship` is USER-only. It stamps the changelog and SwiftPM pins,
-pushes `main`, tags `vX.Y.Z`, and creates the GitHub Release. The
-first cut is `just ship minor` → `v0.1.0`.
+pushes `main`, tags `vX.Y.Z`, and creates the GitHub Release.
 
 macOS 15+, Swift 6.
 
