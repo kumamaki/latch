@@ -55,4 +55,4 @@ the GitHub Release. Agents never run it.
 - Beads is **local-only and Dolt-native** — all of `.beads/` is git-ignored and
   never committed.
 - `bd prime` = beads CLI cheat sheet (SessionStart / local `.beads/PRIME.md`).
-- Memory is **mem0** (`mem search` / `mem add`; `-g` only for cross-project). Not beads KV.
+- Never `bd remember`. Durable facts go to AGENTS, skills, and okf.
