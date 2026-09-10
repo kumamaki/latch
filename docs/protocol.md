@@ -59,6 +59,12 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 
 Unknown command names fail. Product verbs are not in the kernel.
 
+`queryWindows` `visible` is `NSWindow.isVisible`. Miniaturized and
+ordered-out windows are false. `exists` is a matching AppKit window
+still in `NSApp.windows`. CLI `wait window` needs `exists && visible`.
+`wait window --hidden` needs `exists && !visible`. A missing name or
+`exists: false` is not hidden.
+
 ## Encodings
 
 | Kind | Wire |

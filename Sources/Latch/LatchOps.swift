@@ -101,10 +101,21 @@ public final class LatchDefaultOps: LatchOpsProviding {
 
     public static func liveWindows() -> [LatchWindowStatus] {
         LatchCatalog.syncWindows()
-        return LatchCatalog.snapshot().filter { $0.role == "window" }.map { node in
-            let name = node.window ?? String(node.id.dropFirst("window.".count))
-            return LatchWindowStatus(name: name, visible: true, exists: true)
+        return LatchCatalog.snapshot().filter { $0.role == "window" }.map(windowStatus(for:))
+    }
+
+    /// `visible` is `NSWindow.isVisible`. Miniaturized and ordered-out
+    /// windows are false. `exists` is a matching AppKit window still in
+    /// `NSApp.windows`.
+    private static func windowStatus(for node: LatchCatalog.Node) -> LatchWindowStatus {
+        let name = node.window ?? String(node.id.dropFirst("window.".count))
+        guard
+            let window = NSApp.windows.first(where: { LatchAX.windowMatches($0, name: name) })
+        else {
+            return LatchWindowStatus(name: name, visible: false, exists: false)
         }
+        return LatchWindowStatus(
+            name: name, visible: window.isVisible, exists: true)
     }
 
     public static func orderFront(_ name: String) throws {

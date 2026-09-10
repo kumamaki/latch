@@ -396,7 +396,11 @@ if not envelope.get("ok"):
     sys.exit(1)
 for item in envelope["data"].get("items", []):
     if item.get("name") == name:
-        sys.exit(0 if bool(item.get("visible")) == want else 1)
+        exists = item.get("exists") is True
+        visible = item.get("visible") is True
+        if not exists:
+            sys.exit(1)
+        sys.exit(0 if visible == want else 1)
 sys.exit(1)
 PY
 }

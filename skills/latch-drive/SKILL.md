@@ -88,6 +88,8 @@ Latch checkout used by this project: *(absolute path)*.
 ```bash
 bash <latch>/cli/latch.sh --app <app> window show main
 bash <latch>/cli/latch.sh --app <app> wait window main
+bash <latch>/cli/latch.sh --app <app> window hide main
+bash <latch>/cli/latch.sh --app <app> wait window main --hidden
 bash <latch>/cli/latch.sh --app <app> ids
 bash <latch>/cli/latch.sh --app <app> catalog
 bash <latch>/cli/latch.sh --app <app> ax find <id>
@@ -100,6 +102,8 @@ bash <latch>/cli/latch.sh --app <app> screenshot main
 ## When a control is missing
 
 1. Confirm the window is visible (`query windows` / `wait window`).
+   `window hide` leaves `exists: true`, `visible: false`. A missing
+   name is not hidden.
 2. Press the host that mounts it.
 3. `ax find` the id. If not found, register the nearby suggestion or
    a new id. Follow the Latch repo `skills/latch-register/SKILL.md`.

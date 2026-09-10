@@ -463,4 +463,129 @@ struct LatchCatalogTests {
         #expect(ids.contains("sugar.a"))
         #expect(ids.contains("sugar.b"))
     }
+
+    @Test("orderOut reports hidden and still exists")
+    func orderOutReportsHiddenExisting() throws {
+        let fixture = NamedWindowFixture(name: uniqueWindowName())
+        defer { fixture.close() }
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "window.\(fixture.name)",
+            role: "window",
+            title: fixture.name,
+            window: fixture.name,
+            kind: .window,
+            token: token
+        )
+
+        fixture.window.orderFrontRegardless()
+        #expect(fixture.window.isVisible)
+        let shown = try #require(
+            LatchDefaultOps.liveWindows().first { $0.name == fixture.name }
+        )
+        #expect(shown.exists)
+        #expect(shown.visible)
+
+        try LatchDefaultOps.orderOut(fixture.name)
+        #expect(fixture.window.isVisible == false)
+        LatchCatalog.syncWindows()
+        let hidden = try #require(
+            LatchDefaultOps.liveWindows().first { $0.name == fixture.name }
+        )
+        #expect(hidden.visible == false)
+        #expect(hidden.exists)
+        #expect(try LatchCatalog.find(id: "window.\(fixture.name)").role == "window")
+    }
+
+    @Test("a named window that never orders front is not visible")
+    func neverFrontWindowIsNotVisible() throws {
+        let fixture = NamedWindowFixture(name: uniqueWindowName(), orderFront: false)
+        defer { fixture.close() }
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "window.\(fixture.name)",
+            role: "window",
+            window: fixture.name,
+            kind: .window,
+            token: token
+        )
+        #expect(fixture.window.isVisible == false)
+        let status = try #require(
+            LatchDefaultOps.liveWindows().first { $0.name == fixture.name }
+        )
+        #expect(status.exists)
+        #expect(status.visible == false)
+    }
+
+    @Test("catalog window without AppKit row is not hidden")
+    func missingAppKitWindowIsNotHidden() throws {
+        let name = uniqueWindowName()
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "window.\(name)",
+            role: "window",
+            window: name,
+            kind: .window,
+            token: token
+        )
+        let status = try #require(
+            LatchDefaultOps.liveWindows().first { $0.name == name }
+        )
+        #expect(status.exists == false)
+        #expect(status.visible == false)
+    }
+
+    @Test("syncWindows keeps an ordered-out named window")
+    func syncWindowsKeepsOrderedOutWindow() {
+        let fixture = NamedWindowFixture(name: uniqueWindowName())
+        defer { fixture.close() }
+        LatchCatalog.syncWindows()
+        #expect(LatchCatalog.snapshot().contains { $0.id == "window.\(fixture.name)" })
+
+        fixture.window.orderOut(nil)
+        LatchCatalog.syncWindows()
+        #expect(LatchCatalog.snapshot().contains { $0.id == "window.\(fixture.name)" })
+        let status = LatchDefaultOps.liveWindows().first { $0.name == fixture.name }
+        #expect(status?.exists == true)
+        #expect(status?.visible == false)
+    }
+
+    private func uniqueWindowName() -> String {
+        let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(8)
+        return "hide-\(suffix)"
+    }
+}
+
+@MainActor
+private final class NamedWindowFixture {
+    let name: String
+    let window: NSWindow
+
+    init(name: String, orderFront: Bool = true) {
+        let app = NSApplication.shared
+        if !app.isRunning {
+            app.setActivationPolicy(.accessory)
+            app.finishLaunching()
+        }
+        self.name = name
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 200, height: 120),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.identifier = NSUserInterfaceItemIdentifier(name)
+        window.title = name
+        window.isReleasedWhenClosed = false
+        window.contentView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 120))
+        if orderFront {
+            window.orderFrontRegardless()
+        }
+        self.window = window
+    }
+
+    func close() {
+        window.orderOut(nil)
+        window.close()
+    }
 }

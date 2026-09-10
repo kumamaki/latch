@@ -145,6 +145,50 @@ struct LatchCLITests {
         }
     }
 
+    @Test("wait window --hidden needs an existing hidden row")
+    func waitWindowHiddenRequiresExists() async throws {
+        let app = uniqueApp()
+        let (server, ops, dataDirectory) = try await startServer(app: app)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: dataDirectory)
+        }
+
+        await ops.setWindowItems([
+            LatchWindowStatus(name: "main", visible: false, exists: true)
+        ])
+        let hidden = try runCLI(
+            arguments: ["--app", app, "wait", "window", "main", "--hidden", "--timeout", "2"]
+        )
+        #expect(hidden.status == 0)
+        #expect(hidden.stdout.contains("ready: window main hidden"))
+
+        await ops.setWindowItems([
+            LatchWindowStatus(name: "main", visible: true, exists: true)
+        ])
+        let visible = try runCLI(
+            arguments: ["--app", app, "wait", "window", "main", "--timeout", "2"]
+        )
+        #expect(visible.status == 0)
+        #expect(visible.stdout.contains("ready: window main visible"))
+
+        await ops.setWindowItems([
+            LatchWindowStatus(name: "main", visible: false, exists: false)
+        ])
+        let gone = try runCLI(
+            arguments: ["--app", app, "wait", "window", "main", "--hidden", "--timeout", "1"]
+        )
+        #expect(gone.status == 1)
+        #expect(gone.stderr.contains("timeout"))
+
+        await ops.setWindowItems([])
+        let missing = try runCLI(
+            arguments: ["--app", app, "wait", "window", "main", "--hidden", "--timeout", "1"]
+        )
+        #expect(missing.status == 1)
+        #expect(missing.stderr.contains("timeout"))
+    }
+
     @Test("flag app wins over latch json")
     func flagWinsOverSlugFile() throws {
         let directory = try makeTempDirectory()

@@ -4,6 +4,12 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Windows
+
+- `query windows` reports live `NSWindow.isVisible`. Hide (`orderOut`)
+  is `visible: false`, `exists: true`. Miniaturized is not visible.
+  `wait window --hidden` waits for that row, not a missing name.
+
 ### Observation
 
 - `screenshot` paints the window frame (title bar and toolbar), not
