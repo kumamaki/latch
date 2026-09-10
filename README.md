@@ -85,7 +85,8 @@ itself.
 - **One request, one response.** The CLI speaks newline-JSON over the
   socket. Waiting and polling live in the CLI, never in the server.
 - **Screenshots stay in-process.** `cacheDisplay` renders this app's own
-  windows to PNG. Screen Recording permission never comes up.
+  window frames (title bar and toolbar included) to PNG. Screen
+  Recording permission never comes up.
 - **AX is a probe.** An unlabeled `ax dump` walks the in-process AX tree
   for orientation. Press, set, and find never fall through to it. A miss
   means register the control.
@@ -179,8 +180,9 @@ it from `--app`, `LATCH_APP`, or `.latch.json`.
 - macOS 15+, Swift 6.
 - You register controls by hand. That is deliberate; the catalog is an
   allow-list, and the agent can only touch what you put on it.
-- Metal-backed layers may render blank in screenshots. The catalog and
-  the AX probe stay the source of truth there.
+- Screenshots include the title bar and toolbar. Metal-backed layers
+  may still render blank. The catalog and the AX probe stay the source
+  of truth there.
 - The socket serves one local user in Debug builds. Latch is a
   development harness, so treat it as one.
 

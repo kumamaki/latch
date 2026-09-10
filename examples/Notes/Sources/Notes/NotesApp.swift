@@ -40,10 +40,12 @@ struct NotesRoot: View {
                     window: "main",
                     bool: $dark
                 )
+        }
+        .padding()
+        .toolbar {
             Button("Save") { save() }
                 .latch("editor.save", title: "Save", window: "main", press: save)
         }
-        .padding()
         .preferredColorScheme(dark ? .dark : .light)
     }
 

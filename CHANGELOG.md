@@ -4,6 +4,14 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Observation
+
+- `screenshot` paints the window frame (title bar and toolbar), not
+  just `contentView`.
+- Unlabeled `ax dump` lists the window's own AX children after the
+  content view, so toolbar items appear. Catalog press / set stay
+  catalog-only.
+
 ## 0.1.1 — 2026-08-17
 
 ### Catalog

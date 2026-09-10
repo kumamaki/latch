@@ -3,10 +3,19 @@ import Foundation
 
 /// In-process PNG of one of *this* app's windows.
 ///
-/// Uses `cacheDisplay` on the window's content view — not `screencapture`,
-/// not `CGWindowListCreateImage`. No Screen Recording permission. Metal
+/// Uses `cacheDisplay` on the window's frame view (`contentView.superview`)
+/// so the title bar and toolbar paint. Not `screencapture`, not
+/// `CGWindowListCreateImage`. No Screen Recording permission. Metal
 /// layers may render blank; AX is the contract there.
 public enum LatchScreenshot {
+    /// Window frame view when AppKit has attached one; otherwise the
+    /// content view. Toolbar is a sibling of content, not a descendant.
+    @MainActor
+    static func captureRoot(in window: NSWindow) -> NSView? {
+        guard let content = window.contentView else { return nil }
+        return content.superview ?? content
+    }
+
     @MainActor
     public static func capture(windowName: String, app: String) throws -> String {
         let window = NSApp.windows.first { LatchAX.windowMatches($0, name: windowName) }
@@ -16,18 +25,18 @@ public enum LatchScreenshot {
         guard window.isVisible else {
             throw LatchError.windowNotVisible(name: windowName)
         }
-        guard let content = window.contentView else {
+        guard let root = captureRoot(in: window) else {
             throw LatchError.windowEmpty(name: windowName)
         }
-        content.layoutSubtreeIfNeeded()
-        let bounds = content.bounds
+        root.layoutSubtreeIfNeeded()
+        let bounds = root.bounds
         guard bounds.width > 1, bounds.height > 1 else {
             throw LatchError.windowEmpty(name: windowName)
         }
-        guard let rep = content.bitmapImageRepForCachingDisplay(in: bounds) else {
+        guard let rep = root.bitmapImageRepForCachingDisplay(in: bounds) else {
             throw LatchError.screenshotFailed(reason: "Could not allocate bitmap.")
         }
-        content.cacheDisplay(in: bounds, to: rep)
+        root.cacheDisplay(in: bounds, to: rep)
         guard let png = rep.representation(using: .png, properties: [:]) else {
             throw LatchError.screenshotFailed(reason: "Could not encode PNG.")
         }

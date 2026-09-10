@@ -203,16 +203,19 @@ public enum LatchAX {
     }
 
     @MainActor
-    private static func children(of lens: Lens) -> [Lens] {
-        if case .window(let window) = lens, let content = window.contentView {
-            return [.view(content)]
-        }
+    static func children(of lens: Lens) -> [Lens] {
         var seen = Set<ObjectIdentifier>()
         var result: [Lens] = []
         func append(_ child: Lens) {
             let identity = ObjectIdentifier(child.object)
             guard seen.insert(identity).inserted else { return }
             result.append(child)
+        }
+        // Toolbar and titlebar live in the window's AX children, not
+        // inside contentView. Content stays first so existing dumps
+        // keep the same leading child when both mention it.
+        if case .window(let window) = lens, let content = window.contentView {
+            append(.view(content))
         }
         if case .view(let view) = lens {
             for subview in view.subviews {
@@ -289,7 +292,7 @@ public enum LatchAX {
 }
 
 @MainActor
-private enum Lens {
+enum Lens {
     case window(NSWindow)
     case view(NSView)
     case element(NSAccessibilityElement)
