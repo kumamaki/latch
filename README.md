@@ -64,7 +64,7 @@ already on your screen. Each interaction costs a test bundle run, and an
 exploratory session costs many.
 
 **Hand-rolled debug IPC.** A custom socket or URL scheme works until it
-grows into a second, undocumented API surface. Then it ships.
+grows into a second, undocumented API surface.
 
 ## What Latch does instead
 
