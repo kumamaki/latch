@@ -50,6 +50,7 @@ Expected chrome comes from, in order:
 | Off-tab interiors stay registered | Hidden chrome must vanish on disappear. |
 | Sheet interiors stay after dismiss | Register the sheet root and interiors; they vanish on disappear. |
 | Sheet interiors lack `parent:` | Labeled dump stays a bag. Nest under the sheet id. |
+| Greyed control reports `enabled: true` | Press/set refuse the catalog flag, not SwiftUI `.disabled()`. |
 | Live telemetry labeled | Chunk cells, FPS, graphs stay unlabeled. |
 | Bool accepts `yes` / `1` / `on` | Fail loud. Wire is `true` / `false`. |
 | Product verbs in the kernel | Keep them in the app ops type. |

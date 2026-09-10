@@ -64,6 +64,7 @@ public enum LatchCatalog {
         case duplicate(id: String)
         case notFound(id: String, nearby: [String] = [])
         case actionUnavailable(id: String, action: String)
+        case disabled(id: String)
         case invalidValue(id: String, value: String, expected: String)
         case invalidParent(id: String, parent: String, reason: String)
 
@@ -75,6 +76,8 @@ public enum LatchCatalog {
                 return LatchCatalog.notFoundMessage(id: id, nearby: nearby)
             case .actionUnavailable(let id, let action):
                 return "Catalog entry \(id) cannot \(action)."
+            case .disabled(let id):
+                return "Catalog entry \(id) is disabled."
             case .invalidValue(let id, let value, let expected):
                 return "Catalog entry \(id) expected \(expected), got \(value)."
             case .invalidParent(let id, let parent, let reason):
@@ -333,6 +336,7 @@ public enum LatchCatalog {
 
     public static func press(id: String, action: String? = nil) throws {
         guard let entry = entries[id] else { throw missing(id: id) }
+        guard entry.enabled() else { throw Error.disabled(id: id) }
         let wanted = action ?? "press"
         guard let press = entry.press else {
             throw Error.actionUnavailable(id: id, action: wanted)
@@ -350,6 +354,7 @@ public enum LatchCatalog {
 
     public static func set(id: String, value: String) throws {
         guard let entry = entries[id] else { throw missing(id: id) }
+        guard entry.enabled() else { throw Error.disabled(id: id) }
         guard let set = entry.set else {
             throw Error.actionUnavailable(id: id, action: "set")
         }

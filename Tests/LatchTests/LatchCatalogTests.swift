@@ -401,6 +401,104 @@ struct LatchCatalogTests {
         #expect(LatchCatalog.snapshot().first?.enabled == true)
     }
 
+    @Test("disabled press refuses until enabled flips")
+    @MainActor
+    func disabledPressRefusesUntilEnabled() throws {
+        let token = LatchCatalog.Token()
+        var canSave = false
+        var presses = 0
+        try LatchCatalog.register(
+            id: "editor.save",
+            role: "button",
+            enabled: { canSave },
+            actions: ["press"],
+            kind: .action,
+            token: token,
+            press: { _ in presses += 1 }
+        )
+        #expect(throws: LatchCatalog.Error.disabled(id: "editor.save")) {
+            try LatchCatalog.press(id: "editor.save")
+        }
+        #expect(presses == 0)
+        #expect(try LatchCatalog.find(id: "editor.save").enabled == false)
+
+        canSave = true
+        try LatchCatalog.press(id: "editor.save")
+        #expect(presses == 1)
+    }
+
+    @Test("disabled set refuses and leaves the value")
+    @MainActor
+    func disabledSetLeavesValue() throws {
+        let token = LatchCatalog.Token()
+        var canEdit = false
+        var stored = "old"
+        try LatchCatalog.register(
+            id: "editor.title",
+            role: "textfield",
+            value: { stored },
+            enabled: { canEdit },
+            actions: ["set"],
+            kind: .text,
+            token: token,
+            set: { stored = $0 }
+        )
+        #expect(throws: LatchCatalog.Error.disabled(id: "editor.title")) {
+            try LatchCatalog.set(id: "editor.title", value: "Hello")
+        }
+        #expect(stored == "old")
+        canEdit = true
+        try LatchCatalog.set(id: "editor.title", value: "Hello")
+        #expect(stored == "Hello")
+    }
+
+    @Test("disabled without a handler still reports disabled")
+    @MainActor
+    func disabledBeatsMissingHandler() throws {
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "editor.save",
+            role: "button",
+            enabled: { false },
+            kind: .action,
+            token: token
+        )
+        #expect(throws: LatchCatalog.Error.disabled(id: "editor.save")) {
+            try LatchCatalog.press(id: "editor.save")
+        }
+        #expect(throws: LatchCatalog.Error.disabled(id: "editor.save")) {
+            try LatchCatalog.set(id: "editor.save", value: "x")
+        }
+    }
+
+    @Test("disabled press maps to LatchError.disabled")
+    @MainActor
+    func disabledPressMapsToLatchError() async {
+        let token = LatchCatalog.Token()
+        try? LatchCatalog.register(
+            id: "editor.save",
+            role: "button",
+            enabled: { false },
+            actions: ["press"],
+            kind: .action,
+            token: token,
+            press: { _ in }
+        )
+        let mapped = LatchError(LatchCatalog.Error.disabled(id: "editor.save"))
+        #expect(mapped.description.contains("editor.save"))
+        #expect(mapped.description.contains("disabled"))
+        let ops = LatchDefaultOps(appName: "notes")
+        do {
+            try await ops.axPress(id: "editor.save", action: nil)
+            Issue.record("expected disabled press to fail")
+        } catch let error as LatchError {
+            #expect(error.description.contains("editor.save"))
+            #expect(error.description.contains("disabled"))
+        } catch {
+            Issue.record("expected LatchError, got \(error)")
+        }
+    }
+
     @Test("notFound names nearby catalog ids")
     @MainActor
     func nearbyMissNamesRegisteredID() {

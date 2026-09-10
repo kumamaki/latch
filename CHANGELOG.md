@@ -9,6 +9,8 @@ All notable changes to Latch live here.
 - Nodes may name a `parent` catalog id. Labeled dump nests that subtree
   under the parent. A missing parent stays at the window until it
   registers. Self-parent and cycles fail loud.
+- Press and set refuse when live `enabled` is false. Find and dump
+  still return the node. Wire code is `unavailable`.
 
 ### CLI
 
@@ -20,6 +22,7 @@ All notable changes to Latch live here.
 
 - Notes toolbar **New** presents `sheet.compose` with
   `composer.title` / `save` / `cancel`.
+- Notes `composer.save` is disabled while the compose draft is empty.
 
 ### Windows
 

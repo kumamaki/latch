@@ -101,6 +101,7 @@ bash <latch>/cli/latch.sh --app <app> catalog
 bash <latch>/cli/latch.sh --app <app> ax find <id>
 bash <latch>/cli/latch.sh --app <app> ax set <id> <value>
 bash <latch>/cli/latch.sh --app <app> wait ax <id> --value <value>
+bash <latch>/cli/latch.sh --app <app> wait ax <id> --enabled
 bash <latch>/cli/latch.sh --app <app> ax press <id>
 bash <latch>/cli/latch.sh --app <app> screenshot main
 ```

@@ -85,9 +85,11 @@ private struct ComposeSheet: View {
                     ) { composing = false }
                 Spacer()
                 Button("Save") { save() }
+                    .disabled(draft.isEmpty)
                     .latch(
                         "composer.save",
                         title: "Save",
+                        enabled: !draft.isEmpty,
                         window: "main",
                         parent: "sheet.compose",
                         press: save

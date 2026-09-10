@@ -186,7 +186,7 @@ public actor LatchServer {
         case .invalidValue:
             return .protocol
         case .windowNotVisible, .windowEmpty, .screenshotFailed, .actionUnavailable,
-            .coreNotReady, .opsUnavailable:
+            .disabled, .coreNotReady, .opsUnavailable:
             return .unavailable
         default:
             return .ipc

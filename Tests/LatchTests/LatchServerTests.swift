@@ -92,6 +92,30 @@ struct LatchServerTests {
         #expect(pressed.action == "start")
     }
 
+    @Test("disabled press is unavailable")
+    func disabledPressIsUnavailable() async throws {
+        let ops = FakeLatchOps()
+        await ops.setPressError(LatchError.disabled(id: "composer.save"))
+        let (server, socketURL, token) = try await Self.makeServer(ops: ops)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: socketURL)
+        }
+
+        let response = try Self.roundTrip(
+            socketPath: socketURL.path,
+            request:
+                #"{"token":"\#(token)","command":"axPress","args":{"id":"composer.save"}}"#
+        )
+        let json = try #require(Self.parse(response))
+        #expect(json["ok"] as? Bool == false)
+        let error = try #require(json["error"] as? [String: Any])
+        #expect(error["code"] as? String == "unavailable")
+        let message = try #require(error["message"] as? String)
+        #expect(message.contains("composer.save"))
+        #expect(message.contains("disabled"))
+    }
+
     private static func makeServer(
         ops: FakeLatchOps,
         token: String = "test-latch-token"
@@ -185,6 +209,7 @@ actor FakeLatchOps: LatchOpsProviding {
     var screenshotPath = "/tmp/shot.png"
     var screenshotWindows: [String] = []
     var lastPressed: (id: String, action: String?)?
+    var pressError: LatchError?
     var dumpCalls: [(window: String?, labeled: Bool)] = []
     var bootState = "ready"
     var windowItems = [
@@ -220,6 +245,7 @@ actor FakeLatchOps: LatchOpsProviding {
     func setBootState(_ state: String) { bootState = state }
     func setWindowItems(_ items: [LatchWindowStatus]) { windowItems = items }
     func setDumpRoot(_ root: LatchAXNode) { dumpRoot = root }
+    func setPressError(_ error: LatchError?) { pressError = error }
 
     func queryBoot() async -> String { bootState }
     func queryWindows() async -> [LatchWindowStatus] { windowItems }
@@ -236,6 +262,7 @@ actor FakeLatchOps: LatchOpsProviding {
         return node
     }
     func axPress(id: String, action: String?) async throws {
+        if let pressError { throw pressError }
         lastPressed = (id, action)
     }
     func axSet(id: String, value: String) async throws {

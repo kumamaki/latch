@@ -64,6 +64,7 @@ to it. Catalog is the contract.
 |---|---|
 | `notFound` | Id is not registered. Nearby ids are a hint to register. |
 | `actionUnavailable` | Registered, but no press/set handler, or unknown named action |
+| `unavailable` (disabled) | Registered, `enabled` is false. Wait `ax --enabled`, then retry. |
 | `invalidValue` | Encoding wrong (`yes` instead of `true`) |
 
 Set writes the view-model binding. If find shows the VoiceOver label

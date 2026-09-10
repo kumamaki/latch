@@ -15,7 +15,8 @@ for await snapshot in Latch.updates() {
 
 `.latch` compiles in Release. The model only sees what you registered.
 Hidden views vanish. Live telemetry stays unlabeled. A miss is a catalog
-miss; there is no AX fallback in-process.
+miss; there is no AX fallback in-process. Press and set refuse when
+`enabled` is false. Find still returns the node.
 
 `Latch.updates(window:)` is in-process wait. It yields the current
 snapshot immediately, then one coalesced snapshot on the next main

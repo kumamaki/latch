@@ -29,6 +29,8 @@ examples/Notes/latch.sh catalog
 examples/Notes/latch.sh ax set prefs.appearance.dark true
 examples/Notes/latch.sh wait ax prefs.appearance.dark --value true
 examples/Notes/latch.sh ax press editor.new
+examples/Notes/latch.sh ax set composer.title Hello
+examples/Notes/latch.sh wait ax composer.save --enabled
 examples/Notes/latch.sh ax press composer.save
 examples/Notes/latch.sh screenshot main
 ```

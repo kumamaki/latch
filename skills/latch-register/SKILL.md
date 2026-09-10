@@ -54,7 +54,8 @@ node. A missing parent stays at the window until it registers. Do not
 parent across windows. `window:` still names the AppKit window.
 
 `enabled:` is live (`() -> Bool`). Pass `enabled: model.canSave` so
-snapshot reads the current value. Optional `description:` is help
+snapshot reads the current value. Press and set refuse while it is
+false; find still returns the node. Optional `description:` is help
 text. `CaseIterable` selections expose `choices`.
 
 Bool / enum / int / double wrappers call `LatchCatalog.parse*`. Do not

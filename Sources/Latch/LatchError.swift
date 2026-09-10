@@ -21,6 +21,7 @@ public enum LatchError: Error, Sendable, CustomStringConvertible {
     case screenshotFailed(reason: String)
     case elementNotFound(id: String, nearby: [String] = [])
     case actionUnavailable(id: String, action: String)
+    case disabled(id: String)
     case invalidValue(id: String, value: String, expected: String)
     case coreNotReady
     case opsUnavailable(reason: String)
@@ -65,6 +66,8 @@ public enum LatchError: Error, Sendable, CustomStringConvertible {
             return LatchCatalog.notFoundMessage(id: id, nearby: nearby)
         case .actionUnavailable(let id, let action):
             return "Element \(id) cannot \(action)."
+        case .disabled(let id):
+            return "Catalog entry \(id) is disabled."
         case .invalidValue(let id, let value, let expected):
             return "Element \(id) expected \(expected), got \(value)."
         case .coreNotReady:
@@ -82,6 +85,8 @@ extension LatchError {
             self = .elementNotFound(id: id, nearby: nearby)
         case .actionUnavailable(let id, let action):
             self = .actionUnavailable(id: id, action: action)
+        case .disabled(let id):
+            self = .disabled(id: id)
         case .invalidValue(let id, let value, let expected):
             self = .invalidValue(id: id, value: value, expected: expected)
         case .duplicate, .invalidParent:
