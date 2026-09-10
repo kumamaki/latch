@@ -679,6 +679,97 @@ struct LatchCatalogTests {
         #expect(ids.contains("sugar.b"))
     }
 
+    @Test("updates yields the new value after set")
+    func updatesAfterSet() async throws {
+        let token = LatchCatalog.Token()
+        var stored = "old"
+        try LatchCatalog.register(
+            id: "editor.title",
+            role: "textfield",
+            value: { stored },
+            actions: ["set"],
+            kind: .text,
+            token: token,
+            set: { stored = $0 }
+        )
+
+        let stream = Latch.updates()
+        var iterator = stream.makeAsyncIterator()
+        let initial = await iterator.next()
+        #expect(initial?.first { $0.id == "editor.title" }?.value == "old")
+
+        try Latch.set(id: "editor.title", value: "Hello")
+        let next = await iterator.next()
+        #expect(next?.first { $0.id == "editor.title" }?.value == "Hello")
+    }
+
+    @Test("updates sees an enabled flip after press")
+    func updatesAfterPressFlipsEnabled() async throws {
+        let token = LatchCatalog.Token()
+        var canSave = false
+        try LatchCatalog.register(
+            id: "editor.save",
+            role: "button",
+            enabled: { canSave },
+            actions: ["press"],
+            kind: .action,
+            token: token,
+            press: { _ in }
+        )
+        try LatchCatalog.register(
+            id: "editor.unlock",
+            role: "button",
+            actions: ["press"],
+            kind: .action,
+            token: token,
+            press: { _ in canSave = true }
+        )
+
+        let stream = Latch.updates()
+        var iterator = stream.makeAsyncIterator()
+        let initial = await iterator.next()
+        #expect(initial?.first { $0.id == "editor.save" }?.enabled == false)
+
+        try Latch.press(id: "editor.unlock")
+        let next = await iterator.next()
+        #expect(next?.first { $0.id == "editor.save" }?.enabled == true)
+    }
+
+    @Test("updates coalesces two sets in one turn")
+    func updatesCoalesceTwoSets() async throws {
+        let token = LatchCatalog.Token()
+        var title = "old"
+        var note = "draft"
+        try LatchCatalog.register(
+            id: "editor.title",
+            role: "textfield",
+            value: { title },
+            actions: ["set"],
+            kind: .text,
+            token: token,
+            set: { title = $0 }
+        )
+        try LatchCatalog.register(
+            id: "editor.note",
+            role: "textfield",
+            value: { note },
+            actions: ["set"],
+            kind: .text,
+            token: token,
+            set: { note = $0 }
+        )
+
+        let stream = Latch.updates()
+        var iterator = stream.makeAsyncIterator()
+        _ = await iterator.next()
+
+        try Latch.set(id: "editor.title", value: "Hello")
+        try Latch.set(id: "editor.note", value: "Body")
+        let next = await iterator.next()
+        #expect(next?.first { $0.id == "editor.title" }?.value == "Hello")
+        #expect(next?.first { $0.id == "editor.note" }?.value == "Body")
+    }
+
     @Test("orderOut reports hidden and still exists")
     func orderOutReportsHiddenExisting() throws {
         let fixture = NamedWindowFixture(name: uniqueWindowName())

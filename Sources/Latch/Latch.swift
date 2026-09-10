@@ -109,7 +109,8 @@ public enum Latch {
     }
 
     /// Live catalog snapshots. Yields immediately, then once per turn
-    /// after register or unregister. `window` matches `snapshot(window:)`.
+    /// after register, unregister, press, or set. `window` matches
+    /// `snapshot(window:)`.
     ///
     /// In-process wait. Coding-agent wait stays in the CLI.
     public static func updates(window: String? = nil) -> AsyncStream<

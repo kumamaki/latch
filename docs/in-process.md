@@ -9,7 +9,8 @@ try Latch.set(id: "prefs.appearance.dark", value: "true")
 try Latch.press(id: "editor.save")
 
 for await snapshot in Latch.updates() {
-    // current catalog, then one emit per turn after register / unregister
+    // current catalog, then one emit per turn after
+    // register / unregister / press / set
 }
 ```
 
@@ -20,8 +21,9 @@ miss; there is no AX fallback in-process. Press and set refuse when
 
 `Latch.updates(window:)` is in-process wait. It yields the current
 snapshot immediately, then one coalesced snapshot on the next main
-turn after register or unregister. Coding-agent wait stays in the CLI.
-There is no socket subscriber.
+turn after register, unregister, press, or set. Human typing does
+not emit. Coding-agent wait stays in the CLI. There is no socket
+subscriber.
 
 The app owns the allow-list and the model. Latch is the hand.
 

@@ -350,6 +350,7 @@ public enum LatchCatalog {
             }
         }
         try press(action)
+        notifyChanged()
     }
 
     public static func set(id: String, value: String) throws {
@@ -359,6 +360,7 @@ public enum LatchCatalog {
             throw Error.actionUnavailable(id: id, action: "set")
         }
         try set(value)
+        notifyChanged()
     }
 
     /// Refresh `window.*` entries from the live `NSApp` window list.
