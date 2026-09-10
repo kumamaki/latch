@@ -188,6 +188,122 @@ struct LatchCatalogTests {
         #expect(tree.children.map(\.id) == ["editor.save"])
     }
 
+    @Test("labeled dump nests children under a catalog parent")
+    func labeledDumpNestsParent() throws {
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "window.main", role: "window", title: "Notes",
+            window: "main", token: token)
+        try LatchCatalog.register(
+            id: "sheet.compose", role: "sheet", title: "New note",
+            window: "main", token: token)
+        try LatchCatalog.register(
+            id: "composer.title", role: "textfield", value: { "Draft" },
+            window: "main", parent: "sheet.compose", token: token)
+        let tree = LatchCatalogDump.tree(window: "main", title: "Notes")
+        let window = try #require(tree.children.first)
+        #expect(window.id == "window.main")
+        #expect(window.children.map(\.id) == ["sheet.compose"])
+        #expect(window.children[0].children.map(\.id) == ["composer.title"])
+        #expect(window.children[0].children[0].parent == "sheet.compose")
+        #expect(window.children[0].children[0].value == "Draft")
+    }
+
+    @Test("missing parent stays at the window until it registers")
+    func missingParentIsWindowOrphanThenNests() throws {
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "window.main", role: "window", window: "main", token: token)
+        try LatchCatalog.register(
+            id: "composer.title", role: "textfield",
+            window: "main", parent: "sheet.compose", token: token)
+        let before = LatchCatalogDump.tree(window: "main", title: "Notes")
+        #expect(before.children[0].children.map(\.id) == ["composer.title"])
+        #expect(before.children[0].children[0].parent == "sheet.compose")
+
+        try LatchCatalog.register(
+            id: "sheet.compose", role: "sheet", window: "main", token: token)
+        let after = LatchCatalogDump.tree(window: "main", title: "Notes")
+        #expect(after.children[0].children.map(\.id) == ["sheet.compose"])
+        #expect(after.children[0].children[0].children.map(\.id) == ["composer.title"])
+    }
+
+    @Test("self parent fails loud")
+    func selfParentFails() {
+        let token = LatchCatalog.Token()
+        #expect(
+            throws: LatchCatalog.Error.invalidParent(
+                id: "sheet.compose",
+                parent: "sheet.compose",
+                reason: "a node cannot parent itself")
+        ) {
+            try LatchCatalog.register(
+                id: "sheet.compose",
+                role: "sheet",
+                parent: "sheet.compose",
+                token: token
+            )
+        }
+    }
+
+    @Test("parent cycle fails loud")
+    func parentCycleFails() throws {
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "outer", role: "sheet", parent: "inner", token: token)
+        #expect(
+            throws: LatchCatalog.Error.invalidParent(
+                id: "inner",
+                parent: "outer",
+                reason: "that parent chain is a cycle")
+        ) {
+            try LatchCatalog.register(
+                id: "inner", role: "sheet", parent: "outer", token: token)
+        }
+    }
+
+    @Test("cross-window parent fails once the parent exists")
+    func crossWindowParentFails() throws {
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "sheet.compose", role: "sheet", window: "main", token: token)
+        #expect(
+            throws: LatchCatalog.Error.invalidParent(
+                id: "composer.title",
+                parent: "sheet.compose",
+                reason: "parent is in window main, not prefs")
+        ) {
+            try LatchCatalog.register(
+                id: "composer.title",
+                role: "textfield",
+                window: "prefs",
+                parent: "sheet.compose",
+                token: token
+            )
+        }
+    }
+
+    @Test("cross-window parent fails when the parent registers second")
+    func crossWindowParentFailsOnParentRegister() throws {
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "composer.title",
+            role: "textfield",
+            window: "prefs",
+            parent: "sheet.compose",
+            token: token
+        )
+        #expect(
+            throws: LatchCatalog.Error.invalidParent(
+                id: "composer.title",
+                parent: "sheet.compose",
+                reason: "parent is in window main, not prefs")
+        ) {
+            try LatchCatalog.register(
+                id: "sheet.compose", role: "sheet", window: "main", token: token)
+        }
+    }
+
     @Test("latchWindow identity matches name and window.name")
     @MainActor
     func latchWindowIdentityMatches() {
@@ -377,6 +493,7 @@ struct LatchCatalogTests {
         let dict = try #require(object as? [String: Any])
         #expect(dict["kind"] == nil)
         #expect(dict["choices"] == nil)
+        #expect(dict["parent"] == nil)
         #expect(dict["description"] == nil)
         #expect(dict["window"] == nil)
         #expect(dict["role"] as? String == "button")

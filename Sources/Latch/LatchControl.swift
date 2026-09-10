@@ -12,6 +12,7 @@ public struct LatchControl: ViewModifier {
     private let enabled: () -> Bool
     private let actions: [String]
     private let window: String?
+    private let parent: String?
     private let kind: LatchCatalog.Kind?
     private let choices: [String]?
     private let press: ((String?) throws -> Void)?
@@ -27,6 +28,7 @@ public struct LatchControl: ViewModifier {
         enabled: @escaping () -> Bool = { true },
         actions: [String] = [],
         window: String? = nil,
+        parent: String? = nil,
         kind: LatchCatalog.Kind? = nil,
         choices: [String]? = nil,
         press: ((String?) throws -> Void)? = nil,
@@ -40,6 +42,7 @@ public struct LatchControl: ViewModifier {
         self.enabled = enabled
         self.actions = actions
         self.window = window
+        self.parent = parent
         self.kind = kind
         self.choices = choices
         self.press = press
@@ -54,6 +57,8 @@ public struct LatchControl: ViewModifier {
             .onChange(of: title) { _, _ in publish() }
             .onChange(of: description) { _, _ in publish() }
             .onChange(of: actions) { _, _ in publish() }
+            .onChange(of: window) { _, _ in publish() }
+            .onChange(of: parent) { _, _ in publish() }
             .onDisappear {
                 LatchCatalog.unregister(id: id, token: token)
             }
@@ -71,6 +76,7 @@ public struct LatchControl: ViewModifier {
                 enabled: enabled,
                 actions: actions,
                 window: window,
+                parent: parent,
                 kind: kind,
                 choices: choices,
                 token: token,
@@ -92,7 +98,8 @@ extension View {
         description: String? = nil,
         value: @escaping @autoclosure () -> String? = nil,
         enabled: @escaping @autoclosure () -> Bool = true,
-        window: String? = nil
+        window: String? = nil,
+        parent: String? = nil
     ) -> some View {
         modifier(
             LatchControl(
@@ -103,6 +110,7 @@ extension View {
                 value: value,
                 enabled: enabled,
                 window: window,
+                parent: parent,
                 kind: .label
             )
         )
@@ -117,6 +125,7 @@ extension View {
         value: @escaping @autoclosure () -> String? = nil,
         enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
+        parent: String? = nil,
         press: @escaping () -> Void
     ) -> some View {
         modifier(
@@ -129,6 +138,7 @@ extension View {
                 enabled: enabled,
                 actions: ["press"],
                 window: window,
+                parent: parent,
                 kind: .action,
                 press: { _ in press() }
             )
@@ -142,6 +152,7 @@ extension View {
         description: String? = nil,
         enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
+        parent: String? = nil,
         text: Binding<String>
     ) -> some View {
         modifier(
@@ -154,6 +165,7 @@ extension View {
                 enabled: enabled,
                 actions: ["set"],
                 window: window,
+                parent: parent,
                 kind: .text,
                 set: { text.wrappedValue = $0 }
             )
@@ -169,6 +181,7 @@ extension View {
         value: @escaping () -> String?,
         enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
+        parent: String? = nil,
         set: @escaping (String) throws -> Void
     ) -> some View {
         modifier(
@@ -181,6 +194,7 @@ extension View {
                 enabled: enabled,
                 actions: ["set"],
                 window: window,
+                parent: parent,
                 kind: .text,
                 set: { try set($0) }
             )
@@ -194,6 +208,7 @@ extension View {
         description: String? = nil,
         enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
+        parent: String? = nil,
         bool: Binding<Bool>
     ) -> some View {
         modifier(
@@ -206,6 +221,7 @@ extension View {
                 enabled: enabled,
                 actions: ["set"],
                 window: window,
+                parent: parent,
                 kind: .bool,
                 set: { bool.wrappedValue = try LatchCatalog.parseBool(id: id, $0) }
             )
@@ -219,6 +235,7 @@ extension View {
         description: String? = nil,
         enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
+        parent: String? = nil,
         selection: Binding<Value>
     ) -> some View where Value.RawValue == String {
         modifier(
@@ -231,6 +248,7 @@ extension View {
                 enabled: enabled,
                 actions: ["set"],
                 window: window,
+                parent: parent,
                 kind: .enum,
                 set: {
                     selection.wrappedValue = try LatchCatalog.parseEnum(id: id, $0)
@@ -246,6 +264,7 @@ extension View {
         description: String? = nil,
         enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
+        parent: String? = nil,
         selection: Binding<Value>
     ) -> some View where Value.RawValue == String {
         modifier(
@@ -258,6 +277,7 @@ extension View {
                 enabled: enabled,
                 actions: ["set"],
                 window: window,
+                parent: parent,
                 kind: .enum,
                 choices: LatchCatalog.enumChoices(Value.self),
                 set: {
@@ -274,6 +294,7 @@ extension View {
         description: String? = nil,
         enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
+        parent: String? = nil,
         integer: Binding<Int>
     ) -> some View {
         modifier(
@@ -286,6 +307,7 @@ extension View {
                 enabled: enabled,
                 actions: ["set"],
                 window: window,
+                parent: parent,
                 kind: .int,
                 set: { integer.wrappedValue = try LatchCatalog.parseInt(id: id, $0) }
             )
@@ -299,6 +321,7 @@ extension View {
         description: String? = nil,
         enabled: @escaping @autoclosure () -> Bool = true,
         window: String? = nil,
+        parent: String? = nil,
         double: Binding<Double>
     ) -> some View {
         modifier(
@@ -311,6 +334,7 @@ extension View {
                 enabled: enabled,
                 actions: ["set"],
                 window: window,
+                parent: parent,
                 kind: .double,
                 set: {
                     double.wrappedValue = try LatchCatalog.parseDouble(id: id, $0)
@@ -329,6 +353,7 @@ extension View {
         enabled: @escaping @autoclosure () -> Bool = true,
         actions: [String],
         window: String? = nil,
+        parent: String? = nil,
         press: @escaping (String?) throws -> Void
     ) -> some View {
         modifier(
@@ -341,6 +366,7 @@ extension View {
                 enabled: enabled,
                 actions: actions,
                 window: window,
+                parent: parent,
                 kind: .action,
                 press: press
             )

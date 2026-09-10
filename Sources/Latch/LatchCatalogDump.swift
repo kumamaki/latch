@@ -11,18 +11,20 @@ public enum LatchCatalogDump {
 
         var children: [LatchAXNode] = []
         if windowNodes.isEmpty {
-            children = other.map(leaf)
+            children = nest(other, parent: nil)
         } else {
             for windowNode in windowNodes {
                 let name = windowNode.window ?? String(windowNode.id.dropFirst("window.".count))
-                let nested = other.filter { $0.window == name }.map(leaf)
-                children.append(branch(windowNode, children: nested))
+                let inWindow = other.filter { $0.window == name }
+                children.append(
+                    branch(windowNode, children: nest(inWindow, parent: nil))
+                )
             }
             let orphans = other.filter { node in
                 guard let name = node.window else { return true }
                 return !windowNodes.contains { $0.window == name || $0.id == "window.\(name)" }
             }
-            children.append(contentsOf: orphans.map(leaf))
+            children.append(contentsOf: nest(orphans, parent: nil))
         }
 
         return LatchAXNode(
@@ -43,6 +45,25 @@ public enum LatchCatalogDump {
         return leaf(try LatchCatalog.find(id: id))
     }
 
+    /// Recursively nest nodes that name an existing sibling as `parent`.
+    /// Unknown parents stay at this level so dump still shows them.
+    private static func nest(
+        _ nodes: [LatchCatalog.Node],
+        parent: String?
+    ) -> [LatchAXNode] {
+        let nestedIDs = Set(nodes.map(\.id))
+
+        return
+            nodes
+            .filter { node in
+                let claimed = node.parent.flatMap { nestedIDs.contains($0) ? $0 : nil }
+                return claimed == parent
+            }
+            .map { node in
+                branch(node, children: nest(nodes, parent: node.id))
+            }
+    }
+
     private static func leaf(_ node: LatchCatalog.Node) -> LatchAXNode {
         branch(node, children: [])
     }
@@ -61,6 +82,7 @@ public enum LatchCatalogDump {
             frame: .zero,
             children: children,
             window: node.window,
+            parent: node.parent,
             kind: node.kind,
             choices: node.choices,
             description: node.description

@@ -14,8 +14,8 @@ import Latch
 Toggle("Dark mode", isOn: $dark)
     .latch("prefs.appearance.dark", bool: $dark)
 
-Button("Save") { save() }
-    .latch("editor.save", press: save)
+Button("New") { composing = true }
+    .latch("editor.new", press: { composing = true })
 
 NotesRoot()
     .latchWindow("main")
@@ -28,7 +28,8 @@ bash cli/latch.sh --app notes window show main
 bash cli/latch.sh --app notes catalog
 bash cli/latch.sh --app notes ax set prefs.appearance.dark true
 bash cli/latch.sh --app notes wait ax prefs.appearance.dark --value true
-bash cli/latch.sh --app notes ax press editor.save
+bash cli/latch.sh --app notes ax press editor.new
+bash cli/latch.sh --app notes ax press composer.save
 bash cli/latch.sh --app notes screenshot main
 ```
 
@@ -133,8 +134,10 @@ ping, boot, windows, `ax *`, and screenshot, and nothing else.
    NotesRoot()
        .latchWindow("main")
 
-   Button("Save") { save() }
-       .latch("editor.save", title: "Save", window: "main", press: save)
+   Button("New") { composing = true }
+       .latch("editor.new", title: "New", window: "main") {
+           composing = true
+       }
    ```
 
 4. Run the Debug app, then drive it.
@@ -143,7 +146,7 @@ ping, boot, windows, `ax *`, and screenshot, and nothing else.
    bash cli/latch.sh --app notes doctor
    bash cli/latch.sh --app notes wait boot --state ready
    bash cli/latch.sh --app notes window show main
-   bash cli/latch.sh --app notes ax press editor.save
+   bash cli/latch.sh --app notes ax press editor.new
    ```
 
 `just demo` launches `examples/Notes`, a one-window host. For a guided

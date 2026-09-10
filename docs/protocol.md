@@ -84,8 +84,10 @@ Find / press / set and labeled dump use the catalog only. Unlabeled
 catalog ids and tells the agent to register. `.accessibilityIdentifier`
 alone is not enough.
 
-Catalog nodes may include `kind`, `choices`, and `description`. AX probe
-nodes omit them. There is no `catalog` kernel command; `latch catalog`
-is a CLI flatten of labeled dump. `doctor` and `ids` are
-CLI-only. `ping.catalog` counts labeled nodes except the
-synthetic application root.
+Catalog nodes may include `kind`, `choices`, `description`, and
+`parent`. `parent` is a catalog id. Labeled dump nests the child under
+that node when it exists in the same window; a missing parent stays
+under the window. AX probe nodes omit them. There is no `catalog`
+kernel command; `latch catalog` is a CLI flatten of labeled dump and
+copies `parent`. `doctor` and `ids` are CLI-only. `ping.catalog`
+counts labeled nodes except the synthetic application root.

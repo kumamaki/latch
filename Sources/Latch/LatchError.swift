@@ -84,7 +84,7 @@ extension LatchError {
             self = .actionUnavailable(id: id, action: action)
         case .invalidValue(let id, let value, let expected):
             self = .invalidValue(id: id, value: value, expected: expected)
-        case .duplicate:
+        case .duplicate, .invalidParent:
             self = .opsUnavailable(reason: error.description)
         }
     }

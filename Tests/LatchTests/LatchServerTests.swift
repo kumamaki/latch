@@ -270,6 +270,7 @@ extension LatchAXNode {
             frame: frame,
             children: children.map { $0.replacing(id: id, value: value) },
             window: window,
+            parent: parent,
             kind: kind,
             choices: choices,
             description: description

@@ -48,6 +48,8 @@ Expected chrome comes from, in order:
 | Id only on `.accessibilityIdentifier` | Press/set/find miss it. Register. |
 | `.latch` on a parent stack | Press/set hit the wrong owner. Move it to the control. |
 | Off-tab interiors stay registered | Hidden chrome must vanish on disappear. |
+| Sheet interiors stay after dismiss | Register the sheet root and interiors; they vanish on disappear. |
+| Sheet interiors lack `parent:` | Labeled dump stays a bag. Nest under the sheet id. |
 | Live telemetry labeled | Chunk cells, FPS, graphs stay unlabeled. |
 | Bool accepts `yes` / `1` / `on` | Fail loud. Wire is `true` / `false`. |
 | Product verbs in the kernel | Keep them in the app ops type. |

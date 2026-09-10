@@ -187,6 +187,7 @@ public struct LatchAXNode: Sendable, Encodable, Equatable {
     public let frame: LatchAXFrame
     public let children: [Self]
     public let window: String?
+    public let parent: String?
     public let kind: LatchCatalog.Kind?
     public let choices: [String]?
     public let description: String?
@@ -201,6 +202,7 @@ public struct LatchAXNode: Sendable, Encodable, Equatable {
         frame: LatchAXFrame,
         children: [Self],
         window: String? = nil,
+        parent: String? = nil,
         kind: LatchCatalog.Kind? = nil,
         choices: [String]? = nil,
         description: String? = nil
@@ -214,6 +216,7 @@ public struct LatchAXNode: Sendable, Encodable, Equatable {
         self.frame = frame
         self.children = children
         self.window = window
+        self.parent = parent
         self.kind = kind
         self.choices = choices
         self.description = description
@@ -221,7 +224,7 @@ public struct LatchAXNode: Sendable, Encodable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case id, role, title, value, enabled, actions, frame, children
-        case window, kind, choices, description
+        case window, parent, kind, choices, description
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -235,6 +238,7 @@ public struct LatchAXNode: Sendable, Encodable, Equatable {
         try container.encode(frame, forKey: .frame)
         try container.encode(children, forKey: .children)
         try container.encodeIfPresent(window, forKey: .window)
+        try container.encodeIfPresent(parent, forKey: .parent)
         try container.encodeIfPresent(kind, forKey: .kind)
         try container.encodeIfPresent(choices, forKey: .choices)
         try container.encodeIfPresent(description, forKey: .description)

@@ -197,7 +197,7 @@ def walk(node, out):
             "enabled": node.get("enabled"),
             "actions": node.get("actions") or [],
         }
-        for key in ("title", "value", "window", "kind", "choices", "description"):
+        for key in ("title", "value", "window", "parent", "kind", "choices", "description"):
             val = node.get(key)
             if val not in (None, [], ""):
                 item[key] = val

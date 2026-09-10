@@ -46,6 +46,12 @@ only nests a dump node; it does not create the window row.
 | Popup / option group | `.latch("id", selection: $binding)` | `enum` |
 | Integer field | `.latch("id", integer: $binding)` | `int` |
 | Named row actions | `.latch("id", actions: […], press: { action in … })` | `action` |
+| Sheet / popover / alert chrome | `.latch("id", role: "sheet", window:)` | `label` |
+| Interior of that surface | `.latch("id", parent: "sheet.compose", …)` | same as the control |
+
+`parent:` is a catalog id. Labeled dump nests the child under that
+node. A missing parent stays at the window until it registers. Do not
+parent across windows. `window:` still names the AppKit window.
 
 `enabled:` is live (`() -> Bool`). Pass `enabled: model.canSave` so
 snapshot reads the current value. Optional `description:` is help
@@ -64,6 +70,18 @@ Button("Save") { save() }
 
 TextField("Title", text: $title)
     .latch("editor.title", title: "Title", window: "main", text: $title)
+
+ComposeForm()
+    .latch("sheet.compose", role: "sheet", title: "New note", window: "main")
+
+TextField("Title", text: $draft)
+    .latch(
+        "composer.title",
+        title: "Title",
+        window: "main",
+        parent: "sheet.compose",
+        text: $draft
+    )
 ```
 
 ## Lifetime

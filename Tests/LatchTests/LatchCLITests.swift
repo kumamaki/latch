@@ -189,6 +189,60 @@ struct LatchCLITests {
         #expect(missing.stderr.contains("timeout"))
     }
 
+    @Test("catalog flatten copies parent")
+    func catalogFlattenCopiesParent() async throws {
+        let app = uniqueApp()
+        let (server, ops, dataDirectory) = try await startServer(app: app)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: dataDirectory)
+        }
+        await ops.setDumpRoot(
+            LatchAXNode(
+                id: nil,
+                role: "application",
+                title: "Notes",
+                value: nil,
+                enabled: true,
+                actions: [],
+                frame: .zero,
+                children: [
+                    LatchAXNode(
+                        id: "window.main", role: "window", title: "Notes",
+                        value: nil, enabled: true, actions: [], frame: .zero,
+                        children: [
+                            LatchAXNode(
+                                id: "sheet.compose", role: "sheet",
+                                title: "New note", value: nil, enabled: true,
+                                actions: [], frame: .zero,
+                                children: [
+                                    LatchAXNode(
+                                        id: "composer.title",
+                                        role: "textfield",
+                                        title: "Title",
+                                        value: "Draft",
+                                        enabled: true,
+                                        actions: ["set"],
+                                        frame: .zero,
+                                        children: [],
+                                        window: "main",
+                                        parent: "sheet.compose"
+                                    )
+                                ],
+                                window: "main"
+                            )
+                        ],
+                        window: "main"
+                    )
+                ]
+            )
+        )
+        let result = try runCLI(arguments: ["--app", app, "catalog"])
+        #expect(result.status == 0)
+        #expect(result.stdout.contains("composer.title"))
+        #expect(result.stdout.contains("\"parent\": \"sheet.compose\""))
+    }
+
     @Test("flag app wins over latch json")
     func flagWinsOverSlugFile() throws {
         let directory = try makeTempDirectory()

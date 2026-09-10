@@ -28,6 +28,7 @@ public enum LatchCatalog {
         public let enabled: Bool
         public let actions: [String]
         public let window: String?
+        public let parent: String?
         public let kind: Kind?
         public let choices: [String]?
         public let description: String?
@@ -40,6 +41,7 @@ public enum LatchCatalog {
             enabled: Bool = true,
             actions: [String] = [],
             window: String? = nil,
+            parent: String? = nil,
             kind: Kind? = nil,
             choices: [String]? = nil,
             description: String? = nil
@@ -51,6 +53,7 @@ public enum LatchCatalog {
             self.enabled = enabled
             self.actions = actions
             self.window = window
+            self.parent = parent
             self.kind = kind
             self.choices = choices
             self.description = description
@@ -62,6 +65,7 @@ public enum LatchCatalog {
         case notFound(id: String, nearby: [String] = [])
         case actionUnavailable(id: String, action: String)
         case invalidValue(id: String, value: String, expected: String)
+        case invalidParent(id: String, parent: String, reason: String)
 
         public var description: String {
             switch self {
@@ -73,6 +77,8 @@ public enum LatchCatalog {
                 return "Catalog entry \(id) cannot \(action)."
             case .invalidValue(let id, let value, let expected):
                 return "Catalog entry \(id) expected \(expected), got \(value)."
+            case .invalidParent(let id, let parent, let reason):
+                return "Catalog entry \(id) cannot nest under \(parent): \(reason)."
             }
         }
     }
@@ -96,6 +102,7 @@ public enum LatchCatalog {
             enabled: @escaping @autoclosure () -> Bool = true,
             actions: [String] = [],
             window: String? = nil,
+            parent: String? = nil,
             kind: Kind? = nil,
             choices: [String]? = nil,
             press: ((String?) throws -> Void)? = nil,
@@ -116,6 +123,7 @@ public enum LatchCatalog {
                     enabled: enabled,
                     actions: actions,
                     window: window,
+                    parent: parent,
                     kind: kind,
                     choices: choices,
                     token: token,
@@ -203,6 +211,7 @@ public enum LatchCatalog {
         enabled: @escaping () -> Bool = { true },
         actions: [String] = [],
         window: String? = nil,
+        parent: String? = nil,
         kind: Kind? = nil,
         choices: [String]? = nil,
         token: Token,
@@ -218,6 +227,7 @@ public enum LatchCatalog {
             }
             entries.removeValue(forKey: id)
         }
+        try validateParent(id: id, parent: parent, window: window)
         let resolvedChoices = (choices?.isEmpty == true) ? nil : choices
         entries[id] = Entry(
             token: owner,
@@ -229,6 +239,7 @@ public enum LatchCatalog {
                 enabled: true,
                 actions: actions,
                 window: window,
+                parent: parent,
                 kind: kind,
                 choices: resolvedChoices,
                 description: description
@@ -272,10 +283,52 @@ public enum LatchCatalog {
             enabled: entry.enabled(),
             actions: entry.node.actions,
             window: entry.node.window,
+            parent: entry.node.parent,
             kind: entry.node.kind,
             choices: entry.node.choices,
             description: entry.node.description
         )
+    }
+
+    private static func validateParent(
+        id: String,
+        parent: String?,
+        window: String?
+    ) throws {
+        if let parent {
+            if parent == id {
+                throw Error.invalidParent(
+                    id: id, parent: parent, reason: "a node cannot parent itself")
+            }
+            var seen: Set<String> = [id]
+            var current: String? = parent
+            while let next = current {
+                if !seen.insert(next).inserted {
+                    throw Error.invalidParent(
+                        id: id, parent: parent, reason: "that parent chain is a cycle")
+                }
+                guard let ancestor = entries[next] else { break }
+                if let parentWindow = ancestor.node.window, let window,
+                    parentWindow != window
+                {
+                    throw Error.invalidParent(
+                        id: id,
+                        parent: parent,
+                        reason: "parent is in window \(parentWindow), not \(window)"
+                    )
+                }
+                current = ancestor.node.parent
+            }
+        }
+        for child in entries.values where child.node.parent == id {
+            if let childWindow = child.node.window, let window, childWindow != window {
+                throw Error.invalidParent(
+                    id: child.node.id,
+                    parent: id,
+                    reason: "parent is in window \(window), not \(childWindow)"
+                )
+            }
+        }
     }
 
     public static func press(id: String, action: String? = nil) throws {

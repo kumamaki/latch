@@ -4,6 +4,17 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Catalog
+
+- Nodes may name a `parent` catalog id. Labeled dump nests that subtree
+  under the parent. A missing parent stays at the window until it
+  registers. Self-parent and cycles fail loud.
+
+### Demo
+
+- Notes toolbar **New** presents `sheet.compose` with
+  `composer.title` / `save` / `cancel`.
+
 ### Windows
 
 - `query windows` reports live `NSWindow.isVisible`. Hide (`orderOut`)
