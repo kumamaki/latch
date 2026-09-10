@@ -10,6 +10,12 @@ All notable changes to Latch live here.
   under the parent. A missing parent stays at the window until it
   registers. Self-parent and cycles fail loud.
 
+### CLI
+
+- `examples/Notes/latch.sh` is the project wrapper: exec the kernel
+  client, then `cd` next to `.latch.json`. README and agent-setup
+  teach that recipe. Kernel remains `cli/latch.sh`.
+
 ### Demo
 
 - Notes toolbar **New** presents `sheet.compose` with

@@ -16,6 +16,7 @@ app without computer-use or Screen Recording.
 | `docs/agent-contract.md` | Agent-agnostic ask / CLI / runbook rules |
 | `docs/agent-setup.md` | Paste-to-agent install (any coding agent) |
 | `examples/Notes` | Buildable Notes demo (`just demo`) |
+| `examples/Notes/latch.sh` | Demo project CLI (execs `cli/latch.sh`) |
 | `scripts/release.sh` | Tag + GitHub Release (`just release` / `just ship`) |
 
 ## Interface (locked — do not casually reopen)

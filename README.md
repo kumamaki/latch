@@ -22,16 +22,20 @@ NotesRoot()
 ```
 
 ```sh
-bash cli/latch.sh --app notes doctor
-bash cli/latch.sh --app notes wait boot --state ready
-bash cli/latch.sh --app notes window show main
-bash cli/latch.sh --app notes catalog
-bash cli/latch.sh --app notes ax set prefs.appearance.dark true
-bash cli/latch.sh --app notes wait ax prefs.appearance.dark --value true
-bash cli/latch.sh --app notes ax press editor.new
-bash cli/latch.sh --app notes ax press composer.save
-bash cli/latch.sh --app notes screenshot main
+examples/Notes/latch.sh doctor
+examples/Notes/latch.sh wait boot --state ready
+examples/Notes/latch.sh window show main
+examples/Notes/latch.sh catalog
+examples/Notes/latch.sh ax set prefs.appearance.dark true
+examples/Notes/latch.sh wait ax prefs.appearance.dark --value true
+examples/Notes/latch.sh ax press editor.new
+examples/Notes/latch.sh ax press composer.save
+examples/Notes/latch.sh screenshot main
 ```
+
+Your app should have the same named command. Put a thin wrapper at
+`latch.sh` that execs Latch's kernel client. Do not paste the kernel
+into that wrapper. `examples/Notes/latch.sh` is the recipe.
 
 `--app` is optional once a `.latch.json` of `{"app":"notes"}` sits in
 the project (or an ancestor). `examples/Notes` ships one. Keep the
@@ -101,7 +105,8 @@ guessing synonyms.
 | Piece | Role |
 |---|---|
 | `Latch` Swift package | Host: catalog, DEBUG socket, in-process AX probe, screenshot, SwiftUI `.latch` |
-| `cli/latch.sh` | Agent CLI (newline-JSON over the socket) |
+| `cli/latch.sh` | Kernel CLI (newline-JSON over the socket) |
+| `examples/Notes/latch.sh` | Project CLI: execs the kernel client, cd's so `.latch.json` resolves |
 | `skills/` | Agent-agnostic runbooks: setup, register, audit, diagnose, drive |
 | `docs/` | Wire protocol, in-process API, agent contract |
 
@@ -140,13 +145,20 @@ ping, boot, windows, `ax *`, and screenshot, and nothing else.
        }
    ```
 
-4. Run the Debug app, then drive it.
+4. Add a project CLI. `examples/Notes/latch.sh` is the recipe: exec
+   Latch's kernel client, `cd` next to `.latch.json`.
+
+   Path package: point `root` at the Latch checkout you added.
+   Git package: copy `cli/latch.sh` once to `scripts/latch`, then exec
+   that file. Do not paste kernel envelopes into your wrapper.
+
+5. Run the Debug app, then drive it.
 
    ```sh
-   bash cli/latch.sh --app notes doctor
-   bash cli/latch.sh --app notes wait boot --state ready
-   bash cli/latch.sh --app notes window show main
-   bash cli/latch.sh --app notes ax press editor.new
+   examples/Notes/latch.sh doctor
+   examples/Notes/latch.sh wait boot --state ready
+   examples/Notes/latch.sh window show main
+   examples/Notes/latch.sh ax press editor.new
    ```
 
 `just demo` launches `examples/Notes`, a one-window host. For a guided
@@ -176,7 +188,9 @@ and hidden views vanish from the snapshot. See
 ```
 
 `<app>` is the slug you pass to `Latch.start(app:)`. The CLI takes
-it from `--app`, `LATCH_APP`, or `.latch.json`.
+it from `--app`, `LATCH_APP`, or `.latch.json`. The kernel client is
+`cli/latch.sh`. Adopter apps call it through a project wrapper, not
+by pasting that path into every command.
 
 ## Limits
 

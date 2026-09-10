@@ -19,7 +19,13 @@ Works in any coding agent. Shared rules live in the Latch repo:
 
 - Debug app has finished boot.
 - Socket: `~/Library/Application Support/<app>-dev/latch.sock`
-- CLI (do not assume `latch` is on PATH):
+- CLI (do not assume `latch` is on PATH). Prefer the project wrapper:
+
+```bash
+./latch.sh <command>
+```
+
+Kernel fallback if that file is missing:
 
 ```bash
 bash <latch>/cli/latch.sh --app <app> <command>

@@ -152,9 +152,10 @@ Store as `APP_ROOT`.
 ### After answers
 
 1. Restate in bullets: slug, who drives, runbook targets, package source,
-   boot file, window name, first control id.
+   boot file, window name, first control id, project CLI path
+   (`APP_ROOT/latch.sh`).
 2. One line on fit: "Debug socket at `<slug>-dev`; agents will
-   `latch --app <slug> ax press <id>` instead of clicking."
+   `./latch.sh ax press <id>` instead of clicking."
 3. Ask: **Proceed with install?** Continue only on yes / implicit
    go-ahead.
 
@@ -232,16 +233,53 @@ Button("Save") { save() }
     .latch("editor.save", title: "Save", window: "main", press: save)
 ```
 
-### 4.4 Runbook
+### 4.4 Project CLI
+
+When Q0 is 1 or 3, write two files at `APP_ROOT`. Do not skip the
+wrapper and tell them to `bash <latch>/cli/latch.sh` on every call.
+
+**`.latch.json`**
+
+```json
+{"app":"<slug>"}
+```
+
+**`latch.sh`** — thin wrapper. Exec Latch's kernel client. `cd` next
+to this file so `.latch.json` resolves. Do not copy the kernel's
+envelopes into it. `examples/Notes/latch.sh` is the recipe.
+
+Path package / this Latch checkout:
+
+```sh
+#!/usr/bin/env bash
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+client="<latch>/cli/latch.sh"
+if [[ ! -f "$client" ]]; then
+    echo "error: Latch kernel client missing at ${client}." >&2
+    exit 1
+fi
+cd "$here"
+exec bash "$client" "$@"
+```
+
+Replace `<latch>` with the absolute Latch checkout from Q4. Make it
+executable.
+
+Git package: copy `<latch>/cli/latch.sh` once to `APP_ROOT/scripts/latch`,
+then point `client` at `"$here/scripts/latch"`. Keep that copy in
+sync when Latch's CLI changes.
+
+`latch` on PATH is still optional. Do not require a brew install.
+
+### 4.5 Runbook
 
 Copy `skills/latch-drive/SKILL.md` only where Q3 said.
 
-Always replace `<app>`, the id table, window list, and boot states.
-Do not leave template ids.
-
-When Q0 is 1 or 3, write `APP_ROOT/.latch.json` as
-`{"app":"<slug>"}` so later CLI calls can drop `--app`. Keep the
-`--app` form in the runbook for agents that have no slug file.
+Always replace `<app>`, the id table, window list, boot states, and
+the CLI invocation with `./latch.sh` (or `APP_ROOT/latch.sh`).
+Do not leave template ids. Keep the kernel path as a fallback only
+if the wrapper is missing.
 
 If Q3 includes AGENTS.md, add a short pointer, not a second full skill:
 
@@ -249,15 +287,12 @@ If Q3 includes AGENTS.md, add a short pointer, not a second full skill:
 ## Latch
 
 DEBUG agent drive. Slug: `<slug>`.
-CLI: `bash <latch>/cli/latch.sh --app <slug> …`
+CLI: `./latch.sh …` (kernel: `bash <latch>/cli/latch.sh --app <slug> …`)
 Do not click the GUI. Catalog is the driver. See the `latch-drive` skill if present.
 ```
 
 If they use an agent whose skill path you do not know, AGENTS.md is
 enough. Ask before creating a new hidden vendor directory.
-
-Optional: symlink or copy `cli/latch.sh` as `latch` on their PATH. Do
-not require that for smoke.
 
 ---
 
@@ -266,12 +301,15 @@ not require that for smoke.
 The Debug app must be running.
 
 ```sh
-bash <latch>/cli/latch.sh --app <slug> doctor
-bash <latch>/cli/latch.sh --app <slug> wait boot --state ready
-bash <latch>/cli/latch.sh --app <slug> window show main
-bash <latch>/cli/latch.sh --app <slug> ids
-bash <latch>/cli/latch.sh --app <slug> ax find <first-id>
+APP_ROOT/latch.sh doctor
+APP_ROOT/latch.sh wait boot --state ready
+APP_ROOT/latch.sh window show main
+APP_ROOT/latch.sh ids
+APP_ROOT/latch.sh ax find <first-id>
 ```
+
+If the wrapper is missing, fall back to
+`bash <latch>/cli/latch.sh --app <slug> …`.
 
 Ping fail → follow `skills/latch-diagnose/SKILL.md`. Do not grant
 Accessibility. Do not use computer-use.
@@ -285,10 +323,10 @@ Leave them with a recipe that matches Q2, not the full protocol.
 **Agent (Q2 = A or C)**
 
 ```sh
-bash <latch>/cli/latch.sh --app <slug> doctor
-bash <latch>/cli/latch.sh --app <slug> wait boot --state ready
-bash <latch>/cli/latch.sh --app <slug> ids
-bash <latch>/cli/latch.sh --app <slug> ax press <first-id>
+./latch.sh doctor
+./latch.sh wait boot --state ready
+./latch.sh ids
+./latch.sh ax press <first-id>
 ```
 
 **Human (Q2 = B or C)** — same commands, plus: token and socket live
@@ -314,6 +352,7 @@ Hard rules (max 6 lines):
 [ ] Package added
 [ ] Latch.start(app:) only if Q0 is 1 or 3
 [ ] `.latch.json` written if Q0 is 1 or 3
+[ ] `latch.sh` written if Q0 is 1 or 3
 [ ] Window root has `.latchWindow`
 [ ] One control registered
 [ ] Runbook written where they asked (or deliberate skip)

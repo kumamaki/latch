@@ -15,7 +15,7 @@ test:
 # Lint Swift sources and the CLI / release scripts.
 lint:
     swift format lint --strict --recursive Sources Tests examples Package.swift
-    shellcheck cli/latch.sh scripts/release.sh
+    shellcheck cli/latch.sh examples/Notes/latch.sh scripts/release.sh
 
 # Tests plus lint. The full pre-ship gate.
 check:

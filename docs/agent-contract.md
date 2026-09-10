@@ -15,7 +15,9 @@ any other coding agent can run them.
 
 ## Tools
 
-- Drive the app with `bash <latch>/cli/latch.sh --app <slug> …`.
+- Drive the app with the project CLI (`./latch.sh …` or
+  `APP_ROOT/latch.sh …`) when that wrapper exists.
+- Fallback: `bash <latch>/cli/latch.sh --app <slug> …`.
   `<latch>` is the Latch checkout the human pointed at.
   Drop `--app` only when `.latch.json` or `LATCH_APP` already
   names the slug. Keep the `--app` form otherwise.

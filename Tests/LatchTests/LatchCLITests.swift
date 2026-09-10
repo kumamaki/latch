@@ -6,6 +6,18 @@ import Testing
 @Suite(.serialized)
 struct LatchCLITests {
 
+    @Test("Notes wrapper execs the kernel client")
+    func notesWrapperExecsKernel() throws {
+        let result = try runCLI(
+            path: Self.notesWrapperPath,
+            arguments: ["--help"],
+            environment: ["LATCH_APP": nil]
+        )
+        #expect(result.status == 64)
+        #expect(result.stderr.contains("latch [--app slug] <command> [args]"))
+        #expect(result.stderr.contains("catalog [window]"))
+    }
+
     @Test("missing slug fails loud")
     func missingSlugFails() throws {
         let result = try runCLI(
@@ -315,13 +327,14 @@ struct LatchCLITests {
     }
 
     private func runCLI(
+        path: String = LatchCLITests.cliPath,
         arguments: [String],
         environment: [String: String?] = [:],
         directory: URL? = nil
     ) throws -> (status: Int32, stdout: String, stderr: String) {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = [Self.cliPath] + arguments
+        process.arguments = [path] + arguments
         process.currentDirectoryURL = directory
         var env = ProcessInfo.processInfo.environment
         for (key, value) in environment {
@@ -347,10 +360,18 @@ struct LatchCLITests {
         )
     }
 
-    private static let cliPath = URL(fileURLWithPath: #filePath)
+    private static let repositoryRoot = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .deletingLastPathComponent()
+
+    private static let cliPath =
+        repositoryRoot
         .appendingPathComponent("cli/latch.sh")
+        .path
+
+    private static let notesWrapperPath =
+        repositoryRoot
+        .appendingPathComponent("examples/Notes/latch.sh")
         .path
 }
