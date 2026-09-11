@@ -334,6 +334,51 @@ struct LatchCatalogTests {
         #expect(LatchAX.catalogName(from: "window.fetchBox") == "fetchBox")
     }
 
+    @Test("SwiftUI AppWindow suffix still matches the short name")
+    @MainActor
+    func swiftUIAppWindowSuffixMatches() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: true
+        )
+        window.identifier = NSUserInterfaceItemIdentifier("main-AppWindow-1")
+        window.setAccessibilityIdentifier("window.main-AppWindow-1")
+        #expect(LatchAX.windowMatches(window, name: "main"))
+        #expect(LatchAX.catalogName(from: "main-AppWindow-1") == "main")
+        #expect(LatchAX.catalogName(from: "window.main-AppWindow-2") == "main")
+        #expect(LatchAX.catalogName(from: "app.window.main-AppWindow-1") == "main")
+        #expect(LatchAX.catalogName(from: "main") == "main")
+        #expect(LatchAX.catalogName(from: "main-AppWindow-") == "main-AppWindow-")
+    }
+
+    @Test("syncWindows does not mint an AppWindow twin")
+    func syncWindowsDoesNotMintAppWindowTwin() throws {
+        let name = uniqueWindowName()
+        let fixture = NamedWindowFixture(name: name)
+        fixture.window.identifier = NSUserInterfaceItemIdentifier("\(name)-AppWindow-1")
+        defer { fixture.close() }
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "window.\(name)",
+            role: "window",
+            title: name,
+            window: name,
+            kind: .window,
+            token: token
+        )
+        LatchCatalog.syncWindows()
+        let ids = LatchCatalog.snapshot().filter { $0.role == "window" }.map(\.id)
+        #expect(ids.contains("window.\(name)"))
+        #expect(!ids.contains("window.\(name)-AppWindow-1"))
+        let status = try #require(
+            LatchDefaultOps.liveWindows().first { $0.name == name }
+        )
+        #expect(status.exists)
+        #expect(status.visible)
+    }
+
     @Test("in-process Latch surface matches the catalog")
     @MainActor
     func inProcessSurface() throws {

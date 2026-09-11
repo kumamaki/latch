@@ -50,6 +50,7 @@ bash <latch>/cli/latch.sh --app <slug> ax find <id>
 1. Window visible? `query windows` / `wait window`.
    Hidden vs gone: `window hide` leaves `exists: true`,
    `visible: false`. A missing name or `exists: false` is not hidden.
+   SwiftUI `WindowGroup` identifiers (`main-AppWindow-1`) match as `main`.
 2. Host that mounts the control pressed? (tab rail, sheet, mode).
 3. `ax find` the id. Not found → not registered. The message lists
    nearby catalog ids. Follow `skills/latch-register/SKILL.md`.

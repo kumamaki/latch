@@ -32,6 +32,8 @@ All notable changes to Latch live here.
 - `query windows` reports live `NSWindow.isVisible`. Hide (`orderOut`)
   is `visible: false`, `exists: true`. Miniaturized is not visible.
   `wait window --hidden` waits for that row, not a missing name.
+- Window show / dump / wait match SwiftUI `WindowGroup` identifiers
+  (`main-AppWindow-1`) as `main`. `syncWindows` does not mint a twin.
 
 ### Observation
 

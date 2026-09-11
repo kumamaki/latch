@@ -32,6 +32,8 @@ compiles in Release. Do not wrap it in `#if DEBUG`.
 Mark the window root with `.latchWindow("main")`. That sets
 `NSWindow.identifier` and registers `window.main`. Control `window:`
 only nests a dump node; it does not create the window row.
+SwiftUI `WindowGroup` may rewrite the identifier to `main-AppWindow-1`;
+show / wait / dump still match as `main`.
 
 ## Wrappers
 

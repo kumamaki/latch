@@ -67,7 +67,8 @@ the id.
 ordered-out windows are false. `exists` is a matching AppKit window
 still in `NSApp.windows`. CLI `wait window` needs `exists && visible`.
 `wait window --hidden` needs `exists && !visible`. A missing name or
-`exists: false` is not hidden.
+`exists: false` is not hidden. SwiftUI `WindowGroup` identifiers
+(`main-AppWindow-1`) match as `main`.
 
 ## Encodings
 

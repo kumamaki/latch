@@ -92,22 +92,32 @@ public enum LatchAX {
 
     @MainActor
     public static func windowMatches(_ window: NSWindow, name: String) -> Bool {
-        if Lens.window(window).identifier == "window.\(name)" { return true }
+        if let ident = Lens.window(window).identifier, catalogName(from: ident) == name {
+            return true
+        }
         if let raw = window.identifier?.rawValue, catalogName(from: raw) == name {
             return true
         }
         return false
     }
 
-    /// `main`, `window.main`, and `app.window.main` all name `main`.
+    /// `main`, `window.main`, `app.window.main`, and
+    /// `main-AppWindow-1` all name `main`. SwiftUI `WindowGroup`
+    /// rewrites the identifier; we match it rather than overwrite.
     static func catalogName(from raw: String) -> String {
-        if raw.hasPrefix("window.") {
-            return String(raw.dropFirst("window.".count))
+        var name = raw
+        if name.hasPrefix("window.") {
+            name = String(name.dropFirst("window.".count))
+        } else if let range = name.range(of: ".window.") {
+            name = String(name[range.upperBound...])
         }
-        if let range = raw.range(of: ".window.") {
-            return String(raw[range.upperBound...])
+        if let range = name.range(of: "-AppWindow-", options: .backwards) {
+            let suffix = name[range.upperBound...]
+            if !suffix.isEmpty, suffix.allSatisfy(\.isNumber) {
+                name = String(name[..<range.lowerBound])
+            }
         }
-        return raw
+        return name
     }
 
     @MainActor
