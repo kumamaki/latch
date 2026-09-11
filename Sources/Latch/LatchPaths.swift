@@ -1,8 +1,20 @@
 import Foundation
 
 /// Filesystem location for the DEBUG Latch socket + token file.
+@MainActor
 public enum LatchPaths {
+    /// Isolated Debug / E2E: point the socket at a temp data dir.
+    public static var dataDirectoryOverride: URL?
+
     public static func directory(app: String) throws -> URL {
+        if let override = dataDirectoryOverride {
+            return override
+        }
+        if let override = ProcessInfo.processInfo.environment["LATCH_DATA_DIR"],
+            !override.isEmpty
+        {
+            return URL(fileURLWithPath: override, isDirectory: true)
+        }
         guard let home = FileManager.default.homeDirectoryForCurrentUser as URL? else {
             throw LatchError.homeDirectoryUnavailable
         }

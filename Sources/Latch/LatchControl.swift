@@ -50,6 +50,8 @@ public struct LatchControl: ViewModifier {
     }
 
     public func body(content: Content) -> some View {
+        let isEnabled = enabled()
+        let currentValue = value()
         content
             .onAppear { publish() }
             .onChange(of: id) { _, _ in publish() }
@@ -59,6 +61,8 @@ public struct LatchControl: ViewModifier {
             .onChange(of: actions) { _, _ in publish() }
             .onChange(of: window) { _, _ in publish() }
             .onChange(of: parent) { _, _ in publish() }
+            .onChange(of: isEnabled) { _, _ in publish() }
+            .onChange(of: currentValue) { _, _ in publish() }
             .onDisappear {
                 LatchCatalog.unregister(id: id, token: token)
             }

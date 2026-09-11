@@ -6,6 +6,7 @@ All notable changes to Latch live here.
 
 ### Catalog
 
+- `.latch` republishes when live `enabled()` or `value()` change, not only on appear / id.
 - Nodes may name a `parent` catalog id. Labeled dump nests that subtree
   under the parent. A missing parent stays at the window until it
   registers. Self-parent and cycles fail loud.
