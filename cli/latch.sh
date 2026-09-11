@@ -374,7 +374,10 @@ boot_ready() {
     response="$(round_trip queryBoot)"
     python3 - "$response" "$wanted" <<'PY'
 import json, sys
-envelope = json.loads(sys.argv[1])
+try:
+    envelope = json.loads(sys.argv[1])
+except json.JSONDecodeError:
+    sys.exit(1)
 if not envelope.get("ok"):
     sys.exit(1)
 sys.exit(0 if envelope["data"].get("state") == sys.argv[2] else 1)
@@ -389,7 +392,10 @@ window_ready() {
     response="$(round_trip queryWindows)"
     python3 - "$response" "$name" "$want_visible" <<'PY'
 import json, sys
-envelope = json.loads(sys.argv[1])
+try:
+    envelope = json.loads(sys.argv[1])
+except json.JSONDecodeError:
+    sys.exit(1)
 name = sys.argv[2]
 want = sys.argv[3] == "1"
 if not envelope.get("ok"):
@@ -415,7 +421,10 @@ ax_ready() {
     response="$(round_trip axFind "$(printf '{"id":%s}' "$(json_escape "$identifier")")")"
     python3 - "$response" "$check_value" "$want_value" "$enabled_flag" <<'PY'
 import json, sys
-envelope = json.loads(sys.argv[1])
+try:
+    envelope = json.loads(sys.argv[1])
+except json.JSONDecodeError:
+    sys.exit(1)
 if not envelope.get("ok"):
     sys.exit(1)
 node = (envelope.get("data") or {}).get("node") or {}

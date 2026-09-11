@@ -20,6 +20,8 @@ All notable changes to Latch live here.
 - `examples/Notes/latch.sh` is the project wrapper: exec the kernel
   client, then `cd` next to `.latch.json`. README and agent-setup
   teach that recipe. Kernel remains `cli/latch.sh`.
+- `just e2e` launches Notes, drives sheet / Save gate / hide-show /
+  screenshot, and quits. Not part of `just check`.
 
 ### Demo
 

@@ -12,12 +12,12 @@ default:
 test:
     swift test
 
-# Lint Swift sources and the CLI / release scripts.
+# Lint Swift sources and the CLI / release / e2e scripts.
 lint:
     swift format lint --strict --recursive Sources Tests examples Package.swift
-    shellcheck cli/latch.sh examples/Notes/latch.sh scripts/release.sh
+    shellcheck cli/latch.sh examples/Notes/latch.sh scripts/release.sh scripts/e2e-notes.sh
 
-# Tests plus lint. The full pre-ship gate.
+# Tests plus lint. The full pre-ship gate. Live-drive is `just e2e`.
 check:
     just test
     just lint
@@ -29,6 +29,10 @@ cli-help:
 # Build and launch the Notes demo (GUI, Debug).
 demo:
     swift run --package-path examples/Notes Notes
+
+# Launch Notes and drive the catalog. Not part of `just check`.
+e2e:
+    bash scripts/e2e-notes.sh
 
 # Next X.Y.Z from the latest v* tag (fallback v0.0.0). Unprefixed tags do not count.
 [private]

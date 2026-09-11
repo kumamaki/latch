@@ -7,6 +7,7 @@ Latch is a small kernel. Keep it one.
 ```sh
 just test            # unit tests
 just check           # tests + swift-format lint + shellcheck
+just e2e             # launch Notes and drive the catalog
 just demo            # launch examples/Notes
 just release minor   # dry-run the next tag; agents stop here
 ```

@@ -22,4 +22,14 @@ jobs:
       - name: swift-format lint
         run: swift format lint --strict --recursive Sources Tests examples Package.swift
       - name: ShellCheck
-        run: shellcheck cli/latch.sh scripts/release.sh
+        run: shellcheck cli/latch.sh examples/Notes/latch.sh scripts/release.sh scripts/e2e-notes.sh
+
+  e2e:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Swift version
+        run: swift --version
+      - name: Live-drive Notes
+        run: bash scripts/e2e-notes.sh

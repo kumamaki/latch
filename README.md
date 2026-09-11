@@ -163,7 +163,8 @@ ping, boot, windows, `ax *`, and screenshot, and nothing else.
    examples/Notes/latch.sh ax press editor.new
    ```
 
-`just demo` launches `examples/Notes`, a one-window host. For a guided
+`just demo` launches `examples/Notes`, a one-window host. `just e2e`
+builds that app, drives the catalog, and quits it. For a guided
 install, point your agent at [docs/agent-setup.md](docs/agent-setup.md).
 
 ## In-app assistants
@@ -231,6 +232,7 @@ and Cursor can all follow them; the shared rules live in
 ```sh
 just test            # unit tests
 just check           # tests + swift-format lint + shellcheck
+just e2e             # launch Notes and drive the catalog
 just demo            # launch examples/Notes
 just release minor   # dry-run the next tag; agents stop here
 ```

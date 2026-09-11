@@ -17,6 +17,7 @@ app without computer-use or Screen Recording.
 | `docs/agent-setup.md` | Paste-to-agent install (any coding agent) |
 | `examples/Notes` | Buildable Notes demo (`just demo`) |
 | `examples/Notes/latch.sh` | Demo project CLI (execs `cli/latch.sh`) |
+| `scripts/e2e-notes.sh` | Live-drive Notes (`just e2e`). Not part of `just check`. |
 | `scripts/release.sh` | Tag + GitHub Release (`just release` / `just ship`) |
 
 ## Interface (locked — do not casually reopen)
@@ -34,7 +35,8 @@ app without computer-use or Screen Recording.
 
 ```sh
 just test
-just check
+just check            # tests + lint; live-drive is `just e2e`
+just e2e              # launch Notes and drive the catalog
 just release minor    # dry-run plan; agents stop here
 bash cli/latch.sh --help
 ```
