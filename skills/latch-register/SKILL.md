@@ -45,6 +45,9 @@ only nests a dump node; it does not create the window row.
 | Switch | `.latch("id", bool: $binding)` | `bool` |
 | Popup / option group | `.latch("id", selection: $binding)` | `enum` |
 | Integer field | `.latch("id", integer: $binding)` | `int` |
+| Time field | `.latch("id", time: $binding)` | `time` |
+| Work days | `.latch("id", weekdays: $binding)` | `weekdays` |
+| Unsigned field | `.latch("id", unsigned: $binding)` | `uint64` |
 | Named row actions | `.latch("id", actions: […], press: { action in … })` | `action` |
 | Sheet / popover / alert chrome | `.latch("id", role: "sheet", window:)` | `label` |
 | Interior of that surface | `.latch("id", parent: "sheet.compose", …)` | same as the control |
@@ -58,9 +61,9 @@ snapshot reads the current value. Press and set refuse while it is
 false; find still returns the node. Optional `description:` is help
 text. `CaseIterable` selections expose `choices`.
 
-Bool / enum / int / double wrappers call `LatchCatalog.parse*`. Do not
-invent encodings. Bad values throw `invalidValue`. Use `value:` + `set:`
-when the host has no `Binding`.
+Bool / enum / int / double / time / weekdays / unsigned wrappers call
+`LatchCatalog.parse*`. Do not invent encodings. Bad values throw
+`invalidValue`. Use `value:` + `set:` when the host has no `Binding`.
 
 ```swift
 Toggle("Dark mode", isOn: $dark)

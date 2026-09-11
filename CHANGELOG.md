@@ -13,6 +13,7 @@ All notable changes to Latch live here.
   still return the node. Wire code is `unavailable`.
 - In-process `Latch.updates()` emits after a successful press or set,
   coalesced with register / unregister on the next main turn.
+- `.latch` sugar for `time:`, `weekdays:`, and `unsigned:` (`uint64`).
 
 ### CLI
 

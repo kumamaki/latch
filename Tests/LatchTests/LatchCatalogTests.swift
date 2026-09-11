@@ -651,6 +651,105 @@ struct LatchCatalogTests {
         #expect(volume == 1.25)
     }
 
+    @Test("time binding parses HH:MM and rejects out of range")
+    func timeBindingParses() throws {
+        var alarm = (hour: 7, minute: 0)
+        let value = Binding(get: { alarm }, set: { alarm = $0 })
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "prefs.alarm",
+            role: "textfield",
+            value: {
+                LatchCatalog.formatTime(
+                    hour: value.wrappedValue.hour, minute: value.wrappedValue.minute)
+            },
+            actions: ["set"],
+            kind: .time,
+            token: token,
+            set: { value.wrappedValue = try LatchCatalog.parseTime(id: "prefs.alarm", $0) }
+        )
+
+        try Latch.set(id: "prefs.alarm", value: "09:30")
+        #expect(alarm.hour == 9)
+        #expect(alarm.minute == 30)
+        #expect(try Latch.find(id: "prefs.alarm").kind == .time)
+        #expect(try Latch.find(id: "prefs.alarm").value == "09:30")
+        #expect(
+            throws: LatchCatalog.Error.invalidValue(
+                id: "prefs.alarm", value: "25:00", expected: "HH:MM")
+        ) {
+            try Latch.set(id: "prefs.alarm", value: "25:00")
+        }
+        #expect(alarm.hour == 9)
+        #expect(alarm.minute == 30)
+    }
+
+    @Test("weekdays binding parses names and exposes choices")
+    func weekdaysBindingParses() throws {
+        var days: Set<String> = ["monday"]
+        let value = Binding(get: { days }, set: { days = $0 })
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "prefs.days",
+            role: "textfield",
+            value: { LatchCatalog.formatWeekdays(Array(value.wrappedValue)) },
+            actions: ["set"],
+            kind: .weekdays,
+            choices: LatchCatalog.weekdayNames,
+            token: token,
+            set: {
+                value.wrappedValue = try LatchCatalog.parseWeekdays(id: "prefs.days", $0)
+            }
+        )
+
+        try Latch.set(id: "prefs.days", value: "monday,friday")
+        #expect(days == ["monday", "friday"])
+        let node = try Latch.find(id: "prefs.days")
+        #expect(node.kind == .weekdays)
+        #expect(node.value == "monday,friday")
+        #expect(node.choices == LatchCatalog.weekdayNames)
+        #expect(
+            throws: LatchCatalog.Error.invalidValue(
+                id: "prefs.days", value: "funday", expected: "monday,tuesday,…")
+        ) {
+            try Latch.set(id: "prefs.days", value: "funday")
+        }
+        #expect(days == ["monday", "friday"])
+        try Latch.set(id: "prefs.days", value: "")
+        #expect(days.isEmpty)
+        #expect(try Latch.find(id: "prefs.days").value == "")
+    }
+
+    @Test("unsigned binding parses and rejects signed input")
+    func unsignedBindingParses() throws {
+        var count: UInt64 = 1
+        let value = Binding(get: { count }, set: { count = $0 })
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "prefs.count",
+            role: "textfield",
+            value: { String(value.wrappedValue) },
+            actions: ["set"],
+            kind: .uint64,
+            token: token,
+            set: {
+                value.wrappedValue = try LatchCatalog.parseUInt64(
+                    id: "prefs.count", $0)
+            }
+        )
+
+        try Latch.set(id: "prefs.count", value: "42")
+        #expect(count == 42)
+        #expect(try Latch.find(id: "prefs.count").kind == .uint64)
+        #expect(
+            throws: LatchCatalog.Error.invalidValue(
+                id: "prefs.count", value: "-1", expected: "an unsigned integer")
+        ) {
+            try Latch.set(id: "prefs.count", value: "-1")
+        }
+        #expect(count == 42)
+    }
+
     @Test("preview process does not register catalog ids")
     func previewDoesNotRegister() {
         Latch.previewProcessOverride = true

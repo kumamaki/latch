@@ -343,6 +343,99 @@ extension View {
         )
     }
 
+    /// Time field: `HH:MM` 24h.
+    public func latch(
+        _ id: String,
+        title: String? = nil,
+        description: String? = nil,
+        enabled: @escaping @autoclosure () -> Bool = true,
+        window: String? = nil,
+        parent: String? = nil,
+        time: Binding<(hour: Int, minute: Int)>
+    ) -> some View {
+        modifier(
+            LatchControl(
+                id: id,
+                role: "textfield",
+                title: title,
+                description: description,
+                value: {
+                    LatchCatalog.formatTime(
+                        hour: time.wrappedValue.hour,
+                        minute: time.wrappedValue.minute
+                    )
+                },
+                enabled: enabled,
+                actions: ["set"],
+                window: window,
+                parent: parent,
+                kind: .time,
+                set: { time.wrappedValue = try LatchCatalog.parseTime(id: id, $0) }
+            )
+        )
+    }
+
+    /// Work-day field: `monday,tuesday`.
+    public func latch(
+        _ id: String,
+        title: String? = nil,
+        description: String? = nil,
+        enabled: @escaping @autoclosure () -> Bool = true,
+        window: String? = nil,
+        parent: String? = nil,
+        weekdays: Binding<Set<String>>
+    ) -> some View {
+        modifier(
+            LatchControl(
+                id: id,
+                role: "textfield",
+                title: title,
+                description: description,
+                value: {
+                    LatchCatalog.formatWeekdays(Array(weekdays.wrappedValue))
+                },
+                enabled: enabled,
+                actions: ["set"],
+                window: window,
+                parent: parent,
+                kind: .weekdays,
+                choices: LatchCatalog.weekdayNames,
+                set: {
+                    weekdays.wrappedValue = try LatchCatalog.parseWeekdays(id: id, $0)
+                }
+            )
+        )
+    }
+
+    /// Number field: unsigned integer.
+    public func latch(
+        _ id: String,
+        title: String? = nil,
+        description: String? = nil,
+        enabled: @escaping @autoclosure () -> Bool = true,
+        window: String? = nil,
+        parent: String? = nil,
+        unsigned: Binding<UInt64>
+    ) -> some View {
+        modifier(
+            LatchControl(
+                id: id,
+                role: "textfield",
+                title: title,
+                description: description,
+                value: { String(unsigned.wrappedValue) },
+                enabled: enabled,
+                actions: ["set"],
+                window: window,
+                parent: parent,
+                kind: .uint64,
+                set: {
+                    unsigned.wrappedValue = try LatchCatalog.parseUInt64(id: id, $0)
+                }
+            )
+        )
+    }
+
     /// Row / control with named actions.
     public func latch(
         _ id: String,
