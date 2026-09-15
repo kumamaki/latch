@@ -124,7 +124,7 @@ enum LatchResponseData: Sendable, Encodable {
     case windows(items: [LatchWindowStatus])
     case axTree(root: LatchAXNode)
     case axNode(LatchAXNode)
-    case screenshot(path: String)
+    case screenshot(path: String, note: String)
 
     func encode(to encoder: Encoder) throws {
         switch self {
@@ -149,9 +149,10 @@ enum LatchResponseData: Sendable, Encodable {
         case .axNode(let node):
             var container = encoder.container(keyedBy: NodeKeys.self)
             try container.encode(node, forKey: .node)
-        case .screenshot(let path):
+        case .screenshot(let path, let note):
             var container = encoder.container(keyedBy: ScreenshotKeys.self)
             try container.encode(path, forKey: .path)
+            try container.encode(note, forKey: .note)
         }
     }
 
@@ -162,7 +163,7 @@ enum LatchResponseData: Sendable, Encodable {
     private enum WindowsKeys: String, CodingKey { case items }
     private enum TreeKeys: String, CodingKey { case root }
     private enum NodeKeys: String, CodingKey { case node }
-    private enum ScreenshotKeys: String, CodingKey { case path }
+    private enum ScreenshotKeys: String, CodingKey { case path, note }
 }
 
 public struct LatchWindowStatus: Sendable, Encodable, Equatable {

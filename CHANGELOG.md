@@ -41,7 +41,8 @@ All notable changes to Latch live here.
 ### Observation
 
 - `screenshot` paints the window frame (title bar and toolbar), not
-  just `contentView`.
+  just `contentView`. The response includes `note`: material layers
+  (Liquid Glass, vibrancy) and Metal-backed content may not composite.
 - Unlabeled `ax dump` lists the window's own AX children after the
   content view, so toolbar items appear. Catalog press / set stay
   catalog-only.

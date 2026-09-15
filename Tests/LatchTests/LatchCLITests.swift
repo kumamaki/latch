@@ -292,6 +292,7 @@ struct LatchCLITests {
         return "latch-cli-\(suffix)"
     }
 
+    @MainActor
     private func startServer(app: String) async throws -> (
         LatchServer, FakeLatchOps, URL
     ) {

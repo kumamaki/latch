@@ -106,6 +106,10 @@ bash <latch>/cli/latch.sh --app <app> ax press <id>
 bash <latch>/cli/latch.sh --app <app> screenshot main
 ```
 
+Screenshots skip material layers — Liquid Glass, vibrancy, and
+Metal-backed content may not composite. The response `note` repeats
+this. Verify that UI by eye or via AX, not from the image.
+
 ## When a control is missing
 
 1. Confirm the window is visible (`query windows` / `wait window`).

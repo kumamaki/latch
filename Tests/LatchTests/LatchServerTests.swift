@@ -68,6 +68,11 @@ struct LatchServerTests {
         #expect(json["ok"] as? Bool == true)
         let data = try #require(json["data"] as? [String: Any])
         #expect(data["path"] as? String == "/tmp/main.png")
+        #expect(
+            data["note"] as? String
+                == "Material layers (Liquid Glass, vibrancy) and Metal-backed content "
+                + "may not composite in this capture; verify that UI by eye or via AX."
+        )
         #expect(await ops.screenshotWindows == ["main"])
     }
 

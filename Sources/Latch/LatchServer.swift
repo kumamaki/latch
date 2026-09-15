@@ -171,7 +171,7 @@ public actor LatchServer {
             return .success()
         case .screenshot(let window):
             let path = try await ops.screenshot(window: window)
-            return .success(.screenshot(path: path))
+            return .success(.screenshot(path: path, note: LatchScreenshot.captureNote))
         }
     }
 

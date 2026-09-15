@@ -5,9 +5,16 @@ import Foundation
 ///
 /// Uses `cacheDisplay` on the window's frame view (`contentView.superview`)
 /// so the title bar and toolbar paint. Not `screencapture`, not
-/// `CGWindowListCreateImage`. No Screen Recording permission. Metal
-/// layers may render blank; AX is the contract there.
+/// `CGWindowListCreateImage`. No Screen Recording permission. Material
+/// layers (Liquid Glass, vibrancy) and Metal-backed content may not
+/// composite; AX is the contract there.
 public enum LatchScreenshot {
+    /// Reminder returned with every capture so agents learn the
+    /// limitation at the point of use, not from a doc they may not read.
+    public static let captureNote =
+        "Material layers (Liquid Glass, vibrancy) and Metal-backed content "
+        + "may not composite in this capture; verify that UI by eye or via AX."
+
     /// Window frame view when AppKit has attached one; otherwise the
     /// content view. Toolbar is a sibling of content, not a descendant.
     @MainActor

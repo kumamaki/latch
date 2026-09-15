@@ -55,7 +55,7 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 | `axFind` | `{id}` | `{node}` |
 | `axPress` | `{id, action?}` | `{}` |
 | `axSet` | `{id, value}` | `{}` |
-| `screenshot` | `{window}` | `{path}` |
+| `screenshot` | `{window}` | `{path, note}` — `note` warns that material layers (Liquid Glass, vibrancy) and Metal content may not composite in the capture |
 
 Unknown command names fail. Product verbs are not in the kernel.
 
