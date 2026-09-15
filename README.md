@@ -121,7 +121,7 @@ ping, boot, windows, `ax *`, and screenshot, and nothing else.
 
    ```swift
    // Package.swift
-   .package(url: "https://github.com/kumamaki/latch", from: "0.1.1")
+   .package(url: "https://github.com/kumamaki/latch", from: "0.1.2")
    // target dependency:
    .product(name: "Latch", package: "Latch")
    ```

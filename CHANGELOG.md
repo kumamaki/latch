@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.1.2 — 2026-09-15
+
 ### Catalog
 
 - `.latch` republishes when live `enabled()` or `value()` change, not only on appear / id.
