@@ -30,7 +30,7 @@ cli-help:
 demo:
     swift run --package-path examples/Notes Notes
 
-# Launch Notes and drive the catalog. Not part of `just check`.
+# Launch Notes and drive the catalog. This machine only. Not CI.
 e2e:
     bash scripts/e2e-notes.sh
 
