@@ -7,28 +7,30 @@ on:
 
 jobs:
   test:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Swift version
         run: swift --version
       - name: Test
         run: swift test
 
   lint:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: swift-format lint
         run: swift format lint --strict --recursive Sources Tests examples Package.swift
+      - name: Install ShellCheck
+        run: brew install shellcheck
       - name: ShellCheck
         run: shellcheck cli/latch.sh examples/Notes/latch.sh scripts/release.sh scripts/e2e-notes.sh
 
   e2e:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Swift version
         run: swift --version
       - name: Live-drive Notes
