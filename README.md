@@ -21,6 +21,8 @@ NotesRoot()
     .latchWindow("main")
 ```
 
+From this repo, with Notes running (`just demo`):
+
 ```sh
 examples/Notes/latch.sh doctor
 examples/Notes/latch.sh wait boot --state ready
@@ -117,10 +119,15 @@ ping, boot, windows, `ax *`, and screenshot, and nothing else.
 
 ## Quick start
 
-1. Add the package to your app target.
+1. Add the package to your app target. The product name is `Latch`
+   (capital L), not `latch`.
+
+   Xcode: File → Add Package Dependencies →
+   `https://github.com/kumamaki/latch`
+
+   SwiftPM:
 
    ```swift
-   // Package.swift
    .package(url: "https://github.com/kumamaki/latch", from: "0.1.2")
    // target dependency:
    .product(name: "Latch", package: "Latch")
@@ -191,7 +198,9 @@ and hidden views vanish from the snapshot. See
 ```
 
 `<app>` is the slug you pass to `Latch.start(app:)`. The CLI takes
-it from `--app`, `LATCH_APP`, or `.latch.json`. The kernel client is
+it from `--app`, `LATCH_APP`, or `.latch.json`. `LATCH_DATA_DIR`
+relocates the socket directory; screenshots still go under
+`~/Library/Logs/<app>-dev/latch/`. The kernel client is
 `cli/latch.sh`. Adopter apps call it through a project wrapper, not
 by pasting that path into every command.
 
@@ -208,8 +217,8 @@ by pasting that path into every command.
 
 ## Skills
 
-The runbooks in `skills/` are agent-agnostic. Claude Code, Codex, Droid,
-and Cursor can all follow them; the shared rules live in
+The runbooks in `skills/` are agent-agnostic. Claude Code, Codex, Cursor,
+and any other coding agent can follow them. Shared rules live in
 [docs/agent-contract.md](docs/agent-contract.md).
 
 | Skill | Lives | Job |
@@ -245,4 +254,5 @@ and the skills. See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+MIT. See [LICENSE](LICENSE), [CONTRIBUTING.md](CONTRIBUTING.md), and
+[SECURITY.md](SECURITY.md).

@@ -1,15 +1,15 @@
 # Agent contract
 
-Every Latch skill follows this. Claude Code, Codex, Droid, Cursor, and
-any other coding agent can run them.
+Every Latch skill follows this. Claude Code, Codex, Cursor, and any
+other coding agent can run them.
 
 ## Ask
 
 - Numbered questions in **chat**, lettered options.
 - One batch of 2–4, then wait.
 - A host multi-choice tool is optional. Plain text is enough.
-- Do not stall because Factory `AskUser`, a slash command, or a vendor
-  skill loader is missing.
+- Do not stall because a host ask-user tool, a slash command, or a
+  vendor skill loader is missing.
 - Skip only what this thread already answered. Confirm that skip in one
   line. Do not invent a slug, boot site, id, or window name.
 

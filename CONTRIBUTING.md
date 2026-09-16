@@ -29,7 +29,8 @@ macOS 15+, Swift 6.
 
 ## Patches
 
-MIT. Open a PR against `main`. Match the surrounding style. Do not add
-a second API surface.
+MIT. Open a GitHub issue or a PR against `main`. Match the surrounding
+style. Do not add a second API surface. Do not use beads; that tracker
+is local to maintainers.
 
-Security reports go through [SECURITY.md](SECURITY.md), not a public issue.
+Security reports: open a GitHub issue. See [SECURITY.md](SECURITY.md).

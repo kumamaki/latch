@@ -53,9 +53,13 @@ the GitHub Release. Agents never run it.
 
 ## Issue tracking
 
-- `bd` is the sole tracker for durable work. Create before implementation,
+Public work uses GitHub Issues and pull requests. Outside contributors
+never need beads.
+
+Maintainers on this machine:
+
+- `bd` is the local tracker for durable work. Create before implementation,
   claim when starting, close only after verification.
-- Beads is **local-only and Dolt-native** — all of `.beads/` is git-ignored and
-  never committed.
+- Beads is git-ignored (`.beads/`). Never commit it.
 - `bd prime` = beads CLI cheat sheet (SessionStart / local `.beads/PRIME.md`).
 - Never `bd remember`. Durable facts go to AGENTS, skills, and okf.

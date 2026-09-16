@@ -19,6 +19,10 @@ resolves it from `--app`, then `LATCH_APP`, then a cwd-to-root
 `.latch.json` of `{"app":"<slug>"}`. Token file is `0600`.
 Socket file is `0600`. Parent dir is `0700`.
 
+`LATCH_DATA_DIR` relocates the socket directory (tests, isolated
+e2e). Token and socket stay `0600` under that path. Screenshots
+still write to `~/Library/Logs/<app>-dev/latch/`.
+
 ## Envelope
 
 Request:

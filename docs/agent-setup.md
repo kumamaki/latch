@@ -5,8 +5,8 @@ macOS Swift app.
 
 This file is the setup interview. Shared rules for every Latch skill:
 [agent-contract.md](agent-contract.md). Follow both in Claude Code,
-Codex, Droid, Cursor, or any other coding agent. Do not assume a
-Factory tool, a slash command, or a particular skill directory.
+Codex, Cursor, or any other coding agent. Do not assume a host
+ask-user tool, a slash command, or a particular skill directory.
 
 **Do not edit the app yet.** Run the intake. Wait for answers. Restate.
 Get a go-ahead. Then install.
