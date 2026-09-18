@@ -12,3 +12,6 @@
 .dolt/
 *.db
 .beads-credential-key
+
+# LatchE2E journey output (evidence artifacts from dogfood runs).
+.latch-trace/
