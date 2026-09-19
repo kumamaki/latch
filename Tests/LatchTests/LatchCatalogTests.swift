@@ -914,6 +914,64 @@ struct LatchCatalogTests {
         #expect(next?.first { $0.id == "editor.note" }?.value == "Body")
     }
 
+    @Test("liveWindows counts content nodes per window")
+    func liveWindowsCountsContentNodes() throws {
+        let fixture = NamedWindowFixture(name: uniqueWindowName())
+        defer { fixture.close() }
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "window.\(fixture.name)",
+            role: "window",
+            title: fixture.name,
+            window: fixture.name,
+            kind: .window,
+            token: token
+        )
+        try LatchCatalog.register(
+            id: "intro.continue",
+            role: "button",
+            window: fixture.name,
+            token: token
+        )
+        try LatchCatalog.register(
+            id: "intro.skip",
+            role: "button",
+            window: fixture.name,
+            token: token
+        )
+        try LatchCatalog.register(
+            id: "editor.title",
+            role: "textfield",
+            window: "other-\(fixture.name)",
+            token: token
+        )
+        let status = try #require(
+            LatchDefaultOps.liveWindows().first { $0.name == fixture.name }
+        )
+        #expect(status.exists)
+        #expect(status.visible)
+        #expect(status.catalogNodes == 2)
+    }
+
+    @Test("a window with no content reports zero catalog nodes")
+    func emptyWindowReportsZeroCatalogNodes() throws {
+        let fixture = NamedWindowFixture(name: uniqueWindowName())
+        defer { fixture.close() }
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "window.\(fixture.name)",
+            role: "window",
+            window: fixture.name,
+            kind: .window,
+            token: token
+        )
+        let status = try #require(
+            LatchDefaultOps.liveWindows().first { $0.name == fixture.name }
+        )
+        #expect(status.exists)
+        #expect(status.catalogNodes == 0)
+    }
+
     @Test("orderOut reports hidden and still exists")
     func orderOutReportsHiddenExisting() throws {
         let fixture = NamedWindowFixture(name: uniqueWindowName())

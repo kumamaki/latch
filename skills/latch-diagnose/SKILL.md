@@ -51,10 +51,16 @@ bash <latch>/cli/latch.sh --app <slug> ax find <id>
    Hidden vs gone: `window hide` leaves `exists: true`,
    `visible: false`. A missing name or `exists: false` is not hidden.
    SwiftUI `WindowGroup` identifiers (`main-AppWindow-1`) match as `main`.
+   `visible` plus `catalogNodes: 0` is a render stall: the window
+   ordered front, SwiftUI never mounted. `ping.display` `asleep` is
+   the usual cause (AppKit animation completions do not fire).
 2. Host that mounts the control pressed? (tab rail, sheet, mode).
 3. `ax find` the id. Not found → not registered. The message lists
    nearby catalog ids. Follow `skills/latch-register/SKILL.md`.
 4. Do not add an AX pin.
+
+`wait ax` timeout prints `diagnostic:` (`name ✓/✗ n nodes`) instead of
+a bare `timeout:`. Display asleep is named on the timeout line.
 
 Unlabeled `ax dump` is a probe. Press / set / find never fall through
 to it. Catalog is the contract. A system alert (OK / Cancel, no catalog

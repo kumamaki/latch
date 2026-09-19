@@ -26,6 +26,8 @@ struct LatchServerTests {
         #expect(data["boot"] as? String == "ready")
         #expect(data["windows"] as? Int == 1)
         #expect(data["catalog"] as? Int == 3)
+        let display = data["display"] as? String
+        #expect(display == "awake" || display == "asleep")
         let dumps = await ops.dumpCalls
         #expect(dumps.count == 1)
         #expect(dumps[0].window == nil)

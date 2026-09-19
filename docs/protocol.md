@@ -35,7 +35,7 @@ Request:
 Success:
 
 ```json
-{"ok":true,"data":{"status":"ok","boot":"ready","windows":1,"catalog":3}}
+{"ok":true,"data":{"status":"ok","boot":"ready","windows":1,"catalog":3,"display":"awake"}}
 ```
 
 Failure:
@@ -50,9 +50,9 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 
 | Command | Args | Data |
 |---|---|---|
-| `ping` | — | `{status: ok, boot, windows, catalog}` |
+| `ping` | — | `{status: ok, boot, windows, catalog, display}` |
 | `queryBoot` | — | `{state}` (`starting` until the socket listens, then the host state, default `ready`; `failed` on bind error) |
-| `queryWindows` | — | `{items:[{name,visible,exists}]}` |
+| `queryWindows` | — | `{items:[{name,visible,exists,catalogNodes}]}` |
 | `windowShow` | `{window}` | `{}` |
 | `windowHide` | `{window}` | `{}` |
 | `axDump` | `{window?, labeled?}` | `{root}` |
@@ -70,10 +70,17 @@ the id.
 
 `queryWindows` `visible` is `NSWindow.isVisible`. Miniaturized and
 ordered-out windows are false. `exists` is a matching AppKit window
-still in `NSApp.windows`. CLI `wait window` needs `exists && visible`.
-`wait window --hidden` needs `exists && !visible`. A missing name or
-`exists: false` is not hidden. SwiftUI `WindowGroup` identifiers
-(`main-AppWindow-1`) match as `main`.
+still in `NSApp.windows`. `catalogNodes` is registered content in that
+window, excluding the window chrome row. Visible plus zero nodes means
+the window ordered front but SwiftUI never mounted. CLI `wait window`
+needs `exists && visible`. `wait window --hidden` needs
+`exists && !visible`. A missing name or `exists: false` is not hidden.
+SwiftUI `WindowGroup` identifiers (`main-AppWindow-1`) match as `main`.
+
+`ping.display` is `awake` or `asleep` from `CGDisplayIsAsleep` on the
+main display. AppKit animation completions may not fire while asleep.
+CLI `wait` timeout names that on the `timeout:` line and prints a
+`diagnostic:` compact window list (`name ✓/✗ n nodes`).
 
 ## Encodings
 

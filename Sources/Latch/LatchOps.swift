@@ -106,21 +106,35 @@ public final class LatchDefaultOps: LatchOpsProviding {
 
     public static func liveWindows() -> [LatchWindowStatus] {
         LatchCatalog.syncWindows()
-        return LatchCatalog.snapshot().filter { $0.role == "window" }.map(windowStatus(for:))
+        let nodes = LatchCatalog.snapshot()
+        var catalogNodes: [String: Int] = [:]
+        for node in nodes where node.role != "window" {
+            guard let window = node.window else { continue }
+            catalogNodes[window, default: 0] += 1
+        }
+        return nodes.filter { $0.role == "window" }.map {
+            windowStatus(for: $0, catalogNodes: catalogNodes)
+        }
     }
 
     /// `visible` is `NSWindow.isVisible`. Miniaturized and ordered-out
     /// windows are false. `exists` is a matching AppKit window still in
-    /// `NSApp.windows`.
-    private static func windowStatus(for node: LatchCatalog.Node) -> LatchWindowStatus {
+    /// `NSApp.windows`. `catalogNodes` counts snapshot rows whose
+    /// `window` matches, excluding the window chrome row.
+    private static func windowStatus(
+        for node: LatchCatalog.Node,
+        catalogNodes: [String: Int]
+    ) -> LatchWindowStatus {
         let name = node.window ?? String(node.id.dropFirst("window.".count))
+        let count = catalogNodes[name] ?? 0
         guard
             let window = NSApp.windows.first(where: { LatchAX.windowMatches($0, name: name) })
         else {
-            return LatchWindowStatus(name: name, visible: false, exists: false)
+            return LatchWindowStatus(
+                name: name, visible: false, exists: false, catalogNodes: count)
         }
         return LatchWindowStatus(
-            name: name, visible: window.isVisible, exists: true)
+            name: name, visible: window.isVisible, exists: true, catalogNodes: count)
     }
 
     public static func orderFront(_ name: String) throws {

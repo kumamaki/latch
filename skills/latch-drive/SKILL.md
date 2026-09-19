@@ -118,7 +118,9 @@ this. Verify that UI by eye or via AX, not from the image.
 
 1. Confirm the window is visible (`query windows` / `wait window`).
    `window hide` leaves `exists: true`, `visible: false`. A missing
-   name is not hidden.
+   name is not hidden. Visible plus `catalogNodes: 0` is a render
+   stall, often `ping.display` `asleep`. `wait ax` timeout prints
+   that as `diagnostic:`.
 2. Press the host that mounts it.
 3. `ax find` the id. If not found, register the nearby suggestion or
    a new id. Follow the Latch repo `skills/latch-register/SKILL.md`.

@@ -1,3 +1,4 @@
+import CoreGraphics
 import Darwin
 import Foundation
 import os
@@ -144,7 +145,8 @@ public actor LatchServer {
                 .pong(
                     boot: boot,
                     windows: windows.count,
-                    catalog: root.catalogCount
+                    catalog: root.catalogCount,
+                    display: Self.displayState()
                 )
             )
         case .queryBoot:
@@ -176,6 +178,12 @@ public actor LatchServer {
             let path = try await ops.screenshot(window: window)
             return .success(.screenshot(path: path, note: LatchScreenshot.captureNote))
         }
+    }
+
+    /// Local CoreGraphics read. AppKit animation completions stall
+    /// while the main display is asleep.
+    private static func displayState() -> LatchDisplayState {
+        CGDisplayIsAsleep(CGMainDisplayID()) != 0 ? .asleep : .awake
     }
 
     private static func code(for error: LatchError) -> LatchErrorCode {

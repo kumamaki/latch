@@ -122,7 +122,9 @@ struct LatchProtocolTests {
     @Test("success envelope encodes ok:true")
     func successEnvelope() throws {
         let data = try JSONEncoder().encode(
-            LatchResponse.success(.pong(boot: "ready", windows: 1, catalog: 3))
+            LatchResponse.success(
+                .pong(boot: "ready", windows: 1, catalog: 3, display: .asleep)
+            )
         )
         let object = try JSONSerialization.jsonObject(with: data)
         let dict = try #require(object as? [String: Any])
@@ -132,6 +134,28 @@ struct LatchProtocolTests {
         #expect(payload["boot"] as? String == "ready")
         #expect(payload["windows"] as? Int == 1)
         #expect(payload["catalog"] as? Int == 3)
+        #expect(payload["display"] as? String == "asleep")
+    }
+
+    @Test("window status encodes catalogNodes")
+    func windowStatusEncodesCatalogNodes() throws {
+        let data = try JSONEncoder().encode(
+            LatchResponse.success(
+                .windows(items: [
+                    LatchWindowStatus(
+                        name: "onboarding", visible: true, exists: true, catalogNodes: 0)
+                ])
+            )
+        )
+        let object = try JSONSerialization.jsonObject(with: data)
+        let dict = try #require(object as? [String: Any])
+        let payload = try #require(dict["data"] as? [String: Any])
+        let items = try #require(payload["items"] as? [[String: Any]])
+        #expect(items.count == 1)
+        #expect(items[0]["name"] as? String == "onboarding")
+        #expect(items[0]["visible"] as? Bool == true)
+        #expect(items[0]["exists"] as? Bool == true)
+        #expect(items[0]["catalogNodes"] as? Int == 0)
     }
 
     @Test("catalogCount skips the application root")

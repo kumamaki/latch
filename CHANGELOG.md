@@ -6,12 +6,24 @@ All notable changes to Latch live here.
 
 ### Kernel
 
+- `ping` reports `display`: `awake` or `asleep`, from
+  `CGDisplayIsAsleep` on the main display. AppKit animation completions
+  may not fire while the display is asleep.
+- `query windows` items include `catalogNodes`: registered content in
+  that window, excluding the window chrome row. Visible plus zero nodes
+  means the window ordered front but SwiftUI never mounted.
 - `ax dismiss` / `axDismiss` presses a button on the frontmost system
   dialog in this app (NSAlert, SwiftUI `.alert`). Omit the title for the
   default button. Catalog press / find / set stay catalog-only.
 - Named unlabeled `ax dump` nests attached sheets under that window.
   Inside alert / dialog / sheet subtrees, dump keeps title and value so
   the alert copy is readable. Screenshot still paints the overlay.
+
+### CLI
+
+- `latch doctor` prints `display:`.
+- `latch wait` timeout names display-asleep on the `timeout:` line and
+  prints `diagnostic:` (`name ✓/✗ n nodes`).
 
 ## 0.1.2 — 2026-09-15
 

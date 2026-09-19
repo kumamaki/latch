@@ -126,9 +126,14 @@ enum LatchResponse: Sendable, Encodable {
     }
 }
 
+enum LatchDisplayState: String, Sendable, Encodable {
+    case awake
+    case asleep
+}
+
 enum LatchResponseData: Sendable, Encodable {
     case empty
-    case pong(boot: String, windows: Int, catalog: Int)
+    case pong(boot: String, windows: Int, catalog: Int, display: LatchDisplayState)
     case boot(state: String)
     case windows(items: [LatchWindowStatus])
     case axTree(root: LatchAXNode)
@@ -140,12 +145,13 @@ enum LatchResponseData: Sendable, Encodable {
         case .empty:
             var container = encoder.singleValueContainer()
             try container.encode([String: String]())
-        case .pong(let boot, let windows, let catalog):
+        case .pong(let boot, let windows, let catalog, let display):
             var container = encoder.container(keyedBy: PongKeys.self)
             try container.encode("ok", forKey: .status)
             try container.encode(boot, forKey: .boot)
             try container.encode(windows, forKey: .windows)
             try container.encode(catalog, forKey: .catalog)
+            try container.encode(display, forKey: .display)
         case .boot(let state):
             var container = encoder.container(keyedBy: BootKeys.self)
             try container.encode(state, forKey: .state)
@@ -166,7 +172,7 @@ enum LatchResponseData: Sendable, Encodable {
     }
 
     private enum PongKeys: String, CodingKey {
-        case status, boot, windows, catalog
+        case status, boot, windows, catalog, display
     }
     private enum BootKeys: String, CodingKey { case state }
     private enum WindowsKeys: String, CodingKey { case items }
@@ -179,11 +185,15 @@ public struct LatchWindowStatus: Sendable, Encodable, Equatable {
     public let name: String
     public let visible: Bool
     public let exists: Bool
+    /// Registered content in this window, excluding the window chrome row.
+    /// Zero on a visible window means SwiftUI never mounted.
+    public let catalogNodes: Int
 
-    public init(name: String, visible: Bool, exists: Bool) {
+    public init(name: String, visible: Bool, exists: Bool, catalogNodes: Int = 0) {
         self.name = name
         self.visible = visible
         self.exists = exists
+        self.catalogNodes = catalogNodes
     }
 }
 

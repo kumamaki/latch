@@ -106,6 +106,8 @@ struct LatchCLITests {
             #expect(pingJSON["boot"] as? String == "ready")
             #expect(pingJSON["windows"] as? Int == 1)
             #expect(pingJSON["catalog"] as? Int == 3)
+            let display = pingJSON["display"] as? String
+            #expect(display == "awake" || display == "asleep")
 
             let doctor = try runCLI(
                 arguments: ["doctor"],
@@ -118,6 +120,10 @@ struct LatchCLITests {
             #expect(doctor.stdout.contains("boot: ready"))
             #expect(doctor.stdout.contains("windows: 1"))
             #expect(doctor.stdout.contains("catalog: 3"))
+            #expect(
+                doctor.stdout.contains("display: awake")
+                    || doctor.stdout.contains("display: asleep")
+            )
             #expect(doctor.stdout.contains("next: ok"))
 
             let ids = try runCLI(
@@ -165,6 +171,28 @@ struct LatchCLITests {
         }
         #expect(await ops.didDismiss)
         #expect(await ops.lastDismissButton == "Cancel")
+    }
+
+    @Test("wait ax timeout names a visible empty window")
+    func waitAxTimeoutDiagnosesEmptyWindow() async throws {
+        let app = uniqueApp()
+        let (server, ops, dataDirectory) = try await startServer(app: app)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: dataDirectory)
+        }
+        await ops.setWindowItems([
+            LatchWindowStatus(
+                name: "onboarding", visible: true, exists: true, catalogNodes: 0)
+        ])
+        let result = try runCLI(
+            arguments: [
+                "--app", app, "wait", "ax", "intro.continue", "--timeout", "2",
+            ]
+        )
+        #expect(result.status == 1)
+        #expect(result.stderr.contains("timeout: ax intro.continue"))
+        #expect(result.stderr.contains("diagnostic: onboarding ✓ 0 nodes"))
     }
 
     @Test("wait window --hidden needs an existing hidden row")

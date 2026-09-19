@@ -278,6 +278,7 @@ doctor() {
     local boot="unknown"
     local windows=0
     local catalog=0
+    local display="unknown"
 
     if [[ "$token_exists" == "true" && "$socket_listening" == "true" ]]; then
         local response=""
@@ -290,20 +291,21 @@ raw = sys.argv[1]
 try:
     envelope = json.loads(raw)
 except json.JSONDecodeError:
-    print("unparseable\tunknown\t0\t0\tprotocol")
+    print("unparseable\tunknown\t0\t0\tunknown\tprotocol")
     sys.exit(0)
 if not envelope.get("ok"):
     err = envelope.get("error") or {}
-    print(f"failed\tunknown\t0\t0\t{err.get('code', 'error')}")
+    print(f"failed\tunknown\t0\t0\tunknown\t{err.get('code', 'error')}")
     sys.exit(0)
 data = envelope.get("data") or {}
 boot = data.get("boot") or "unknown"
 windows = data.get("windows") if isinstance(data.get("windows"), int) else 0
 catalog = data.get("catalog") if isinstance(data.get("catalog"), int) else 0
-print(f"ok\t{boot}\t{windows}\t{catalog}\t")
+display = data.get("display") or "unknown"
+print(f"ok\t{boot}\t{windows}\t{catalog}\t{display}\t")
 PY
             )"
-            IFS=$'\t' read -r ping_status boot windows catalog ping_code <<<"$parsed"
+            IFS=$'\t' read -r ping_status boot windows catalog display ping_code <<<"$parsed"
         fi
     fi
 
@@ -340,6 +342,7 @@ PY
     echo "boot: ${boot}"
     echo "windows: ${windows}"
     echo "catalog: ${catalog}"
+    echo "display: ${display}"
     echo "next: ${next}"
 
     if [[ "$ping_status" == "ok" && "$boot" != "failed" ]]; then
@@ -360,8 +363,63 @@ wait_until() {
         fi
         sleep 0.2
     done
-    echo "timeout: ${label}" >&2
+    print_wait_timeout "$label"
     exit 1
+}
+
+print_wait_timeout() {
+    local label="$1"
+    local display=""
+    local ping_response=""
+    if ping_response="$(round_trip ping 2>/dev/null)"; then
+        display="$(
+            python3 - "$ping_response" <<'PY'
+import json, sys
+try:
+    envelope = json.loads(sys.argv[1])
+except json.JSONDecodeError:
+    sys.exit(0)
+if envelope.get("ok") and (envelope.get("data") or {}).get("display") == "asleep":
+    print("asleep")
+PY
+        )"
+    fi
+    if [[ "$display" == "asleep" ]]; then
+        echo "timeout: ${label} (display asleep — AppKit animations may not complete)" >&2
+    else
+        echo "timeout: ${label}" >&2
+    fi
+    print_wait_diagnostic
+}
+
+print_wait_diagnostic() {
+    local response=""
+    if ! response="$(round_trip queryWindows 2>/dev/null)"; then
+        return 0
+    fi
+    python3 - "$response" <<'PY'
+import json, sys
+try:
+    envelope = json.loads(sys.argv[1])
+except json.JSONDecodeError:
+    sys.exit(0)
+if not envelope.get("ok"):
+    sys.exit(0)
+items = (envelope.get("data") or {}).get("items") or []
+if not items:
+    sys.exit(0)
+parts = []
+for item in items:
+    name = item.get("name") or "?"
+    visible = item.get("visible") is True
+    exists = item.get("exists") is True
+    nodes = item.get("catalogNodes")
+    if not isinstance(nodes, int):
+        nodes = 0
+    mark = "✓" if exists and visible else "✗"
+    parts.append(f"{name} {mark} {nodes} nodes")
+print("diagnostic: " + " · ".join(parts), file=sys.stderr)
+PY
 }
 
 socket_ready() {
