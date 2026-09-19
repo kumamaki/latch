@@ -7,6 +7,8 @@ No token. No Accessibility permission.
 let nodes = Latch.snapshot()
 try Latch.set(id: "prefs.appearance.dark", value: "true")
 try Latch.press(id: "editor.save")
+try Latch.dismiss()
+try Latch.dismiss(button: "Cancel")
 
 for await snapshot in Latch.updates() {
     // current catalog, then one emit per turn after
@@ -17,7 +19,8 @@ for await snapshot in Latch.updates() {
 `.latch` compiles in Release. The model only sees what you registered.
 Hidden views vanish. Live telemetry stays unlabeled. A miss is a catalog
 miss; there is no AX fallback in-process. Press and set refuse when
-`enabled` is false. Find still returns the node.
+`enabled` is false. Find still returns the node. `Latch.dismiss` is
+chrome for the frontmost system dialog, not a catalog press.
 
 `Latch.updates(window:)` is in-process wait. It yields the current
 snapshot immediately, then one coalesced snapshot on the next main

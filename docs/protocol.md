@@ -59,6 +59,7 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 | `axFind` | `{id}` | `{node}` |
 | `axPress` | `{id, action?}` | `{}` |
 | `axSet` | `{id, value}` | `{}` |
+| `axDismiss` | `{button?}` | `{}` — press a button on the frontmost system dialog (NSAlert, SwiftUI `.alert`). Omit `button` for the default. A miss lists the titles. |
 | `screenshot` | `{window}` | `{path, note}` — `note` warns that material layers (Liquid Glass, vibrancy) and Metal content may not composite in the capture |
 
 Unknown command names fail. Product verbs are not in the kernel.
@@ -91,7 +92,14 @@ No synonyms. `yes`, `1`, and `on` fail.
 Find / press / set and labeled dump use the catalog only. Unlabeled
 `ax dump` walks the in-process AX tree as a probe. A miss names nearby
 catalog ids and tells the agent to register. `.accessibilityIdentifier`
-alone is not enough.
+alone is not enough. `axDismiss` is chrome: it presses a system dialog
+in this app, not a catalog id.
+
+Named unlabeled dump nests attached sheets under that window so an
+alert is visible next to the parent content. Inside `alert` / `dialog`
+/ `sheet` subtrees, dump keeps title and value even when the node is
+not interactive. Screenshot still paints the overlay; dismiss, then
+dump or shot to see underneath.
 
 Catalog nodes may include `kind`, `choices`, `description`, and
 `parent`. `parent` is a catalog id. Labeled dump nests the child under

@@ -62,6 +62,31 @@ struct LatchProtocolTests {
         #expect(labeled)
     }
 
+    @Test("decodes axDismiss with a button title")
+    func axDismissNamed() throws {
+        let json = Data(
+            #"""
+            {"token":"abc","command":"axDismiss","args":{"button":"Cancel"}}
+            """#.utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard case .axDismiss(let button) = request.command else {
+            Issue.record("expected .axDismiss, got \(request.command)")
+            return
+        }
+        #expect(button == "Cancel")
+    }
+
+    @Test("decodes axDismiss with no args")
+    func axDismissDefault() throws {
+        let json = Data(#"{"token":"abc","command":"axDismiss"}"#.utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard case .axDismiss(let button) = request.command else {
+            Issue.record("expected .axDismiss, got \(request.command)")
+            return
+        }
+        #expect(button == nil)
+    }
+
     @Test("decodes axSet")
     func axSet() throws {
         let json = Data(

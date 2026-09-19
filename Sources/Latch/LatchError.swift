@@ -20,6 +20,8 @@ public enum LatchError: Error, Sendable, CustomStringConvertible {
     case windowEmpty(name: String)
     case screenshotFailed(reason: String)
     case elementNotFound(id: String, nearby: [String] = [])
+    case noSystemDialog
+    case dialogButtonNotFound(wanted: String?, available: [String])
     case actionUnavailable(id: String, action: String)
     case disabled(id: String)
     case invalidValue(id: String, value: String, expected: String)
@@ -64,6 +66,14 @@ public enum LatchError: Error, Sendable, CustomStringConvertible {
             return "Screenshot failed: \(reason)."
         case .elementNotFound(let id, let nearby):
             return LatchCatalog.notFoundMessage(id: id, nearby: nearby)
+        case .noSystemDialog:
+            return "No system dialog to dismiss."
+        case .dialogButtonNotFound(let wanted, let available):
+            let list = available.isEmpty ? "none" : available.joined(separator: ", ")
+            if let wanted {
+                return "No button titled \(wanted) in the frontmost dialog. Buttons: \(list)."
+            }
+            return "Frontmost dialog has no default button. Buttons: \(list)."
         case .actionUnavailable(let id, let action):
             return "Element \(id) cannot \(action)."
         case .disabled(let id):

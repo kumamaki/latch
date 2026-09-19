@@ -40,6 +40,10 @@ final class LatchBootGatedOps: LatchOpsProviding {
         try await inner.axSet(id: id, value: value)
     }
 
+    func axDismiss(button: String?) async throws {
+        try await inner.axDismiss(button: button)
+    }
+
     func screenshot(window: String) async throws -> String {
         try await inner.screenshot(window: window)
     }

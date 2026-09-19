@@ -97,6 +97,67 @@ struct LatchServerTests {
         #expect(pressed.action == "start")
     }
 
+    @Test("axDismiss forwards the button title")
+    func axDismissNamed() async throws {
+        let ops = FakeLatchOps()
+        let (server, socketURL, token) = try await Self.makeServer(ops: ops)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: socketURL)
+        }
+
+        let response = try Self.roundTrip(
+            socketPath: socketURL.path,
+            request:
+                #"{"token":"\#(token)","command":"axDismiss","args":{"button":"Cancel"}}"#
+        )
+        let json = try #require(Self.parse(response))
+        #expect(json["ok"] as? Bool == true)
+        #expect(await ops.didDismiss)
+        #expect(await ops.lastDismissButton == "Cancel")
+    }
+
+    @Test("axDismiss with no args forwards a nil button")
+    func axDismissDefault() async throws {
+        let ops = FakeLatchOps()
+        let (server, socketURL, token) = try await Self.makeServer(ops: ops)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: socketURL)
+        }
+
+        let response = try Self.roundTrip(
+            socketPath: socketURL.path,
+            request: #"{"token":"\#(token)","command":"axDismiss"}"#
+        )
+        let json = try #require(Self.parse(response))
+        #expect(json["ok"] as? Bool == true)
+        #expect(await ops.didDismiss)
+        #expect(await ops.lastDismissButton == nil)
+    }
+
+    @Test("no system dialog is notFound")
+    func noSystemDialogIsNotFound() async throws {
+        let ops = FakeLatchOps()
+        await ops.setDismissError(LatchError.noSystemDialog)
+        let (server, socketURL, token) = try await Self.makeServer(ops: ops)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: socketURL)
+        }
+
+        let response = try Self.roundTrip(
+            socketPath: socketURL.path,
+            request: #"{"token":"\#(token)","command":"axDismiss"}"#
+        )
+        let json = try #require(Self.parse(response))
+        #expect(json["ok"] as? Bool == false)
+        let error = try #require(json["error"] as? [String: Any])
+        #expect(error["code"] as? String == "notFound")
+        let message = try #require(error["message"] as? String)
+        #expect(message.contains("No system dialog to dismiss"))
+    }
+
     @Test("disabled press is unavailable")
     func disabledPressIsUnavailable() async throws {
         let ops = FakeLatchOps()
@@ -215,6 +276,9 @@ actor FakeLatchOps: LatchOpsProviding {
     var screenshotWindows: [String] = []
     var lastPressed: (id: String, action: String?)?
     var pressError: LatchError?
+    var lastDismissButton: String?
+    var didDismiss = false
+    var dismissError: LatchError?
     var dumpCalls: [(window: String?, labeled: Bool)] = []
     var bootState = "ready"
     var windowItems = [
@@ -251,6 +315,7 @@ actor FakeLatchOps: LatchOpsProviding {
     func setWindowItems(_ items: [LatchWindowStatus]) { windowItems = items }
     func setDumpRoot(_ root: LatchAXNode) { dumpRoot = root }
     func setPressError(_ error: LatchError?) { pressError = error }
+    func setDismissError(_ error: LatchError?) { dismissError = error }
 
     func queryBoot() async -> String { bootState }
     func queryWindows() async -> [LatchWindowStatus] { windowItems }
@@ -275,6 +340,11 @@ actor FakeLatchOps: LatchOpsProviding {
             throw LatchError.elementNotFound(id: id)
         }
         dumpRoot = dumpRoot.replacing(id: id, value: value)
+    }
+    func axDismiss(button: String?) async throws {
+        if let dismissError { throw dismissError }
+        didDismiss = true
+        lastDismissButton = button
     }
     func screenshot(window: String) async throws -> String {
         screenshotWindows.append(window)

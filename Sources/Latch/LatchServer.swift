@@ -169,6 +169,9 @@ public actor LatchServer {
         case .axSet(let id, let value):
             try await ops.axSet(id: id, value: value)
             return .success()
+        case .axDismiss(let button):
+            try await ops.axDismiss(button: button)
+            return .success()
         case .screenshot(let window):
             let path = try await ops.screenshot(window: window)
             return .success(.screenshot(path: path, note: LatchScreenshot.captureNote))
@@ -181,7 +184,7 @@ public actor LatchServer {
             return .unauthenticated
         case .unknownCommand:
             return .unknownCommand
-        case .unknownWindow, .elementNotFound:
+        case .unknownWindow, .elementNotFound, .noSystemDialog, .dialogButtonNotFound:
             return .notFound
         case .invalidValue:
             return .protocol

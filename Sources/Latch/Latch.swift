@@ -3,7 +3,7 @@ import Foundation
 /// Process-wide Latch host.
 ///
 /// Two uses, one catalog:
-/// - In-process: `snapshot` / `updates` / `find` / `press` / `set`.
+/// - In-process: `snapshot` / `updates` / `find` / `press` / `set` / `dismiss`.
 /// - Outside agent: `start(app:)` binds a DEBUG-only unix socket.
 @MainActor
 public enum Latch {
@@ -106,6 +106,12 @@ public enum Latch {
 
     public static func set(id: String, value: String) throws {
         try LatchCatalog.set(id: id, value: value)
+    }
+
+    /// Press a button on the frontmost system dialog. Catalog press
+    /// stays catalog-only; this is chrome (NSAlert, SwiftUI `.alert`).
+    public static func dismiss(button: String? = nil) throws {
+        try LatchAX.dismiss(button: button)
     }
 
     /// Live catalog snapshots. Yields immediately, then once per turn
