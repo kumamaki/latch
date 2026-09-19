@@ -57,13 +57,14 @@ bash <latch>/cli/latch.sh --app <slug> ax find <id>
 4. Do not add an AX pin.
 
 Unlabeled `ax dump` is a probe. Press / set / find never fall through
-to it. Catalog is the contract.
+to it. Catalog is the contract. A system alert (OK / Cancel, no catalog
+id) is `ax dismiss`, not an AX pin.
 
 ## Press / set fail
 
 | Error | Meaning |
 |---|---|
-| `notFound` | Id is not registered. Nearby ids are a hint to register. |
+| `notFound` | Id is not registered, or `ax dismiss` found no dialog / no matching title. Nearby ids are a hint to register. |
 | `actionUnavailable` | Registered, but no press/set handler, or unknown named action |
 | `unavailable` (disabled) | Registered, `enabled` is false. Wait `ax --enabled`, then retry. |
 | `invalidValue` | Encoding wrong (`yes` instead of `true`) |

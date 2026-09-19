@@ -16,6 +16,7 @@ struct LatchCLITests {
         #expect(result.status == 64)
         #expect(result.stderr.contains("latch [--app slug] <command> [args]"))
         #expect(result.stderr.contains("catalog [window]"))
+        #expect(result.stderr.contains("ax dismiss [button]"))
     }
 
     @Test("missing slug fails loud")
@@ -154,7 +155,16 @@ struct LatchCLITests {
             )
             #expect(wait.status == 0)
             #expect(wait.stdout.contains("ready: ax prefs.appearance.dark value=true"))
+
+            let dismiss = try runCLI(
+                arguments: ["ax", "dismiss", "Cancel"],
+                environment: ["LATCH_APP": nil],
+                directory: directory
+            )
+            #expect(dismiss.status == 0)
         }
+        #expect(await ops.didDismiss)
+        #expect(await ops.lastDismissButton == "Cancel")
     }
 
     @Test("wait window --hidden needs an existing hidden row")

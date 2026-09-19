@@ -40,7 +40,8 @@ other coding agent can run them.
 ## Product boundary
 
 - Catalog is the driver. Press / set / find never fall through to AX.
-  `.accessibilityIdentifier` is not enough.
+  `.accessibilityIdentifier` is not enough. `ax dismiss` is chrome for
+  NSAlert / SwiftUI `.alert`, not a catalog id.
 - `.latch` compiles in every build. The socket does not.
 - In-app assistant: `Latch.snapshot` / `press` / `set`. No socket.
 - Product verbs stay in the app.

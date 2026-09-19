@@ -55,10 +55,12 @@ bash <latch>/cli/latch.sh --app <app> doctor
 |---|---|
 | `catalog` / `ax dump --labeled` | Scene catalog (registered handlers) |
 | `ax find` / `press` / `set` | Catalog only. A miss names nearby ids. |
-| `ax dump` (no `--labeled`) | In-process AX probe. Not the driver. |
+| `ax dump` (no `--labeled`) | In-process AX probe. Not the driver. Named dump includes attached sheets. |
+| `ax dismiss` / `ax dismiss <title>` | Frontmost system dialog in this app. Not a catalog id. |
 
 A control is driveable only when it is registered.
 `.accessibilityIdentifier` alone is not enough. Do not pin AX.
+System alerts are chrome: `ax dismiss`, not `ax press action-button-1`.
 
 ## Encoding
 
@@ -103,6 +105,8 @@ bash <latch>/cli/latch.sh --app <app> ax set <id> <value>
 bash <latch>/cli/latch.sh --app <app> wait ax <id> --value <value>
 bash <latch>/cli/latch.sh --app <app> wait ax <id> --enabled
 bash <latch>/cli/latch.sh --app <app> ax press <id>
+bash <latch>/cli/latch.sh --app <app> ax dismiss
+bash <latch>/cli/latch.sh --app <app> ax dismiss Cancel
 bash <latch>/cli/latch.sh --app <app> screenshot main
 ```
 

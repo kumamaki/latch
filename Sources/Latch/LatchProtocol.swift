@@ -31,6 +31,7 @@ enum LatchCommand: Sendable {
     case axFind(id: String)
     case axPress(id: String, action: String?)
     case axSet(id: String, value: String)
+    case axDismiss(button: String?)
     case screenshot(window: String)
 
     fileprivate static func decode(
@@ -62,6 +63,10 @@ enum LatchCommand: Sendable {
         case "axSet":
             let args = try container.decode(AxSetArgs.self, forKey: .args)
             return .axSet(id: args.id, value: args.value)
+        case "axDismiss":
+            let args = try container.decodeIfPresent(AxDismissArgs.self, forKey: .args)
+            let button = args?.button.flatMap { $0.isEmpty ? nil : $0 }
+            return .axDismiss(button: button)
         case "screenshot":
             let args = try container.decode(WindowArgs.self, forKey: .args)
             return .screenshot(window: args.window)
@@ -91,6 +96,10 @@ enum LatchCommand: Sendable {
     private struct AxSetArgs: Decodable {
         let id: String
         let value: String
+    }
+
+    private struct AxDismissArgs: Decodable {
+        let button: String?
     }
 }
 

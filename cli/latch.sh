@@ -37,6 +37,7 @@ Commands:
   ax find <id>
   ax press <id> [action]
   ax set <id> <value>
+  ax dismiss [button]
   catalog [window]
   screenshot <window>
 EOF
@@ -609,6 +610,13 @@ case "$command" in
             set)
                 [[ $# -ge 2 ]] || usage
                 query axSet "$(printf '{"id":%s,"value":%s}' "$(json_escape "$1")" "$(json_escape "$2")")"
+                ;;
+            dismiss)
+                if [[ $# -ge 1 ]]; then
+                    query axDismiss "$(printf '{"button":%s}' "$(json_escape "$1")")"
+                else
+                    query axDismiss
+                fi
                 ;;
             *) usage ;;
         esac

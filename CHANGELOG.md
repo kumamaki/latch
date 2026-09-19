@@ -4,6 +4,15 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Kernel
+
+- `ax dismiss` / `axDismiss` presses a button on the frontmost system
+  dialog in this app (NSAlert, SwiftUI `.alert`). Omit the title for the
+  default button. Catalog press / find / set stay catalog-only.
+- Named unlabeled `ax dump` nests attached sheets under that window.
+  Inside alert / dialog / sheet subtrees, dump keeps title and value so
+  the alert copy is readable. Screenshot still paints the overlay.
+
 ## 0.1.2 — 2026-09-15
 
 ### Catalog

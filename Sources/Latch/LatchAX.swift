@@ -21,13 +21,35 @@ public enum LatchAX {
             throw LatchError.opsUnavailable(reason: "No windows to dump.")
         }
         var remaining = maxNodes
-        let children = windows.compactMap { window in
-            snapshot(
-                Lens.window(window),
-                depth: 0,
-                remaining: &remaining,
-                labeledOnly: labeledOnly
-            )
+        let topLevel = Set(windows.map { ObjectIdentifier($0) })
+        let children = windows.compactMap { window -> LatchAXNode? in
+            guard
+                var node = snapshot(
+                    Lens.window(window),
+                    depth: 0,
+                    remaining: &remaining,
+                    labeledOnly: labeledOnly
+                )
+            else { return nil }
+            // Named dump filters by identifier, so attached sheets miss
+            // the parent name. Nest them under that window. Unscoped dump
+            // already lists sheet windows at the top level.
+            if windowName != nil {
+                let extras = attachedDialogs(of: window).compactMap { sheet -> LatchAXNode? in
+                    guard !topLevel.contains(ObjectIdentifier(sheet)) else { return nil }
+                    return snapshot(
+                        Lens.window(sheet),
+                        depth: 1,
+                        remaining: &remaining,
+                        labeledOnly: labeledOnly,
+                        inChrome: true
+                    )
+                }
+                if !extras.isEmpty {
+                    node = node.appending(children: extras)
+                }
+            }
+            return node
         }
         return LatchAXNode(
             id: nil,
@@ -90,6 +112,26 @@ public enum LatchAX {
         }
     }
 
+    /// Press a button on the frontmost system dialog in this app.
+    /// Catalog press stays catalog-only; this is chrome, not a product id.
+    @MainActor
+    public static func dismiss(button: String? = nil) throws {
+        let chrome = try frontmostChrome()
+        let buttons = collectButtons(in: chrome)
+        let titles = uniqueTitles(buttons)
+        let target: Lens
+        if let button, !button.isEmpty {
+            guard let match = buttons.first(where: { $0.title == button }) else {
+                throw LatchError.dialogButtonNotFound(wanted: button, available: titles)
+            }
+            target = match
+        } else {
+            target = try defaultButton(in: chrome, buttons: buttons, titles: titles)
+        }
+        if performPress(on: target) { return }
+        throw LatchError.actionUnavailable(id: target.title ?? "dialog", action: "press")
+    }
+
     @MainActor
     public static func windowMatches(_ window: NSWindow, name: String) -> Bool {
         if let ident = Lens.window(window).identifier, catalogName(from: ident) == name {
@@ -125,6 +167,168 @@ public enum LatchAX {
         let windows = NSApp.windows.filter { $0.isVisible || $0.isMiniaturized }
         guard let name else { return windows }
         return windows.filter { windowMatches($0, name: name) }
+    }
+
+    private static let dismissRoles: Set<String> = ["alert", "dialog"]
+    private static let copyRoles: Set<String> = ["alert", "dialog", "sheet"]
+    private static let chromeSubroles: Set<String> = ["dialog", "systemdialog"]
+
+    @MainActor
+    private static func isCopyChrome(_ lens: Lens) -> Bool {
+        if copyRoles.contains(lens.roleName) { return true }
+        if let subrole = lens.subroleName, chromeSubroles.contains(subrole) {
+            return true
+        }
+        return false
+    }
+
+    @MainActor
+    private static func isDismissChrome(_ lens: Lens) -> Bool {
+        if dismissRoles.contains(lens.roleName) { return true }
+        if let subrole = lens.subroleName, chromeSubroles.contains(subrole) {
+            return true
+        }
+        return false
+    }
+
+    @MainActor
+    private static func isSystemDialogWindow(_ window: NSWindow) -> Bool {
+        if window === NSApp.modalWindow { return true }
+        if isDismissChrome(.window(window)) { return true }
+        if window.isSheet, window.defaultButtonCell != nil { return true }
+        return false
+    }
+
+    @MainActor
+    private static func attachedDialogs(of window: NSWindow) -> [NSWindow] {
+        var seen = Set<ObjectIdentifier>()
+        var result: [NSWindow] = []
+        func add(_ candidate: NSWindow?) {
+            guard let candidate, candidate !== window else { return }
+            guard seen.insert(ObjectIdentifier(candidate)).inserted else { return }
+            result.append(candidate)
+        }
+        add(window.attachedSheet)
+        for sheet in window.sheets {
+            add(sheet)
+        }
+        if let modal = NSApp.modalWindow, modal.sheetParent === window {
+            add(modal)
+        }
+        return result
+    }
+
+    @MainActor
+    private static func preferredWindows() -> [NSWindow] {
+        var seen = Set<ObjectIdentifier>()
+        var result: [NSWindow] = []
+        func add(_ window: NSWindow?) {
+            guard let window else { return }
+            guard seen.insert(ObjectIdentifier(window)).inserted else { return }
+            result.append(window)
+        }
+        add(NSApp.keyWindow)
+        add(NSApp.mainWindow)
+        for window in NSApp.windows {
+            if window.isVisible || window.isMiniaturized || window.isSheet {
+                add(window)
+            }
+        }
+        return result
+    }
+
+    @MainActor
+    private static func frontmostChrome() throws -> Lens {
+        if let modal = NSApp.modalWindow, isSystemDialogWindow(modal) {
+            return .window(modal)
+        }
+        for window in preferredWindows() {
+            if let sheet = window.attachedSheet, isSystemDialogWindow(sheet) {
+                return .window(sheet)
+            }
+            for sheet in window.sheets where isSystemDialogWindow(sheet) {
+                return .window(sheet)
+            }
+        }
+        for window in preferredWindows() {
+            if let node = firstChromeNode(in: .window(window)) {
+                return node
+            }
+        }
+        throw LatchError.noSystemDialog
+    }
+
+    @MainActor
+    private static func firstChromeNode(in lens: Lens, depth: Int = 0) -> Lens? {
+        if isDismissChrome(lens) { return lens }
+        guard depth < maxDepth else { return nil }
+        for child in children(of: lens) {
+            if let hit = firstChromeNode(in: child, depth: depth + 1) {
+                return hit
+            }
+        }
+        return nil
+    }
+
+    @MainActor
+    private static func collectButtons(in lens: Lens, depth: Int = 0) -> [Lens] {
+        var seen = Set<ObjectIdentifier>()
+        var result: [Lens] = []
+        func walk(_ lens: Lens, depth: Int) {
+            let isButton = lens.roleName == "button" || lens.object is NSButton
+            if isButton, seen.insert(ObjectIdentifier(lens.object)).inserted {
+                result.append(lens)
+            }
+            guard depth < maxDepth else { return }
+            for child in children(of: lens) {
+                walk(child, depth: depth + 1)
+            }
+        }
+        walk(lens, depth: depth)
+        return result
+    }
+
+    @MainActor
+    private static func defaultButton(
+        in chrome: Lens,
+        buttons: [Lens],
+        titles: [String]
+    ) throws -> Lens {
+        if case .window(let window) = chrome, let cell = window.defaultButtonCell {
+            if let button = cell.controlView as? NSButton {
+                return .view(button)
+            }
+            if let title = nonempty(cell.title),
+                let match = buttons.first(where: { $0.title == title })
+            {
+                return match
+            }
+        }
+        if let enter = buttons.first(where: isReturnKey) {
+            return enter
+        }
+        let uniqueTitles = Set(buttons.compactMap(\.title))
+        if uniqueTitles.count == 1, let only = buttons.first {
+            return only
+        }
+        throw LatchError.dialogButtonNotFound(wanted: nil, available: titles)
+    }
+
+    @MainActor
+    private static func isReturnKey(_ lens: Lens) -> Bool {
+        (lens.object as? NSButton)?.keyEquivalent == "\r"
+    }
+
+    @MainActor
+    private static func uniqueTitles(_ buttons: [Lens]) -> [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for title in buttons.compactMap(\.title) {
+            if seen.insert(title).inserted {
+                result.append(title)
+            }
+        }
+        return result
     }
 
     @MainActor
@@ -179,15 +383,23 @@ public enum LatchAX {
         _ lens: Lens,
         depth: Int,
         remaining: inout Int,
-        labeledOnly: Bool = false
+        labeledOnly: Bool = false,
+        inChrome: Bool = false
     ) -> LatchAXNode? {
         guard remaining > 0 else { return nil }
         let id = lens.identifier
         let role = lens.roleName
+        let nextChrome = inChrome || isCopyChrome(lens)
         let childNodes: [LatchAXNode]
         if depth < maxDepth {
             childNodes = children(of: lens).compactMap {
-                snapshot($0, depth: depth + 1, remaining: &remaining, labeledOnly: labeledOnly)
+                snapshot(
+                    $0,
+                    depth: depth + 1,
+                    remaining: &remaining,
+                    labeledOnly: labeledOnly,
+                    inChrome: nextChrome
+                )
             }
         } else {
             childNodes = []
@@ -196,7 +408,10 @@ public enum LatchAX {
         if labeledOnly {
             keep = id != nil || !childNodes.isEmpty
         } else {
-            keep = id != nil || !childNodes.isEmpty || lens.isInteractive
+            let hasCopy = lens.title != nil || lens.stringValue != nil
+            keep =
+                id != nil || !childNodes.isEmpty || lens.isInteractive
+                || (nextChrome && hasCopy)
         }
         guard keep else { return nil }
         remaining -= 1
@@ -358,13 +573,27 @@ enum Lens {
             role = object.ax.accessibilityRole?()
         }
         if let role {
-            return role.rawValue.replacingOccurrences(of: "AX", with: "").lowercased()
+            return axName(role.rawValue)
         }
         switch self {
         case .window: return "window"
         case .view: return "group"
         case .element, .object: return "unknown"
         }
+    }
+
+    var subroleName: String? {
+        let subrole: NSAccessibility.Subrole?
+        switch self {
+        case .window(let window): subrole = window.accessibilitySubrole()
+        case .view(let view): subrole = view.accessibilitySubrole()
+        case .element(let element): subrole = element.accessibilitySubrole()
+        case .object(let object):
+            subrole = object.ax.accessibilitySubrole?()
+        }
+        guard let subrole else { return nil }
+        let name = axName(subrole.rawValue)
+        return name.isEmpty ? nil : name
     }
 
     var stringValue: String? {
@@ -509,6 +738,7 @@ enum Lens {
 @objc private protocol LatchAXSpeaking: NSObjectProtocol {
     @objc optional func accessibilityIdentifier() -> String
     @objc optional func accessibilityRole() -> NSAccessibility.Role
+    @objc optional func accessibilitySubrole() -> NSAccessibility.Subrole
     @objc optional func accessibilityValue() -> Any
     @objc optional func accessibilityTitle() -> String
     @objc optional func accessibilityLabel() -> String
@@ -544,6 +774,31 @@ private func mergedAXChildren(_ first: [Any]?, _ second: [Any]?) -> [Any] {
 private func nonempty(_ value: String?) -> String? {
     guard let value, !value.isEmpty else { return nil }
     return value
+}
+
+private func axName(_ raw: String) -> String {
+    raw.replacingOccurrences(of: "AX", with: "").lowercased()
+}
+
+extension LatchAXNode {
+    fileprivate func appending(children extra: [LatchAXNode]) -> LatchAXNode {
+        guard !extra.isEmpty else { return self }
+        return LatchAXNode(
+            id: id,
+            role: role,
+            title: title,
+            value: value,
+            enabled: enabled,
+            actions: actions,
+            frame: frame,
+            children: children + extra,
+            window: window,
+            parent: parent,
+            kind: kind,
+            choices: choices,
+            description: description
+        )
+    }
 }
 
 @MainActor
