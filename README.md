@@ -98,7 +98,9 @@ itself.
   Recording permission never comes up.
 - **AX is a probe.** An unlabeled `ax dump` walks the in-process AX tree
   for orientation. Press, set, and find never fall through to it. A miss
-  means register the control.
+  means register the control. `ax dismiss` presses the frontmost system
+  alert in this app (NSAlert, SwiftUI `.alert`). Named dump nests that
+  sheet under the window so the alert copy is readable.
 
 Encodings fail loud. A bool is `true` or `false` on the wire; `yes`,
 `1`, and `on` are errors, so an agent learns the contract instead of
@@ -176,17 +178,18 @@ install, point your agent at [docs/agent-setup.md](docs/agent-setup.md).
 
 ## In-app assistants
 
-An assistant that lives inside the app skips the socket and calls the
-same catalog directly:
+An assistant that lives inside the app skips the socket:
 
 ```swift
 let nodes = Latch.snapshot()
 try Latch.set(id: "prefs.appearance.dark", value: "true")
 try Latch.press(id: "editor.save")
+try Latch.dismiss()
 ```
 
 This works in Release builds. The model only sees what you registered,
-and hidden views vanish from the snapshot. See
+and hidden views vanish from the snapshot. `Latch.dismiss` is chrome
+for a system dialog, not a catalog press. See
 [docs/in-process.md](docs/in-process.md).
 
 ## Paths
