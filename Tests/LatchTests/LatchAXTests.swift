@@ -161,6 +161,22 @@ struct LatchAXTests {
         }
     }
 
+    @Test("unlabeled dump keeps staticText copy outside chrome")
+    func dumpKeepsStaticText() throws {
+        let fixture = CopyFixture()
+        defer { fixture.close() }
+
+        let nodes = flatten(try LatchAX.dump(windowName: "main"))
+        #expect(
+            nodes.contains {
+                $0.role == "statictext" && $0.value == "Active · OAuth"
+            })
+        #expect(
+            !nodes.contains {
+                $0.title == "Section" || $0.value == "Section"
+            })
+    }
+
     @Test("SwiftUI alert dismisses the default button")
     func swiftUIAlertDismisses() throws {
         let fixture = SwiftUIAlertFixture()
@@ -303,6 +319,56 @@ private struct AlertHost: View {
                 Text("Token expired")
             }
     }
+}
+
+@MainActor
+private final class CopyFixture {
+    let window: NSWindow
+
+    init() {
+        _ = NSApplication.shared
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 240),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.identifier = NSUserInterfaceItemIdentifier("main")
+        window.title = "Notes"
+        window.isReleasedWhenClosed = false
+        window.contentView = CopyView(
+            frame: NSRect(x: 0, y: 0, width: 420, height: 240))
+        window.makeKeyAndOrderFront(nil)
+        window.layoutIfNeeded()
+        window.contentView?.superview?.layoutSubtreeIfNeeded()
+        self.window = window
+    }
+
+    func close() {
+        window.orderOut(nil)
+        window.close()
+    }
+}
+
+private final class CopyView: NSView {
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        addSubview(StaticTextView())
+        addSubview(LabeledView())
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+}
+
+private final class StaticTextView: NSView {
+    override func accessibilityRole() -> NSAccessibility.Role? { .staticText }
+    override func accessibilityValue() -> Any? { "Active · OAuth" }
+}
+
+private final class LabeledView: NSView {
+    override func accessibilityLabel() -> String? { "Section" }
 }
 
 @MainActor

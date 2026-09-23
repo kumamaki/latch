@@ -7,50 +7,58 @@ import SwiftUI
 /// `NSWindow.identifier` and registers `window.<name>`.
 public struct LatchWindow: ViewModifier {
     private let name: String
-    @State private var token = LatchCatalog.Token()
+    #if DEBUG
+        @State private var token = LatchCatalog.Token()
+    #endif
 
     public init(_ name: String) {
         self.name = name
     }
 
     public func body(content: Content) -> some View {
-        content
-            .background {
-                LatchWindowProbeRepresentable(name: name)
-                    .frame(width: 0, height: 0)
-                    .accessibilityHidden(true)
-            }
-            .onAppear { publish() }
-            .onChange(of: name) { oldName, _ in
-                LatchCatalog.unregister(
-                    id: LatchWindowIdentity.catalogID(name: oldName),
-                    token: token
-                )
-                publish()
-            }
-            .onDisappear {
-                LatchCatalog.unregister(
-                    id: LatchWindowIdentity.catalogID(name: name),
-                    token: token
-                )
-            }
+        #if DEBUG
+            content
+                .background {
+                    LatchWindowProbeRepresentable(name: name)
+                        .frame(width: 0, height: 0)
+                        .accessibilityHidden(true)
+                }
+                .onAppear { publish() }
+                .onChange(of: name) { oldName, _ in
+                    LatchCatalog.unregister(
+                        id: LatchWindowIdentity.catalogID(name: oldName),
+                        token: token
+                    )
+                    publish()
+                }
+                .onDisappear {
+                    LatchCatalog.unregister(
+                        id: LatchWindowIdentity.catalogID(name: name),
+                        token: token
+                    )
+                }
+        #else
+            content
+        #endif
     }
 
-    private func publish() {
-        guard !Latch.isPreviewProcess else { return }
-        do {
-            try LatchCatalog.register(
-                id: LatchWindowIdentity.catalogID(name: name),
-                role: "window",
-                title: LatchWindowIdentity.title(for: name),
-                window: name,
-                kind: .window,
-                token: token
-            )
-        } catch {
-            assertionFailure("Latch catalog: \(error)")
+    #if DEBUG
+        private func publish() {
+            guard !Latch.isPreviewProcess else { return }
+            do {
+                try LatchCatalog.register(
+                    id: LatchWindowIdentity.catalogID(name: name),
+                    role: "window",
+                    title: LatchWindowIdentity.title(for: name),
+                    window: name,
+                    kind: .window,
+                    token: token
+                )
+            } catch {
+                assertionFailure("Latch catalog: \(error)")
+            }
         }
-    }
+    #endif
 }
 
 extension View {
@@ -64,50 +72,52 @@ extension View {
     }
 }
 
-enum LatchWindowIdentity {
-    static func catalogID(name: String) -> String {
-        "window.\(name)"
+#if DEBUG
+    enum LatchWindowIdentity {
+        static func catalogID(name: String) -> String {
+            "window.\(name)"
+        }
+
+        @MainActor
+        static func apply(name: String, to window: NSWindow) {
+            window.identifier = NSUserInterfaceItemIdentifier(name)
+        }
+
+        @MainActor
+        static func title(for name: String) -> String? {
+            let title = NSApp.windows.first { LatchAX.windowMatches($0, name: name) }?
+                .title
+            guard let title, !title.isEmpty else { return nil }
+            return title
+        }
     }
 
-    @MainActor
-    static func apply(name: String, to window: NSWindow) {
-        window.identifier = NSUserInterfaceItemIdentifier(name)
+    private struct LatchWindowProbeRepresentable: NSViewRepresentable {
+        let name: String
+
+        func makeNSView(context: Context) -> LatchWindowProbe {
+            let view = LatchWindowProbe()
+            view.name = name
+            return view
+        }
+
+        func updateNSView(_ view: LatchWindowProbe, context: Context) {
+            view.name = name
+            view.applyIdentifier()
+        }
     }
 
-    @MainActor
-    static func title(for name: String) -> String? {
-        let title = NSApp.windows.first { LatchAX.windowMatches($0, name: name) }?
-            .title
-        guard let title, !title.isEmpty else { return nil }
-        return title
+    final class LatchWindowProbe: NSView {
+        var name = ""
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            applyIdentifier()
+        }
+
+        func applyIdentifier() {
+            guard let window, !name.isEmpty else { return }
+            LatchWindowIdentity.apply(name: name, to: window)
+        }
     }
-}
-
-private struct LatchWindowProbeRepresentable: NSViewRepresentable {
-    let name: String
-
-    func makeNSView(context: Context) -> LatchWindowProbe {
-        let view = LatchWindowProbe()
-        view.name = name
-        return view
-    }
-
-    func updateNSView(_ view: LatchWindowProbe, context: Context) {
-        view.name = name
-        view.applyIdentifier()
-    }
-}
-
-final class LatchWindowProbe: NSView {
-    var name = ""
-
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        applyIdentifier()
-    }
-
-    func applyIdentifier() {
-        guard let window, !name.isEmpty else { return }
-        LatchWindowIdentity.apply(name: name, to: window)
-    }
-}
+#endif

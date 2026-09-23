@@ -103,10 +103,12 @@ alone is not enough. `axDismiss` is chrome: it presses a system dialog
 in this app, not a catalog id.
 
 Named unlabeled dump nests attached sheets under that window so an
-alert is visible next to the parent content. Inside `alert` / `dialog`
-/ `sheet` subtrees, dump keeps title and value even when the node is
-not interactive. Screenshot still paints the overlay; dismiss, then
-dump or shot to see underneath.
+alert is visible next to the parent content. `cell` / `statictext` /
+`textarea` nodes keep title and value anywhere, so copy is assertable
+from the dump. Inside `alert` / `dialog` / `sheet` subtrees, dump
+keeps title and value on any node even when it is not interactive.
+Screenshot still paints the overlay; dismiss, then dump or shot to
+see underneath.
 
 Catalog nodes may include `kind`, `choices`, `description`, and
 `parent`. `parent` is a catalog id. Labeled dump nests the child under

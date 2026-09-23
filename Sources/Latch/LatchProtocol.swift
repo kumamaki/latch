@@ -3,183 +3,185 @@ import Foundation
 // Wire types for the DEBUG Latch socket. Same newline-JSON one-shot
 // envelope so a CLI can `printf | nc -U`.
 
-struct LatchRequest: Sendable, Decodable {
-    let token: String
-    let command: LatchCommand
+#if DEBUG
+    struct LatchRequest: Sendable, Decodable {
+        let token: String
+        let command: LatchCommand
 
-    fileprivate enum CodingKeys: String, CodingKey {
-        case token
-        case command
-        case args
-    }
+        fileprivate enum CodingKeys: String, CodingKey {
+            case token
+            case command
+            case args
+        }
 
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.token = try container.decodeIfPresent(String.self, forKey: .token) ?? ""
-        let name = try container.decode(String.self, forKey: .command)
-        self.command = try LatchCommand.decode(name: name, container: container)
-    }
-}
-
-enum LatchCommand: Sendable {
-    case ping
-    case queryBoot
-    case queryWindows
-    case windowShow(name: String)
-    case windowHide(name: String)
-    case axDump(window: String?, labeled: Bool)
-    case axFind(id: String)
-    case axPress(id: String, action: String?)
-    case axSet(id: String, value: String)
-    case axDismiss(button: String?)
-    case screenshot(window: String)
-
-    fileprivate static func decode(
-        name: String,
-        container: KeyedDecodingContainer<LatchRequest.CodingKeys>
-    ) throws -> Self {
-        switch name {
-        case "ping":
-            return .ping
-        case "queryBoot":
-            return .queryBoot
-        case "queryWindows":
-            return .queryWindows
-        case "windowShow":
-            let args = try container.decode(WindowArgs.self, forKey: .args)
-            return .windowShow(name: args.window)
-        case "windowHide":
-            let args = try container.decode(WindowArgs.self, forKey: .args)
-            return .windowHide(name: args.window)
-        case "axDump":
-            let args = try container.decodeIfPresent(AxDumpArgs.self, forKey: .args)
-            return .axDump(window: args?.window, labeled: args?.labeled ?? false)
-        case "axFind":
-            let args = try container.decode(AxIdArgs.self, forKey: .args)
-            return .axFind(id: args.id)
-        case "axPress":
-            let args = try container.decode(AxPressArgs.self, forKey: .args)
-            return .axPress(id: args.id, action: args.action)
-        case "axSet":
-            let args = try container.decode(AxSetArgs.self, forKey: .args)
-            return .axSet(id: args.id, value: args.value)
-        case "axDismiss":
-            let args = try container.decodeIfPresent(AxDismissArgs.self, forKey: .args)
-            let button = args?.button.flatMap { $0.isEmpty ? nil : $0 }
-            return .axDismiss(button: button)
-        case "screenshot":
-            let args = try container.decode(WindowArgs.self, forKey: .args)
-            return .screenshot(window: args.window)
-        default:
-            throw LatchError.unknownCommand(name: name)
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.token = try container.decodeIfPresent(String.self, forKey: .token) ?? ""
+            let name = try container.decode(String.self, forKey: .command)
+            self.command = try LatchCommand.decode(name: name, container: container)
         }
     }
 
-    private struct WindowArgs: Decodable {
-        let window: String
-    }
+    enum LatchCommand: Sendable {
+        case ping
+        case queryBoot
+        case queryWindows
+        case windowShow(name: String)
+        case windowHide(name: String)
+        case axDump(window: String?, labeled: Bool)
+        case axFind(id: String)
+        case axPress(id: String, action: String?)
+        case axSet(id: String, value: String)
+        case axDismiss(button: String?)
+        case screenshot(window: String)
 
-    private struct AxDumpArgs: Decodable {
-        let window: String?
-        let labeled: Bool?
-    }
-
-    private struct AxIdArgs: Decodable {
-        let id: String
-    }
-
-    private struct AxPressArgs: Decodable {
-        let id: String
-        let action: String?
-    }
-
-    private struct AxSetArgs: Decodable {
-        let id: String
-        let value: String
-    }
-
-    private struct AxDismissArgs: Decodable {
-        let button: String?
-    }
-}
-
-enum LatchResponse: Sendable, Encodable {
-    case success(LatchResponseData)
-    case failure(LatchResponseError)
-
-    static func success() -> Self { .success(.empty) }
-
-    private enum CodingKeys: String, CodingKey {
-        case ok, data, error
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        switch self {
-        case .success(let data):
-            try container.encode(true, forKey: .ok)
-            try container.encode(data, forKey: .data)
-        case .failure(let error):
-            try container.encode(false, forKey: .ok)
-            try container.encode(error, forKey: .error)
+        fileprivate static func decode(
+            name: String,
+            container: KeyedDecodingContainer<LatchRequest.CodingKeys>
+        ) throws -> Self {
+            switch name {
+            case "ping":
+                return .ping
+            case "queryBoot":
+                return .queryBoot
+            case "queryWindows":
+                return .queryWindows
+            case "windowShow":
+                let args = try container.decode(WindowArgs.self, forKey: .args)
+                return .windowShow(name: args.window)
+            case "windowHide":
+                let args = try container.decode(WindowArgs.self, forKey: .args)
+                return .windowHide(name: args.window)
+            case "axDump":
+                let args = try container.decodeIfPresent(AxDumpArgs.self, forKey: .args)
+                return .axDump(window: args?.window, labeled: args?.labeled ?? false)
+            case "axFind":
+                let args = try container.decode(AxIdArgs.self, forKey: .args)
+                return .axFind(id: args.id)
+            case "axPress":
+                let args = try container.decode(AxPressArgs.self, forKey: .args)
+                return .axPress(id: args.id, action: args.action)
+            case "axSet":
+                let args = try container.decode(AxSetArgs.self, forKey: .args)
+                return .axSet(id: args.id, value: args.value)
+            case "axDismiss":
+                let args = try container.decodeIfPresent(AxDismissArgs.self, forKey: .args)
+                let button = args?.button.flatMap { $0.isEmpty ? nil : $0 }
+                return .axDismiss(button: button)
+            case "screenshot":
+                let args = try container.decode(WindowArgs.self, forKey: .args)
+                return .screenshot(window: args.window)
+            default:
+                throw LatchError.unknownCommand(name: name)
+            }
         }
-    }
-}
 
-enum LatchDisplayState: String, Sendable, Encodable {
-    case awake
-    case asleep
-}
+        private struct WindowArgs: Decodable {
+            let window: String
+        }
 
-enum LatchResponseData: Sendable, Encodable {
-    case empty
-    case pong(boot: String, windows: Int, catalog: Int, display: LatchDisplayState)
-    case boot(state: String)
-    case windows(items: [LatchWindowStatus])
-    case axTree(root: LatchAXNode)
-    case axNode(LatchAXNode)
-    case screenshot(path: String, note: String)
+        private struct AxDumpArgs: Decodable {
+            let window: String?
+            let labeled: Bool?
+        }
 
-    func encode(to encoder: Encoder) throws {
-        switch self {
-        case .empty:
-            var container = encoder.singleValueContainer()
-            try container.encode([String: String]())
-        case .pong(let boot, let windows, let catalog, let display):
-            var container = encoder.container(keyedBy: PongKeys.self)
-            try container.encode("ok", forKey: .status)
-            try container.encode(boot, forKey: .boot)
-            try container.encode(windows, forKey: .windows)
-            try container.encode(catalog, forKey: .catalog)
-            try container.encode(display, forKey: .display)
-        case .boot(let state):
-            var container = encoder.container(keyedBy: BootKeys.self)
-            try container.encode(state, forKey: .state)
-        case .windows(let items):
-            var container = encoder.container(keyedBy: WindowsKeys.self)
-            try container.encode(items, forKey: .items)
-        case .axTree(let root):
-            var container = encoder.container(keyedBy: TreeKeys.self)
-            try container.encode(root, forKey: .root)
-        case .axNode(let node):
-            var container = encoder.container(keyedBy: NodeKeys.self)
-            try container.encode(node, forKey: .node)
-        case .screenshot(let path, let note):
-            var container = encoder.container(keyedBy: ScreenshotKeys.self)
-            try container.encode(path, forKey: .path)
-            try container.encode(note, forKey: .note)
+        private struct AxIdArgs: Decodable {
+            let id: String
+        }
+
+        private struct AxPressArgs: Decodable {
+            let id: String
+            let action: String?
+        }
+
+        private struct AxSetArgs: Decodable {
+            let id: String
+            let value: String
+        }
+
+        private struct AxDismissArgs: Decodable {
+            let button: String?
         }
     }
 
-    private enum PongKeys: String, CodingKey {
-        case status, boot, windows, catalog, display
+    enum LatchResponse: Sendable, Encodable {
+        case success(LatchResponseData)
+        case failure(LatchResponseError)
+
+        static func success() -> Self { .success(.empty) }
+
+        private enum CodingKeys: String, CodingKey {
+            case ok, data, error
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            switch self {
+            case .success(let data):
+                try container.encode(true, forKey: .ok)
+                try container.encode(data, forKey: .data)
+            case .failure(let error):
+                try container.encode(false, forKey: .ok)
+                try container.encode(error, forKey: .error)
+            }
+        }
     }
-    private enum BootKeys: String, CodingKey { case state }
-    private enum WindowsKeys: String, CodingKey { case items }
-    private enum TreeKeys: String, CodingKey { case root }
-    private enum NodeKeys: String, CodingKey { case node }
-    private enum ScreenshotKeys: String, CodingKey { case path, note }
-}
+
+    enum LatchDisplayState: String, Sendable, Encodable {
+        case awake
+        case asleep
+    }
+
+    enum LatchResponseData: Sendable, Encodable {
+        case empty
+        case pong(boot: String, windows: Int, catalog: Int, display: LatchDisplayState)
+        case boot(state: String)
+        case windows(items: [LatchWindowStatus])
+        case axTree(root: LatchAXNode)
+        case axNode(LatchAXNode)
+        case screenshot(path: String, note: String)
+
+        func encode(to encoder: Encoder) throws {
+            switch self {
+            case .empty:
+                var container = encoder.singleValueContainer()
+                try container.encode([String: String]())
+            case .pong(let boot, let windows, let catalog, let display):
+                var container = encoder.container(keyedBy: PongKeys.self)
+                try container.encode("ok", forKey: .status)
+                try container.encode(boot, forKey: .boot)
+                try container.encode(windows, forKey: .windows)
+                try container.encode(catalog, forKey: .catalog)
+                try container.encode(display, forKey: .display)
+            case .boot(let state):
+                var container = encoder.container(keyedBy: BootKeys.self)
+                try container.encode(state, forKey: .state)
+            case .windows(let items):
+                var container = encoder.container(keyedBy: WindowsKeys.self)
+                try container.encode(items, forKey: .items)
+            case .axTree(let root):
+                var container = encoder.container(keyedBy: TreeKeys.self)
+                try container.encode(root, forKey: .root)
+            case .axNode(let node):
+                var container = encoder.container(keyedBy: NodeKeys.self)
+                try container.encode(node, forKey: .node)
+            case .screenshot(let path, let note):
+                var container = encoder.container(keyedBy: ScreenshotKeys.self)
+                try container.encode(path, forKey: .path)
+                try container.encode(note, forKey: .note)
+            }
+        }
+
+        private enum PongKeys: String, CodingKey {
+            case status, boot, windows, catalog, display
+        }
+        private enum BootKeys: String, CodingKey { case state }
+        private enum WindowsKeys: String, CodingKey { case items }
+        private enum TreeKeys: String, CodingKey { case root }
+        private enum NodeKeys: String, CodingKey { case node }
+        private enum ScreenshotKeys: String, CodingKey { case path, note }
+    }
+#endif
 
 public struct LatchWindowStatus: Sendable, Encodable, Equatable {
     public let name: String
@@ -286,16 +288,18 @@ public struct LatchAXFrame: Sendable, Encodable, Equatable {
     }
 }
 
-enum LatchErrorCode: String, Sendable, Encodable {
-    case unauthenticated
-    case unknownCommand
-    case ipc
-    case notFound
-    case unavailable
-    case `protocol`
-}
+#if DEBUG
+    enum LatchErrorCode: String, Sendable, Encodable {
+        case unauthenticated
+        case unknownCommand
+        case ipc
+        case notFound
+        case unavailable
+        case `protocol`
+    }
 
-struct LatchResponseError: Sendable, Encodable {
-    let code: LatchErrorCode
-    let message: String
-}
+    struct LatchResponseError: Sendable, Encodable {
+        let code: LatchErrorCode
+        let message: String
+    }
+#endif

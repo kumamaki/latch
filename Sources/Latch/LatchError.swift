@@ -104,18 +104,20 @@ extension LatchError {
         }
     }
 
-    init(_ error: UnixSocketError) {
-        switch error {
-        case .socketPathTooLong(let path, let limit):
-            self = .socketPathTooLong(path: path, limit: limit)
-        case .directoryCreate(let path, let underlying):
-            self = .directoryCreate(path: path, underlying: underlying)
-        case .socketCreate(let errno):
-            self = .socketCreate(errno: errno)
-        case .socketBind(let path, let errno):
-            self = .socketBind(path: path, errno: errno)
-        case .socketListen(let errno):
-            self = .socketListen(errno: errno)
+    #if DEBUG
+        init(_ error: UnixSocketError) {
+            switch error {
+            case .socketPathTooLong(let path, let limit):
+                self = .socketPathTooLong(path: path, limit: limit)
+            case .directoryCreate(let path, let underlying):
+                self = .directoryCreate(path: path, underlying: underlying)
+            case .socketCreate(let errno):
+                self = .socketCreate(errno: errno)
+            case .socketBind(let path, let errno):
+                self = .socketBind(path: path, errno: errno)
+            case .socketListen(let errno):
+                self = .socketListen(errno: errno)
+            }
         }
-    }
+    #endif
 }

@@ -7,20 +7,22 @@ import Foundation
 /// - Outside agent: `start(app:)` binds a DEBUG-only unix socket.
 @MainActor
 public enum Latch {
-    private static var server: LatchServer?
-    private static var retainedOps: (any LatchOpsProviding)?
-    private static var lifecycleTask: Task<Void, Never>?
-    static var socketPhase: LatchSocketPhase = .idle
-    static var failLoudOnStartFailure = true
-    static var previewProcessOverride: Bool?
+    #if DEBUG
+        private static var server: LatchServer?
+        private static var retainedOps: (any LatchOpsProviding)?
+        private static var lifecycleTask: Task<Void, Never>?
+        static var socketPhase: LatchSocketPhase = .idle
+        static var failLoudOnStartFailure = true
+        static var previewProcessOverride: Bool?
 
-    /// SwiftUI preview processes must not publish into the host catalog
-    /// or bind the adopter socket.
-    static var isPreviewProcess: Bool {
-        if let previewProcessOverride { return previewProcessOverride }
-        return ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
-            == "1"
-    }
+        /// SwiftUI preview processes must not publish into the host catalog
+        /// or bind the adopter socket.
+        static var isPreviewProcess: Bool {
+            if let previewProcessOverride { return previewProcessOverride }
+            return ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
+                == "1"
+        }
+    #endif
 
     /// Bind the DEBUG socket. Release is a no-op. Does not affect the catalog.
     ///
@@ -83,35 +85,58 @@ public enum Latch {
         #endif
     }
 
-    static func resolvedBoot(host: String) -> String {
-        socketPhase.resolvedBoot(host: host)
-    }
+    #if DEBUG
+        static func resolvedBoot(host: String) -> String {
+            socketPhase.resolvedBoot(host: host)
+        }
 
-    static func waitForLifecycle() async {
-        await lifecycleTask?.value
-    }
+        static func waitForLifecycle() async {
+            await lifecycleTask?.value
+        }
+    #endif
 
     /// Live catalog. Same nodes an outside agent would see in labeled dump.
+    /// Release ships no catalog: always empty.
     public static func snapshot(window: String? = nil) -> [LatchCatalog.Node] {
-        LatchCatalog.snapshot(window: window)
+        #if DEBUG
+            LatchCatalog.snapshot(window: window)
+        #else
+            []
+        #endif
     }
 
     public static func find(id: String) throws -> LatchCatalog.Node {
-        try LatchCatalog.find(id: id)
+        #if DEBUG
+            try LatchCatalog.find(id: id)
+        #else
+            throw LatchCatalog.Error.notFound(id: id)
+        #endif
     }
 
     public static func press(id: String, action: String? = nil) throws {
-        try LatchCatalog.press(id: id, action: action)
+        #if DEBUG
+            try LatchCatalog.press(id: id, action: action)
+        #else
+            throw LatchCatalog.Error.notFound(id: id)
+        #endif
     }
 
     public static func set(id: String, value: String) throws {
-        try LatchCatalog.set(id: id, value: value)
+        #if DEBUG
+            try LatchCatalog.set(id: id, value: value)
+        #else
+            throw LatchCatalog.Error.notFound(id: id)
+        #endif
     }
 
     /// Press a button on the frontmost system dialog. Catalog press
     /// stays catalog-only; this is chrome (NSAlert, SwiftUI `.alert`).
     public static func dismiss(button: String? = nil) throws {
-        try LatchAX.dismiss(button: button)
+        #if DEBUG
+            try LatchAX.dismiss(button: button)
+        #else
+            throw LatchError.noSystemDialog
+        #endif
     }
 
     /// Live catalog snapshots. Yields immediately, then once per turn
@@ -122,6 +147,10 @@ public enum Latch {
     public static func updates(window: String? = nil) -> AsyncStream<
         [LatchCatalog.Node]
     > {
-        LatchCatalog.updates(window: window)
+        #if DEBUG
+            LatchCatalog.updates(window: window)
+        #else
+            AsyncStream { $0.finish() }
+        #endif
     }
 }

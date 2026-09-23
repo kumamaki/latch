@@ -17,7 +17,9 @@ public struct LatchControl: ViewModifier {
     private let choices: [String]?
     private let press: ((String?) throws -> Void)?
     private let set: ((String) throws -> Void)?
-    @State private var token = LatchCatalog.Token()
+    #if DEBUG
+        @State private var token = LatchCatalog.Token()
+    #endif
 
     public init(
         id: String,
@@ -49,48 +51,56 @@ public struct LatchControl: ViewModifier {
         self.set = set
     }
 
+    /// Registers with the DEBUG catalog. In Release the modifier is a
+    /// pass-through — the catalog impl is compiled out.
     public func body(content: Content) -> some View {
-        let isEnabled = enabled()
-        let currentValue = value()
-        content
-            .onAppear { publish() }
-            .onChange(of: id) { _, _ in publish() }
-            .onChange(of: role) { _, _ in publish() }
-            .onChange(of: title) { _, _ in publish() }
-            .onChange(of: description) { _, _ in publish() }
-            .onChange(of: actions) { _, _ in publish() }
-            .onChange(of: window) { _, _ in publish() }
-            .onChange(of: parent) { _, _ in publish() }
-            .onChange(of: isEnabled) { _, _ in publish() }
-            .onChange(of: currentValue) { _, _ in publish() }
-            .onDisappear {
-                LatchCatalog.unregister(id: id, token: token)
-            }
+        #if DEBUG
+            let isEnabled = enabled()
+            let currentValue = value()
+            content
+                .onAppear { publish() }
+                .onChange(of: id) { _, _ in publish() }
+                .onChange(of: role) { _, _ in publish() }
+                .onChange(of: title) { _, _ in publish() }
+                .onChange(of: description) { _, _ in publish() }
+                .onChange(of: actions) { _, _ in publish() }
+                .onChange(of: window) { _, _ in publish() }
+                .onChange(of: parent) { _, _ in publish() }
+                .onChange(of: isEnabled) { _, _ in publish() }
+                .onChange(of: currentValue) { _, _ in publish() }
+                .onDisappear {
+                    LatchCatalog.unregister(id: id, token: token)
+                }
+        #else
+            content
+        #endif
     }
 
-    private func publish() {
-        guard !Latch.isPreviewProcess else { return }
-        do {
-            try LatchCatalog.register(
-                id: id,
-                role: role,
-                title: title,
-                description: description,
-                value: value,
-                enabled: enabled,
-                actions: actions,
-                window: window,
-                parent: parent,
-                kind: kind,
-                choices: choices,
-                token: token,
-                press: press,
-                set: set
-            )
-        } catch {
-            assertionFailure("Latch catalog: \(error)")
+    #if DEBUG
+        private func publish() {
+            guard !Latch.isPreviewProcess else { return }
+            do {
+                try LatchCatalog.register(
+                    id: id,
+                    role: role,
+                    title: title,
+                    description: description,
+                    value: value,
+                    enabled: enabled,
+                    actions: actions,
+                    window: window,
+                    parent: parent,
+                    kind: kind,
+                    choices: choices,
+                    token: token,
+                    press: press,
+                    set: set
+                )
+            } catch {
+                assertionFailure("Latch catalog: \(error)")
+            }
         }
-    }
+    #endif
 }
 
 extension View {
