@@ -129,7 +129,9 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
             let name = node.window ?? String(node.id.dropFirst("window.".count))
             let count = catalogNodes[name] ?? 0
             guard
-                let window = NSApp.windows.first(where: { LatchAX.windowMatches($0, name: name) })
+                let window = NSApplication.shared.windows.first(where: {
+                    LatchAX.windowMatches($0, name: name)
+                })
             else {
                 return LatchWindowStatus(
                     name: name, visible: false, exists: false, catalogNodes: count)
@@ -139,7 +141,10 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
         }
 
         public static func orderFront(_ name: String) throws {
-            guard let window = NSApp.windows.first(where: { LatchAX.windowMatches($0, name: name) })
+            guard
+                let window = NSApplication.shared.windows.first(where: {
+                    LatchAX.windowMatches($0, name: name)
+                })
             else {
                 throw LatchError.unknownWindow(name: name)
             }
@@ -147,7 +152,10 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
         }
 
         public static func orderOut(_ name: String) throws {
-            guard let window = NSApp.windows.first(where: { LatchAX.windowMatches($0, name: name) })
+            guard
+                let window = NSApplication.shared.windows.first(where: {
+                    LatchAX.windowMatches($0, name: name)
+                })
             else {
                 throw LatchError.unknownWindow(name: name)
             }

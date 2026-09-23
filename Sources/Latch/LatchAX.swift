@@ -57,7 +57,7 @@
             return LatchAXNode(
                 id: nil,
                 role: "application",
-                title: NSApp.applicationName,
+                title: NSApplication.shared.applicationName,
                 value: nil,
                 enabled: true,
                 actions: [],
@@ -167,7 +167,9 @@
 
         @MainActor
         private static func targetWindows(named name: String?) -> [NSWindow] {
-            let windows = NSApp.windows.filter { $0.isVisible || $0.isMiniaturized }
+            let windows = NSApplication.shared.windows.filter {
+                $0.isVisible || $0.isMiniaturized
+            }
             guard let name else { return windows }
             return windows.filter { windowMatches($0, name: name) }
         }
@@ -197,7 +199,7 @@
 
         @MainActor
         private static func isSystemDialogWindow(_ window: NSWindow) -> Bool {
-            if window === NSApp.modalWindow { return true }
+            if window === NSApplication.shared.modalWindow { return true }
             if isDismissChrome(.window(window)) { return true }
             if window.isSheet, window.defaultButtonCell != nil { return true }
             return false
@@ -216,7 +218,7 @@
             for sheet in window.sheets {
                 add(sheet)
             }
-            if let modal = NSApp.modalWindow, modal.sheetParent === window {
+            if let modal = NSApplication.shared.modalWindow, modal.sheetParent === window {
                 add(modal)
             }
             return result
@@ -231,9 +233,10 @@
                 guard seen.insert(ObjectIdentifier(window)).inserted else { return }
                 result.append(window)
             }
-            add(NSApp.keyWindow)
-            add(NSApp.mainWindow)
-            for window in NSApp.windows {
+            let app = NSApplication.shared
+            add(app.keyWindow)
+            add(app.mainWindow)
+            for window in app.windows {
                 if window.isVisible || window.isMiniaturized || window.isSheet {
                     add(window)
                 }
@@ -243,7 +246,7 @@
 
         @MainActor
         private static func frontmostChrome() throws -> Lens {
-            if let modal = NSApp.modalWindow, isSystemDialogWindow(modal) {
+            if let modal = NSApplication.shared.modalWindow, isSystemDialogWindow(modal) {
                 return .window(modal)
             }
             for window in preferredWindows() {
@@ -338,7 +341,7 @@
         @MainActor
         private static func findAll(id: String) -> [Lens] {
             var hits: [Lens] = []
-            for window in NSApp.windows {
+            for window in NSApplication.shared.windows {
                 collect(id: id, in: .window(window), depth: 0, into: &hits)
             }
             return hits

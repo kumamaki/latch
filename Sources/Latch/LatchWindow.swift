@@ -85,8 +85,9 @@ extension View {
 
         @MainActor
         static func title(for name: String) -> String? {
-            let title = NSApp.windows.first { LatchAX.windowMatches($0, name: name) }?
-                .title
+            let title = NSApplication.shared.windows.first {
+                LatchAX.windowMatches($0, name: name)
+            }?.title
             guard let title, !title.isEmpty else { return nil }
             return title
         }
