@@ -30,6 +30,7 @@ app without computer-use or Screen Recording.
 6. **Fail loud.** Bool is `true` / `false`. No synonym encodings.
 7. **Kernel verbs only.** ping, boot, windows, ax \*, screenshot. Product verbs stay in the app.
 8. **No out-of-process AX.** No System Events. No `screencapture`. Screenshot is `cacheDisplay` on this app's windows.
+9. **One product: the dev harness.** A production in-process catalog is a future explicit opt-in product — never an env var, an adopter flag, or a consumer's `DEBUG` convention.
 
 ## Commands
 

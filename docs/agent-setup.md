@@ -24,8 +24,8 @@ In your own words, cover:
   marks each window root with `.latchWindow`.
 - A **coding agent** drives them over a **DEBUG unix socket**. No
   computer-use. No Screen Recording. No Accessibility permission.
-- An **in-app assistant** calls `Latch.snapshot` / `press` / `set`.
-  No socket. See [in-process.md](in-process.md).
+- An **in-app assistant** calls `Latch.snapshot` / `press` / `set` in
+  DEBUG builds. No socket. See [in-process.md](in-process.md).
 - `.accessibilityIdentifier` is not enough.
 - Product verbs (`add-note`, `seed`) stay in the app.
 
@@ -57,11 +57,13 @@ the socket lands in the wrong folder.
 | Option | Meaning |
 |--------|---------|
 | **1. Coding agent (DEBUG socket)** | Outside process. `Latch.start` + CLI. Default for this guide. |
-| **2. In-app assistant** | Same process. `Latch.snapshot` / `press` / `set`. No socket. |
-| **3. Both** | Register once. Socket in DEBUG. In-process in every build. |
+| **2. In-app assistant** | Same process. `Latch.snapshot` / `press` / `set`, DEBUG builds only. No socket. |
+| **3. Both** | Register once. Socket and in-process drive in DEBUG builds. |
 
 If **2**, skip Q1 (slug), Q2–Q3 (CLI runbook), and Q5 (`start`). Still register
-`.latch`. Point them at [in-process.md](in-process.md).
+`.latch`. In-process drive exists in DEBUG builds only — a production
+Release assistant is not something this package provides. Point them at
+[in-process.md](in-process.md).
 
 ### Q1 — App slug (if Q0 is 1 or 3)
 
@@ -337,7 +339,7 @@ under `~/Library/Application Support/<slug>-dev/`.
 Hard rules (max 6 lines):
 
 1. Catalog is the driver. Press / set / find never fall through to AX.
-2. `.latch` compiles in every build. `Latch.start` does not.
+2. `.latch` and `Latch.start` compile in every build; Release makes both inert.
 3. Bool wire is `true` / `false`. No `yes`.
 4. Wait lives in the CLI. In-app drive uses `Latch.snapshot` / `updates` / `press` / `set`.
 5. DEBUG-only socket. No Screen Recording. No System Events.

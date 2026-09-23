@@ -4,6 +4,15 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Release contract
+
+- The socket, AX probe, screenshot, token, and catalog-registry impl
+  compile only under `DEBUG`. Release builds carry no driving surface:
+  `.latch` passes content through, `Latch.start` is a no-op, and
+  in-process `snapshot` / `find` / `press` / `set` / `dismiss` return
+  empty or throw. In 0.1.2, in-process drive worked in Release; it is
+  now DEBUG-only.
+
 ### Kernel
 
 - `ping` reports `display`: `awake` or `asleep`, from

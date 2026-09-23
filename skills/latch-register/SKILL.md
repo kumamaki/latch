@@ -27,7 +27,8 @@ was hard to find.
 - AppKit recycle: `LatchCatalog.Binding`
 
 Put `.latch` on the interactive view, not a parent stack. The modifier
-compiles in Release. Do not wrap it in `#if DEBUG`.
+compiles in every build and self-gates — inert in Release, live in
+DEBUG. Do not wrap it in `#if DEBUG`.
 
 Mark the window root with `.latchWindow("main")`. That sets
 `NSWindow.identifier` and registers `window.main`. Control `window:`

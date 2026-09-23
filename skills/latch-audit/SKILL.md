@@ -55,7 +55,7 @@ Expected chrome comes from, in order:
 | Bool accepts `yes` / `1` / `on` | Fail loud. Wire is `true` / `false`. |
 | Product verbs in the kernel | Keep them in the app ops type. |
 | Socket started in Release | `Latch.start` is DEBUG-only. |
-| `.latch` wrapped in `#if DEBUG` | Catalog must exist in Release for in-app drive. |
+| `.latch` wrapped in `#if DEBUG` | Redundant — the modifier self-gates and is inert in Release. |
 | Window named only on control `window:` | `window show` / screenshot miss it. Add `.latchWindow`. |
 
 ## Report

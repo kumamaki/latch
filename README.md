@@ -86,9 +86,10 @@ itself.
 - **Press and set call your handlers.** A registered handler is the same
   code path the human control uses. Latch synthesizes nothing from
   pixels or AX guesses.
-- **The socket is DEBUG-only.** `Latch.start` binds a unix socket in
-  Debug builds and compiles to a no-op in Release. The catalog compiles
-  in every build.
+- **The driving surface is DEBUG-only.** `Latch.start` binds a unix
+  socket in Debug builds. Release builds compile none of it: no socket,
+  no catalog, no AX probe, no screenshot. `.latch` passes content
+  through and `Latch.start` is a no-op.
 - **Auth is a file.** A `0600` token sits next to the socket. Same user,
   same machine, no network, no Keychain, no pairing UI, no TCC prompt.
 - **One request, one response.** The CLI speaks newline-JSON over the
@@ -187,10 +188,13 @@ try Latch.press(id: "editor.save")
 try Latch.dismiss()
 ```
 
-This works in Release builds. The model only sees what you registered,
-and hidden views vanish from the snapshot. `Latch.dismiss` is chrome
-for a system dialog, not a catalog press. See
-[docs/in-process.md](docs/in-process.md).
+The in-process API drives DEBUG builds: development runs, tests,
+internal tools. The model only sees what you registered, and hidden
+views vanish from the snapshot. `Latch.dismiss` is chrome for a system
+dialog, not a catalog press. Release builds carry no catalog —
+`snapshot()` is empty and `press` / `set` / `find` throw `notFound`.
+A production assistant needs its own drive path; Latch does not ship
+one. See [docs/in-process.md](docs/in-process.md).
 
 ## Paths
 
@@ -215,8 +219,8 @@ by pasting that path into every command.
 - Screenshots include the title bar and toolbar. Metal-backed layers
   may still render blank. The catalog and the AX probe stay the source
   of truth there.
-- The socket serves one local user in Debug builds. Latch is a
-  development harness, so treat it as one.
+- Latch is a development harness. The socket serves one local user in
+  Debug builds, and Release builds carry none of the driving surface.
 
 ## Skills
 
