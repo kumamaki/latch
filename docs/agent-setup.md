@@ -212,8 +212,10 @@ Latch.start(app: "<slug>")
 #endif
 ```
 
-Release `start` is a no-op. `.latch` is not. Do not wrap the modifier
-in `#if DEBUG`. Boot is `starting` until the socket listens, then the
+Release `start` is a no-op, and `.latch` passes content through without
+registering — the catalog populates only in DEBUG. Leave the modifier
+unconditional anyway; it must compile in every build and wrapping it
+adds nothing. Boot is `starting` until the socket listens, then the
 host state (default `ready`).
 
 ### 4.3 Window and first control

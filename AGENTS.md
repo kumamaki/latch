@@ -26,7 +26,7 @@ app without computer-use or Screen Recording.
 2. **Catalog is the driver.** Press / set / find hit registered handlers only. Unlabeled `ax dump` is a probe. A miss means register, never fall through to AX.
 3. **Newline-JSON, one-shot.** Wait lives in the CLI so the server never pins a Task.
 4. **File token.** `0600` sibling of the socket. No Keychain, no pairing.
-5. **Socket is DEBUG-only.** `Latch.start` is a no-op in Release. `.latch` and the catalog compile in every build.
+5. **Socket is DEBUG-only.** `Latch.start` is a no-op in Release. `.latch` and the catalog API compile in every build; the socket, AX, screenshot, token, and catalog-registry impl compile only under `DEBUG` — Release registration is a no-op and in-process queries return empty / `notFound`.
 6. **Fail loud.** Bool is `true` / `false`. No synonym encodings.
 7. **Kernel verbs only.** ping, boot, windows, ax \*, screenshot. Product verbs stay in the app.
 8. **No out-of-process AX.** No System Events. No `screencapture`. Screenshot is `cacheDisplay` on this app's windows.

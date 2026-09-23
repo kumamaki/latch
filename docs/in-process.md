@@ -16,11 +16,17 @@ for await snapshot in Latch.updates() {
 }
 ```
 
-`.latch` compiles in Release. The model only sees what you registered.
-Hidden views vanish. Live telemetry stays unlabeled. A miss is a catalog
-miss; there is no AX fallback in-process. Press and set refuse when
-`enabled` is false. Find still returns the node. `Latch.dismiss` is
-chrome for the frontmost system dialog, not a catalog press.
+`.latch` compiles in Release but the catalog populates only in DEBUG:
+`.latch` passes content through, `snapshot()` returns `[]`,
+`find`/`press`/`set` throw `notFound`, `updates()` finishes
+immediately, and `dismiss()` throws `noSystemDialog`. An in-app
+assistant that ships in Release needs a different drive path.
+
+In DEBUG the model only sees what you registered. Hidden views vanish.
+Live telemetry stays unlabeled. A miss is a catalog miss; there is no
+AX fallback in-process. Press and set refuse when `enabled` is false.
+Find still returns the node. `Latch.dismiss` is chrome for the
+frontmost system dialog, not a catalog press.
 
 `Latch.updates(window:)` is in-process wait. It yields the current
 snapshot immediately, then one coalesced snapshot on the next main
