@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.2.0 — 2026-09-23
+
 ### Release contract
 
 - The socket, AX probe, screenshot, token, and catalog-registry impl

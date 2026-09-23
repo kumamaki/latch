@@ -131,7 +131,7 @@ ping, boot, windows, `ax *`, and screenshot, and nothing else.
    SwiftPM:
 
    ```swift
-   .package(url: "https://github.com/kumamaki/latch", from: "0.1.2")
+   .package(url: "https://github.com/kumamaki/latch", from: "0.2.0")
    // target dependency:
    .product(name: "Latch", package: "Latch")
    ```
@@ -256,7 +256,7 @@ just release minor   # dry-run the next tag; agents stop here
 `just ship` is USER-only. It stamps, tags `vX.Y.Z`, and creates the
 GitHub Release.
 
-Status: 0.1. The kernel covers the catalog, the DEBUG socket, the CLI,
+Status: 0.2. The kernel covers the catalog, the DEBUG socket, the CLI,
 and the skills. See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
