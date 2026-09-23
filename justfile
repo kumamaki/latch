@@ -12,15 +12,25 @@ default:
 test:
     swift test
 
-# Lint Swift sources and the CLI / release / e2e scripts.
+# Lint Swift sources and the CLI / release / e2e / check scripts.
 lint:
     swift format lint --strict --recursive Sources Tests examples Package.swift
-    shellcheck cli/latch.sh examples/Notes/latch.sh scripts/release.sh scripts/e2e-notes.sh
+    shellcheck cli/latch.sh examples/Notes/latch.sh scripts/release.sh scripts/e2e-notes.sh scripts/audit-config.sh scripts/smoke-consumer.sh
 
-# Tests plus lint. The full pre-ship gate. Live-drive is `just e2e`.
+# Assert Release carries no driving-surface impl or API.
+audit-config:
+    bash scripts/audit-config.sh
+
+# Build and run a scratch consumer package against this checkout.
+smoke-consumer:
+    bash scripts/smoke-consumer.sh
+
+# Tests, lint, and config audits. The full pre-ship gate. Live-drive is `just e2e`.
 check:
     just test
     just lint
+    just audit-config
+    just smoke-consumer
 
 # Print the CLI usage.
 cli-help:
