@@ -78,16 +78,35 @@ extension View {
             "window.\(name)"
         }
 
+        /// Leave an identifier SwiftUI already set (`name-AppWindow-N`).
+        /// A second window of the same scene gets its own suffix so
+        /// the one already on screen keeps the short name.
         @MainActor
         static func apply(name: String, to window: NSWindow) {
-            window.identifier = NSUserInterfaceItemIdentifier(name)
+            if let raw = window.identifier?.rawValue, !raw.isEmpty,
+                LatchAX.catalogName(from: raw) == name
+            {
+                return
+            }
+            let taken = NSApplication.shared.windows.contains { other in
+                other !== window && LatchAX.windowMatches(other, name: name)
+            }
+            guard taken else {
+                window.identifier = NSUserInterfaceItemIdentifier(name)
+                return
+            }
+            var index = 2
+            while NSApplication.shared.windows.contains(where: { other in
+                other.identifier?.rawValue == "\(name)-AppWindow-\(index)"
+            }) {
+                index += 1
+            }
+            window.identifier = NSUserInterfaceItemIdentifier("\(name)-AppWindow-\(index)")
         }
 
         @MainActor
         static func title(for name: String) -> String? {
-            let title = NSApplication.shared.windows.first {
-                LatchAX.windowMatches($0, name: name)
-            }?.title
+            let title = LatchAX.preferredWindow(named: name)?.title
             guard let title, !title.isEmpty else { return nil }
             return title
         }

@@ -159,9 +159,17 @@ public enum LatchCatalog {
             var enabled: () -> Bool
             var press: ((String?) throws -> Void)?
             var set: ((String) throws -> Void)?
+            /// AppKit window this registration was mounted in.
+            /// Nil for callers that are not a view.
+            var host: ObjectIdentifier?
+            var generation: Int
         }
 
-        private static var entries: [String: Entry] = [:]
+        /// Owners of one catalog id. A second window of the same scene
+        /// registers beside the one already on screen; reads follow the
+        /// on-screen owner instead of the latest mount.
+        private static var entries: [String: [ObjectIdentifier: Entry]] = [:]
+        private static var nextGeneration = 0
         private static let windowSyncToken = Token()
         private static var updateSubscribers: [UUID: UpdateSubscriber] = [:]
         private static var updateFlushScheduled = false
@@ -176,6 +184,7 @@ public enum LatchCatalog {
     public static func reset() {
         #if DEBUG
             entries.removeAll()
+            nextGeneration = 0
             updateFlushScheduled = false
             updateGeneration += 1
             for subscriber in updateSubscribers.values {
@@ -230,22 +239,24 @@ public enum LatchCatalog {
         kind: Kind? = nil,
         choices: [String]? = nil,
         token: Token,
+        host: NSWindow? = nil,
         press: ((String?) throws -> Void)? = nil,
         set: ((String) throws -> Void)? = nil
     ) throws {
         #if DEBUG
             let owner = ObjectIdentifier(token)
-            if let existing = entries[id], existing.token != owner {
-                // SwiftUI often appears the new owner before the old one
-                // disappears. Same role is that remount. A role clash is a leak.
-                guard existing.node.role == role else {
-                    throw Error.duplicate(id: id)
+            if let group = entries[id] {
+                for existing in group.values where existing.token != owner {
+                    guard existing.node.role == role else {
+                        throw Error.duplicate(id: id)
+                    }
                 }
-                entries.removeValue(forKey: id)
             }
             try validateParent(id: id, parent: parent, window: window)
             let resolvedChoices = (choices?.isEmpty == true) ? nil : choices
-            entries[id] = Entry(
+            nextGeneration += 1
+            var group = entries[id] ?? [:]
+            group[owner] = Entry(
                 token: owner,
                 node: Node(
                     id: id,
@@ -263,24 +274,30 @@ public enum LatchCatalog {
                 value: value,
                 enabled: enabled,
                 press: press,
-                set: set
+                set: set,
+                host: host.map(ObjectIdentifier.init),
+                generation: nextGeneration
             )
+            entries[id] = group
             notifyChanged()
         #endif
     }
 
     public static func unregister(id: String, token: Token) {
         #if DEBUG
-            guard let existing = entries[id] else { return }
-            guard existing.token == ObjectIdentifier(token) else { return }
-            entries.removeValue(forKey: id)
+            let owner = ObjectIdentifier(token)
+            guard entries[id]?[owner] != nil else { return }
+            entries[id]?.removeValue(forKey: owner)
+            if entries[id]?.isEmpty != false {
+                entries.removeValue(forKey: id)
+            }
             notifyChanged()
         #endif
     }
 
     public static func snapshot(window: String? = nil) -> [Node] {
         #if DEBUG
-            entries.values
+            entries.keys.compactMap { active(id: $0) }
                 .map(resolved)
                 .filter { node in
                     guard let window else { return true }
@@ -294,7 +311,7 @@ public enum LatchCatalog {
 
     public static func find(id: String) throws -> Node {
         #if DEBUG
-            guard let entry = entries[id] else { throw missing(id: id) }
+            guard let entry = active(id: id) else { throw missing(id: id) }
             return resolved(entry)
         #else
             throw Error.notFound(id: id)
@@ -302,6 +319,38 @@ public enum LatchCatalog {
     }
 
     #if DEBUG
+        /// On-screen instance wins. Two owners with no window (a remount
+        /// that has not moved to a window yet) keep the later registration.
+        private static func active(id: String) -> Entry? {
+            guard let group = entries[id], !group.isEmpty else { return nil }
+            return group.values.max(by: loses)
+        }
+
+        private static func loses(_ lhs: Entry, to rhs: Entry) -> Bool {
+            let left = hostWindow(of: lhs)
+            let right = hostWindow(of: rhs)
+            switch (left?.isVisible == true, right?.isVisible == true) {
+            case (false, true):
+                return true
+            case (true, false):
+                return false
+            default:
+                let leftNumber = left?.windowNumber ?? Int.max
+                let rightNumber = right?.windowNumber ?? Int.max
+                if leftNumber != rightNumber { return leftNumber > rightNumber }
+                return lhs.generation < rhs.generation
+            }
+        }
+
+        private static func hostWindow(of entry: Entry) -> NSWindow? {
+            guard let host = entry.host else { return nil }
+            return NSApplication.shared.windows.first { ObjectIdentifier($0) == host }
+        }
+
+        private static func eachEntry() -> [Entry] {
+            entries.values.flatMap(\.values)
+        }
+
         private static func resolved(_ entry: Entry) -> Node {
             Node(
                 id: entry.node.id,
@@ -335,7 +384,7 @@ public enum LatchCatalog {
                         throw Error.invalidParent(
                             id: id, parent: parent, reason: "that parent chain is a cycle")
                     }
-                    guard let ancestor = entries[next] else { break }
+                    guard let ancestor = active(id: next) else { break }
                     if let parentWindow = ancestor.node.window, let window,
                         parentWindow != window
                     {
@@ -348,7 +397,7 @@ public enum LatchCatalog {
                     current = ancestor.node.parent
                 }
             }
-            for child in entries.values where child.node.parent == id {
+            for child in eachEntry() where child.node.parent == id {
                 if let childWindow = child.node.window, let window, childWindow != window {
                     throw Error.invalidParent(
                         id: child.node.id,
@@ -362,7 +411,7 @@ public enum LatchCatalog {
 
     public static func press(id: String, action: String? = nil) throws {
         #if DEBUG
-            guard let entry = entries[id] else { throw missing(id: id) }
+            guard let entry = active(id: id) else { throw missing(id: id) }
             guard entry.enabled() else { throw Error.disabled(id: id) }
             let wanted = action ?? "press"
             guard let press = entry.press else {
@@ -385,7 +434,7 @@ public enum LatchCatalog {
 
     public static func set(id: String, value: String) throws {
         #if DEBUG
-            guard let entry = entries[id] else { throw missing(id: id) }
+            guard let entry = active(id: id) else { throw missing(id: id) }
             guard entry.enabled() else { throw Error.disabled(id: id) }
             guard let set = entry.set else {
                 throw Error.actionUnavailable(id: id, action: "set")
@@ -408,7 +457,7 @@ public enum LatchCatalog {
             let token = windowSyncToken
             let owner = ObjectIdentifier(token)
             let liveIDs = Set(app.windows.compactMap(windowCatalogID))
-            for entry in entries.values
+            for entry in eachEntry()
             where entry.node.role == "window" && entry.token == owner {
                 if !liveIDs.contains(entry.node.id) {
                     unregister(id: entry.node.id, token: token)

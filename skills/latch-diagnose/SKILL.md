@@ -50,7 +50,7 @@ bash <latch>/cli/latch.sh --app <slug> ax find <id>
 1. Window visible? `query windows` / `wait window`.
    Hidden vs gone: `window hide` leaves `exists: true`,
    `visible: false`. A missing name or `exists: false` is not hidden.
-   SwiftUI `WindowGroup` identifiers (`main-AppWindow-1`) match as `main`.
+   SwiftUI `WindowGroup` identifiers (`main-AppWindow-1`) match as `main` for a single window. A second instance is listed as `main-AppWindow-2`. Short-name commands follow the window on screen.
    `visible` plus `catalogNodes: 0` is a render stall: the window
    ordered front, SwiftUI never mounted. `ping.display` `asleep` is
    the usual cause (AppKit animation completions do not fire).

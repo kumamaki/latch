@@ -334,6 +334,75 @@ struct LatchCatalogTests {
         #expect(LatchAX.catalogName(from: "window.fetchBox") == "fetchBox")
     }
 
+    @Test("a second instance keeps its own name")
+    @MainActor
+    func secondInstanceIsListedAndDoesNotStealTheScreen() throws {
+        let name = uniqueWindowName()
+        let onScreen = NamedWindowFixture(name: name)
+        let spawned = NamedWindowFixture(name: name, orderFront: false)
+        spawned.window.identifier = NSUserInterfaceItemIdentifier("\(name)-AppWindow-2")
+        defer {
+            onScreen.close()
+            spawned.close()
+        }
+
+        #expect(LatchAX.preferredWindow(named: name) === onScreen.window)
+        let path = try LatchScreenshot.capture(windowName: name, app: "latch-test")
+        #expect(FileManager.default.fileExists(atPath: path))
+
+        var kept = "filled"
+        var empty = ""
+        let onScreenToken = LatchCatalog.Token()
+        let spawnedToken = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "\(name).url",
+            role: "textfield",
+            value: { kept },
+            actions: ["set"],
+            window: name,
+            token: onScreenToken,
+            host: onScreen.window,
+            set: { kept = $0 }
+        )
+        try LatchCatalog.register(
+            id: "\(name).url",
+            role: "textfield",
+            value: { empty },
+            actions: ["set"],
+            window: name,
+            token: spawnedToken,
+            host: spawned.window,
+            set: { empty = $0 }
+        )
+        #expect(try LatchCatalog.find(id: "\(name).url").value == "filled")
+        try LatchCatalog.set(id: "\(name).url", value: "next")
+        #expect(kept == "next")
+        #expect(empty == "")
+
+        LatchCatalog.syncWindows()
+        let names = LatchDefaultOps.liveWindows().map(\.name)
+        #expect(names.contains(name))
+        #expect(names.contains("\(name)-AppWindow-2"))
+
+        try LatchDefaultOps.orderFront("\(name)-AppWindow-2")
+        #expect(spawned.window.isVisible)
+        let spawnedStatus = try #require(
+            LatchDefaultOps.liveWindows().first { $0.name == "\(name)-AppWindow-2" }
+        )
+        #expect(spawnedStatus.visible)
+        #expect(spawnedStatus.exists)
+    }
+
+    @Test("show raises a hidden window of that name")
+    @MainActor
+    func showRaisesHiddenWindow() throws {
+        let fixture = NamedWindowFixture(name: uniqueWindowName(), orderFront: false)
+        defer { fixture.close() }
+        #expect(fixture.window.isVisible == false)
+        try LatchDefaultOps.orderFront(fixture.name)
+        #expect(fixture.window.isVisible)
+    }
+
     @Test("SwiftUI AppWindow suffix still matches the short name")
     @MainActor
     func swiftUIAppWindowSuffixMatches() {
@@ -351,6 +420,8 @@ struct LatchCatalogTests {
         #expect(LatchAX.catalogName(from: "app.window.main-AppWindow-1") == "main")
         #expect(LatchAX.catalogName(from: "main") == "main")
         #expect(LatchAX.catalogName(from: "main-AppWindow-") == "main-AppWindow-")
+        LatchWindowIdentity.apply(name: "main", to: window)
+        #expect(window.identifier?.rawValue == "main-AppWindow-1")
     }
 
     @Test("syncWindows does not mint an AppWindow twin")

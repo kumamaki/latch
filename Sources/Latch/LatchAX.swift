@@ -137,25 +137,25 @@
 
         @MainActor
         public static func windowMatches(_ window: NSWindow, name: String) -> Bool {
-            if let ident = Lens.window(window).identifier, catalogName(from: ident) == name {
+            if let ident = Lens.window(window).identifier, nameFits(ident, name: name) {
                 return true
             }
-            if let raw = window.identifier?.rawValue, catalogName(from: raw) == name {
+            if let raw = window.identifier?.rawValue, nameFits(raw, name: name) {
                 return true
             }
             return false
+        }
+
+        /// Short name (`main`) or the instance name (`main-AppWindow-2`).
+        private static func nameFits(_ raw: String, name: String) -> Bool {
+            catalogName(from: raw) == name || instanceName(from: raw) == name
         }
 
         /// `main`, `window.main`, `app.window.main`, and
         /// `main-AppWindow-1` all name `main`. SwiftUI `WindowGroup`
         /// rewrites the identifier; we match it rather than overwrite.
         static func catalogName(from raw: String) -> String {
-            var name = raw
-            if name.hasPrefix("window.") {
-                name = String(name.dropFirst("window.".count))
-            } else if let range = name.range(of: ".window.") {
-                name = String(name[range.upperBound...])
-            }
+            var name = instanceName(from: raw)
             if let range = name.range(of: "-AppWindow-", options: .backwards) {
                 let suffix = name[range.upperBound...]
                 if !suffix.isEmpty, suffix.allSatisfy(\.isNumber) {
@@ -165,13 +165,58 @@
             return name
         }
 
+        /// Identifier with the `window.` prefix removed. Keeps
+        /// SwiftUI's `-AppWindow-N` so two instances of one scene
+        /// stay addressable.
+        static func instanceName(from raw: String) -> String {
+            if raw.hasPrefix("window.") {
+                return String(raw.dropFirst("window.".count))
+            }
+            if let range = raw.range(of: ".window.") {
+                return String(raw[range.upperBound...])
+            }
+            return raw
+        }
+
+        @MainActor
+        static func instanceName(of window: NSWindow) -> String? {
+            let accessibility = window.accessibilityIdentifier()
+            let raw =
+                accessibility.isEmpty
+                ? window.identifier?.rawValue
+                : accessibility
+            guard let raw, !raw.isEmpty else { return nil }
+            return instanceName(from: raw)
+        }
+
+        /// The window a drive means by `name`.
+        ///
+        /// An exact instance name (`fetchBox-AppWindow-2`) selects that
+        /// window. A short name selects the instance already on screen,
+        /// which is the earlier window when a later `window show` has
+        /// spawned another. A hidden window is the match only when
+        /// nothing of that name is on screen.
+        @MainActor
+        static func preferredWindow(named name: String) -> NSWindow? {
+            let matches = NSApplication.shared.windows.filter {
+                windowMatches($0, name: name)
+            }
+            let exact = matches.filter { instanceName(of: $0) == name }
+            let pool = exact.isEmpty ? matches : exact
+            let visible = pool.filter(\.isVisible)
+            let ranked = visible.isEmpty ? pool : visible
+            return ranked.min { $0.windowNumber < $1.windowNumber }
+        }
+
         @MainActor
         private static func targetWindows(named name: String?) -> [NSWindow] {
             let windows = NSApplication.shared.windows.filter {
                 $0.isVisible || $0.isMiniaturized
             }
             guard let name else { return windows }
-            return windows.filter { windowMatches($0, name: name) }
+            guard let window = preferredWindow(named: name) else { return [] }
+            guard window.isVisible || window.isMiniaturized else { return [] }
+            return [window]
         }
 
         private static let dismissRoles: Set<String> = ["alert", "dialog"]

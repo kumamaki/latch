@@ -4,6 +4,15 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Kernel
+
+- `screenshot`, `ax find`, and `ax set` follow the named window already
+  on screen when another instance of that scene exists.
+- `query windows` lists that other instance under its own name
+  (`fetchBox-AppWindow-2`). One instance still lists as the short name.
+- `window show` raises an existing window, and fails when that window
+  stays off screen.
+
 ## 0.2.0 — 2026-09-23
 
 ### Release contract

@@ -113,50 +113,84 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
                 guard let window = node.window else { continue }
                 catalogNodes[window, default: 0] += 1
             }
-            return nodes.filter { $0.role == "window" }.map {
-                windowStatus(for: $0, catalogNodes: catalogNodes)
+            var rows: [LatchWindowStatus] = []
+            for node in nodes where node.role == "window" {
+                let logical = node.window ?? String(node.id.dropFirst("window.".count))
+                let matches = NSApplication.shared.windows.filter {
+                    LatchAX.windowMatches($0, name: logical)
+                }
+                let count = catalogNodes[logical] ?? 0
+                if matches.isEmpty {
+                    rows.append(
+                        LatchWindowStatus(
+                            name: logical, visible: false, exists: false, catalogNodes: count)
+                    )
+                    continue
+                }
+                for window in matches.sorted(by: { $0.windowNumber < $1.windowNumber }) {
+                    rows.append(
+                        windowStatus(
+                            name: listedName(of: window, among: matches, logical: logical),
+                            window: window,
+                            catalogNodes: count
+                        )
+                    )
+                }
             }
+            return rows
+        }
+
+        /// One instance keeps the short name (`main`). Further instances
+        /// keep the SwiftUI suffix so a drive can target each one.
+        private static func listedName(
+            of window: NSWindow,
+            among matches: [NSWindow],
+            logical: String
+        ) -> String {
+            guard matches.count > 1 else { return logical }
+            guard let instance = LatchAX.instanceName(of: window) else { return logical }
+            let same = matches.filter { LatchAX.instanceName(of: $0) == instance }
+            guard same.count > 1 else { return instance }
+            let earliest = matches.min { $0.windowNumber < $1.windowNumber }
+            if window === earliest { return logical }
+            return "\(logical)-\(window.windowNumber)"
         }
 
         /// `visible` is `NSWindow.isVisible`. Miniaturized and ordered-out
-        /// windows are false. `exists` is a matching AppKit window still in
+        /// windows are false. `exists` is this AppKit window still in
         /// `NSApp.windows`. `catalogNodes` counts snapshot rows whose
-        /// `window` matches, excluding the window chrome row.
+        /// `window` matches the logical name, excluding the window chrome row.
         private static func windowStatus(
-            for node: LatchCatalog.Node,
-            catalogNodes: [String: Int]
+            name: String,
+            window: NSWindow,
+            catalogNodes: Int
         ) -> LatchWindowStatus {
-            let name = node.window ?? String(node.id.dropFirst("window.".count))
-            let count = catalogNodes[name] ?? 0
-            guard
-                let window = NSApplication.shared.windows.first(where: {
-                    LatchAX.windowMatches($0, name: name)
-                })
-            else {
-                return LatchWindowStatus(
-                    name: name, visible: false, exists: false, catalogNodes: count)
-            }
-            return LatchWindowStatus(
-                name: name, visible: window.isVisible, exists: true, catalogNodes: count)
+            LatchWindowStatus(
+                name: name,
+                visible: window.isVisible,
+                exists: true,
+                catalogNodes: catalogNodes
+            )
         }
 
         public static func orderFront(_ name: String) throws {
-            guard
-                let window = NSApplication.shared.windows.first(where: {
-                    LatchAX.windowMatches($0, name: name)
-                })
-            else {
+            guard let window = LatchAX.preferredWindow(named: name) else {
                 throw LatchError.unknownWindow(name: name)
             }
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
             window.makeKeyAndOrderFront(nil)
+            if !window.isVisible {
+                window.orderFrontRegardless()
+            }
+            guard window.isVisible else {
+                throw LatchError.windowNotVisible(name: name)
+            }
         }
 
         public static func orderOut(_ name: String) throws {
-            guard
-                let window = NSApplication.shared.windows.first(where: {
-                    LatchAX.windowMatches($0, name: name)
-                })
-            else {
+            guard let window = LatchAX.preferredWindow(named: name) else {
                 throw LatchError.unknownWindow(name: name)
             }
             window.orderOut(nil)

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Registers a catalog entry for the lifetime of this view.
@@ -19,6 +20,11 @@ public struct LatchControl: ViewModifier {
     private let set: ((String) throws -> Void)?
     #if DEBUG
         @State private var token = LatchCatalog.Token()
+        @State private var mount = Mount()
+
+        private final class Mount {
+            weak var window: NSWindow?
+        }
     #endif
 
     public init(
@@ -58,16 +64,23 @@ public struct LatchControl: ViewModifier {
             let isEnabled = enabled()
             let currentValue = value()
             content
-                .onAppear { publish() }
-                .onChange(of: id) { _, _ in publish() }
-                .onChange(of: role) { _, _ in publish() }
-                .onChange(of: title) { _, _ in publish() }
-                .onChange(of: description) { _, _ in publish() }
-                .onChange(of: actions) { _, _ in publish() }
-                .onChange(of: window) { _, _ in publish() }
-                .onChange(of: parent) { _, _ in publish() }
-                .onChange(of: isEnabled) { _, _ in publish() }
-                .onChange(of: currentValue) { _, _ in publish() }
+                .background {
+                    LatchHostProbe { window in
+                        publish(host: window)
+                    }
+                    .frame(width: 0, height: 0)
+                    .accessibilityHidden(true)
+                }
+                .onAppear { publish(host: nil) }
+                .onChange(of: id) { _, _ in publish(host: nil) }
+                .onChange(of: role) { _, _ in publish(host: nil) }
+                .onChange(of: title) { _, _ in publish(host: nil) }
+                .onChange(of: description) { _, _ in publish(host: nil) }
+                .onChange(of: actions) { _, _ in publish(host: nil) }
+                .onChange(of: window) { _, _ in publish(host: nil) }
+                .onChange(of: parent) { _, _ in publish(host: nil) }
+                .onChange(of: isEnabled) { _, _ in publish(host: nil) }
+                .onChange(of: currentValue) { _, _ in publish(host: nil) }
                 .onDisappear {
                     LatchCatalog.unregister(id: id, token: token)
                 }
@@ -77,8 +90,11 @@ public struct LatchControl: ViewModifier {
     }
 
     #if DEBUG
-        private func publish() {
+        private func publish(host: NSWindow?) {
             guard !Latch.isPreviewProcess else { return }
+            if let host {
+                mount.window = host
+            }
             do {
                 try LatchCatalog.register(
                     id: id,
@@ -93,6 +109,7 @@ public struct LatchControl: ViewModifier {
                     kind: kind,
                     choices: choices,
                     token: token,
+                    host: host ?? mount.window,
                     press: press,
                     set: set
                 )
@@ -102,6 +119,36 @@ public struct LatchControl: ViewModifier {
         }
     #endif
 }
+
+#if DEBUG
+    private struct LatchHostProbe: NSViewRepresentable {
+        var onWindow: (NSWindow?) -> Void
+
+        func makeNSView(context: Context) -> ProbeView {
+            let view = ProbeView()
+            view.onWindow = onWindow
+            return view
+        }
+
+        func updateNSView(_ view: ProbeView, context: Context) {
+            view.onWindow = onWindow
+            view.report()
+        }
+
+        final class ProbeView: NSView {
+            var onWindow: ((NSWindow?) -> Void)?
+
+            override func viewDidMoveToWindow() {
+                super.viewDidMoveToWindow()
+                report()
+            }
+
+            func report() {
+                onWindow?(window)
+            }
+        }
+    }
+#endif
 
 extension View {
     /// Host / label: visible in dump, no press or set.

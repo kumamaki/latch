@@ -26,10 +26,7 @@
 
         @MainActor
         public static func capture(windowName: String, app: String) throws -> String {
-            let window = NSApplication.shared.windows.first {
-                LatchAX.windowMatches($0, name: windowName)
-            }
-            guard let window else {
+            guard let window = LatchAX.preferredWindow(named: windowName) else {
                 throw LatchError.unknownWindow(name: windowName)
             }
             guard window.isVisible else {

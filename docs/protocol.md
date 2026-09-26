@@ -75,7 +75,7 @@ window, excluding the window chrome row. Visible plus zero nodes means
 the window ordered front but SwiftUI never mounted. CLI `wait window`
 needs `exists && visible`. `wait window --hidden` needs
 `exists && !visible`. A missing name or `exists: false` is not hidden.
-SwiftUI `WindowGroup` identifiers (`main-AppWindow-1`) match as `main`.
+SwiftUI `WindowGroup` identifiers (`main-AppWindow-1`) match as `main` while that scene has one window. A second instance is listed under its own name (`main-AppWindow-2`). `screenshot`, `window show`, and catalog reads follow the instance already on screen, or the exact instance name when the drive passes one. `window show` of a window that stays off screen fails.
 
 `ping.display` is `awake` or `asleep` from `CGDisplayIsAsleep` on the
 main display. AppKit animation completions may not fire while asleep.

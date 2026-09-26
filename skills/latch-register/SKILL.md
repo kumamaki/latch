@@ -34,7 +34,9 @@ Mark the window root with `.latchWindow("main")`. That sets
 `NSWindow.identifier` and registers `window.main`. Control `window:`
 only nests a dump node; it does not create the window row.
 SwiftUI `WindowGroup` may rewrite the identifier to `main-AppWindow-1`;
-show / wait / dump still match as `main`.
+show / wait / dump still match as `main` while that scene has one
+window. A second instance is listed as `main-AppWindow-2`. Short-name
+commands follow the window on screen.
 
 ## Wrappers
 
@@ -98,7 +100,9 @@ off-tab controls must vanish. SwiftUI previews
 (`XCODE_RUNNING_FOR_PREVIEWS=1`) do not register and do not bind the
 socket.
 
-Duplicate id from another owner fails loud. Same owner may upsert.
+A different role on an id another owner holds fails loud. Same role
+may remount. A second window registering that id stays beside the one
+on screen; find and set follow the on-screen window. Same owner may upsert.
 
 `window:` is the catalog window name (`main`, `preferences`, …). It nests
 the node in labeled dump.
