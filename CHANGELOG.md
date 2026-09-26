@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.2.1 — 2026-09-27
+
 ### Kernel
 
 - `screenshot`, `ax find`, and `ax set` follow the named window already
