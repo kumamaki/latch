@@ -4,6 +4,15 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Kernel
+
+- `mouseClickPoint` injects the same real AppKit click as `mouseClick`,
+  aimed at a point inside a named window instead of a catalog id.
+  `x`/`y` are points from the top-left of the window's outer frame;
+  off-frame points are rejected, not clamped. For dead space between
+  rows and spots with no catalog id. `latch.sh mouse click-point
+  <window> <x> <y> [left|right]` exposes it.
+
 ## 0.3.0 — 2026-09-30
 
 ### Kernel
