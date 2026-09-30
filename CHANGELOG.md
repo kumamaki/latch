@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.4.0 — 2026-09-30
+
 ### Kernel
 
 - `mouseClickPoint` injects the same real AppKit click as `mouseClick`,
