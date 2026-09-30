@@ -4,6 +4,14 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Kernel
+
+- `mouseClick` synthesizes a real AppKit left/right click at a catalog
+  node's hit point — down and up on the host window. Unlike `press`,
+  which calls the action, this exercises the same event path as a
+  physical click (dismiss-on-outside-click, drag regions, hit-testing).
+  `LatchApp.click` and `latch.sh mouse click` expose it.
+
 ## 0.2.1 — 2026-09-27
 
 ### Kernel
