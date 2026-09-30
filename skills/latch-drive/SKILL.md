@@ -13,7 +13,8 @@ repo (AGENTS.md and/or a skill dir they named) and fills the id table.
 Kernel docs stay in the Latch repo.
 
 Works in any coding agent. Shared rules live in the Latch repo:
-`docs/agent-contract.md`. This repo proves drive with `just e2e`.
+`docs/agent-contract.md`. `examples/Notes` (`just demo`) is the
+reference host to drive by hand.
 
 ## Preconditions
 

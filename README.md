@@ -177,8 +177,7 @@ else.
    examples/Notes/latch.sh ax press editor.new
    ```
 
-`just demo` launches `examples/Notes`, a one-window host. `just e2e`
-builds that app, drives the catalog, and quits it. For a guided
+`just demo` launches `examples/Notes`, a one-window host. For a guided
 install, point your agent at [docs/agent-setup.md](docs/agent-setup.md).
 
 ## In-app assistants
@@ -252,7 +251,6 @@ and any other coding agent can follow them. Shared rules live in
 ```sh
 just test            # unit tests
 just check           # tests + swift-format lint + shellcheck
-just e2e             # live-drive Notes on this machine. Not CI.
 just demo            # launch examples/Notes
 just release minor   # dry-run the next tag; agents stop here
 ```
