@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.3.0 — 2026-09-30
+
 ### Kernel
 
 - `mouseClick` synthesizes a real AppKit left/right click at a catalog
