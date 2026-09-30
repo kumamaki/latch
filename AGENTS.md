@@ -23,7 +23,7 @@ app without computer-use or Screen Recording.
 ## Interface (locked — do not casually reopen)
 
 1. **Catalog is the model.** Press and set call registered handlers. `.accessibilityIdentifier` alone is not enough.
-2. **Catalog is the driver.** Press / set / find hit registered handlers only. Unlabeled `ax dump` is a probe. A miss means register, never fall through to AX.
+2. **Catalog is the driver.** Press / set / find hit registered handlers only. Unlabeled `ax dump` is a probe. `mouseClick` injects a real `NSEvent` on a catalog-resolved frame — input for dispatch behavior (outside-click, right-click), not a press fallback. A miss means register, never fall through to AX.
 3. **Newline-JSON, one-shot.** Wait lives in the CLI so the server never pins a Task.
 4. **File token.** `0600` sibling of the socket. No Keychain, no pairing.
 5. **Socket is DEBUG-only.** `Latch.start` is a no-op in Release. `.latch` and the catalog API compile in every build; the socket, AX, screenshot, token, and catalog-registry impl compile only under `DEBUG` — Release registration is a no-op and in-process queries return empty / `notFound`.

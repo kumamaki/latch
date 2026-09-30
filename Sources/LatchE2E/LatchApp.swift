@@ -213,6 +213,19 @@ public actor LatchApp {
         }
     }
 
+    /// A real synthesized mouse click at the element's frame center.
+    /// Runs the full dispatch path — hit-testing, event monitors — so it
+    /// covers behavior `press` cannot: outside-click dismissal, context
+    /// menus on `right`.
+    public func click(_ id: String, button: String? = nil) async throws {
+        let args: [String: JSONValue] =
+            button.map { ["id": .string(id), "button": .string($0)] }
+            ?? ["id": .string(id)]
+        try await withDiff(action: "mouseClick", id: id) {
+            _ = try await self.send("mouseClick", args: args)
+        }
+    }
+
     public func set(_ id: String, value: String) async throws {
         try await withDiff(action: "axSet", id: id) {
             _ = try await self.send("axSet", args: ["id": .string(id), "value": .string(value)])

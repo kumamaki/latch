@@ -55,6 +55,7 @@ bash <latch>/cli/latch.sh --app <app> doctor
 |---|---|
 | `catalog` / `ax dump --labeled` | Scene catalog (registered handlers) |
 | `ax find` / `press` / `set` | Catalog only. A miss names nearby ids. |
+| `mouse click <id>` / `mouse click <id> right` | Real `NSEvent` on the catalog-resolved frame. Use for dispatch behavior — outside-click dismissal, click-through, right-click menus — not as a faster `press`. |
 | `ax dump` (no `--labeled`) | In-process AX probe. Not the driver. Named dump includes attached sheets. |
 | `ax dismiss` / `ax dismiss <title>` | Frontmost system dialog in this app. Not a catalog id. |
 

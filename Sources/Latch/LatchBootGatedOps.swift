@@ -45,6 +45,10 @@
             try await inner.axDismiss(button: button)
         }
 
+        func mouseClick(id: String, button: String?) async throws {
+            try await inner.mouseClick(id: id, button: button)
+        }
+
         func screenshot(window: String) async throws -> String {
             try await inner.screenshot(window: window)
         }

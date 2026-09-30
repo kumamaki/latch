@@ -88,6 +88,82 @@
             return (hit.object, node)
         }
 
+        /// Post a real mouse click at the element's frame center via
+        /// `NSApp.sendEvent`. Unlike catalog `press`, this runs the whole
+        /// dispatch path — hit-testing, local event monitors, window
+        /// ordering — so drives can reach behavior that only real clicks
+        /// exercise (outside-click dismissal, right-click menus).
+        @MainActor
+        public static func click(id: String, button: String?) throws {
+            let hits = findAll(id: id)
+            guard let hit = preferredHit(hits) else {
+                throw LatchError.elementNotFound(id: id)
+            }
+            let down: NSEvent.EventType
+            let up: NSEvent.EventType
+            switch button {
+            case nil, "left":
+                (down, up) = (.leftMouseDown, .leftMouseUp)
+            case "right":
+                (down, up) = (.rightMouseDown, .rightMouseUp)
+            case let other?:
+                throw LatchError.invalidValue(
+                    id: id, value: other, expected: "left or right")
+            }
+            let frame = hit.frame
+            guard frame != .zero, let window = hostWindow(of: hit) else {
+                throw LatchError.actionUnavailable(id: id, action: "click")
+            }
+            // AX frames are screen points from the primary screen's top
+            // edge; AppKit screen points count up from the bottom.
+            let screenPoint = CGPoint(
+                x: frame.midX,
+                y: NSScreen.screens[0].frame.height - frame.midY
+            )
+            let location = window.convertPoint(fromScreen: screenPoint)
+            for type in [down, up] {
+                guard
+                    let event = NSEvent.mouseEvent(
+                        with: type,
+                        location: location,
+                        modifierFlags: [],
+                        timestamp: ProcessInfo.processInfo.systemUptime,
+                        windowNumber: window.windowNumber,
+                        context: nil,
+                        eventNumber: 0,
+                        clickCount: 1,
+                        pressure: type == down ? 1 : 0
+                    )
+                else {
+                    throw LatchError.opsUnavailable(
+                        reason: "NSEvent.mouseEvent could not synthesize \(type).")
+                }
+                NSApp.sendEvent(event)
+            }
+        }
+
+        /// The window hit-testing should target: the view's own window,
+        /// or the nearest windowed AX ancestor for backing elements.
+        @MainActor
+        private static func hostWindow(of lens: Lens) -> NSWindow? {
+            switch lens {
+            case .window(let window):
+                return window
+            case .view(let view):
+                return view.window
+            case .element, .object:
+                var parent = lens.parent
+                while let current = parent, let next = Lens(current) {
+                    switch next {
+                    case .window(let window): return window
+                    case .view(let view): return view.window
+                    case .element, .object: parent = next.parent
+                    }
+                }
+                return nil
+            }
+        }
+
         @MainActor
         public static func press(id: String, action: String? = nil) throws {
             let hits = findAll(id: id)
@@ -700,6 +776,19 @@
             }
         }
 
+        var parent: Any? {
+            switch self {
+            case .window(let window):
+                return window.accessibilityParent()
+            case .view(let view):
+                return view.accessibilityParent()
+            case .element(let element):
+                return element.accessibilityParent()
+            case .object(let object):
+                return object.ax.accessibilityParent?()
+            }
+        }
+
         var rawChildren: [Any] {
             switch self {
             case .window(let window):
@@ -797,6 +886,7 @@
         @objc optional func accessibilityLabel() -> String
         @objc optional func isAccessibilityEnabled() -> Bool
         @objc optional func accessibilityFrame() -> NSRect
+        @objc optional func accessibilityParent() -> Any
         @objc optional func accessibilityChildren() -> [Any]
         @objc optional func accessibilityChildrenInNavigationOrder() -> [Any]
         @objc optional func accessibilityCustomActions() -> [NSAccessibilityCustomAction]

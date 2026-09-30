@@ -87,6 +87,34 @@ struct LatchProtocolTests {
         #expect(button == nil)
     }
 
+    @Test("decodes mouseClick with a button")
+    func mouseClickButton() throws {
+        let json = Data(
+            #"""
+            {"token":"abc","command":"mouseClick","args":{"id":"fetch.row.1","button":"right"}}
+            """#.utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard case .mouseClick(let id, let button) = request.command else {
+            Issue.record("expected .mouseClick, got \(request.command)")
+            return
+        }
+        #expect(id == "fetch.row.1")
+        #expect(button == "right")
+    }
+
+    @Test("decodes mouseClick without a button")
+    func mouseClickDefault() throws {
+        let json = Data(
+            #"{"token":"abc","command":"mouseClick","args":{"id":"row.1","button":""}}"#
+                .utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard case .mouseClick(_, let button) = request.command else {
+            Issue.record("expected .mouseClick, got \(request.command)")
+            return
+        }
+        #expect(button == nil)
+    }
+
     @Test("decodes axSet")
     func axSet() throws {
         let json = Data(
