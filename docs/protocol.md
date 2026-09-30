@@ -61,6 +61,7 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 | `axSet` | `{id, value}` | `{}` |
 | `axDismiss` | `{button?}` | `{}` — press a button on the frontmost system dialog (NSAlert, SwiftUI `.alert`). Omit `button` for the default. A miss lists the titles. |
 | `mouseClick` | `{id, button?}` | `{}` — synthesize a real mouse click (`left` default, `right` for context menus) at the element's frame center via `NSApp.sendEvent`. Runs the full dispatch path: hit-testing, local event monitors, window ordering. |
+| `mouseClickPoint` | `{window, x, y, button?}` | `{}` — same injected click, aimed at a point instead of a catalog id. `x`/`y` are points from the top-left of the named window's outer frame; points outside the frame are rejected, not clamped. For dead space between rows and spots with no catalog id. |
 | `screenshot` | `{window}` | `{path, note}` — `note` warns that material layers (Liquid Glass, vibrancy) and Metal content may not composite in the capture |
 
 Unknown command names fail. Product verbs are not in the kernel.
@@ -102,9 +103,12 @@ dump hit registered handlers only. Unlabeled `ax dump` walks the
 in-process AX tree as a probe. `mouseClick` injects input: it resolves
 a catalog id to a frame, then sends a real `NSEvent` through
 `NSApp.sendEvent`, so hit-testing, local event monitors, and window
-ordering all run. Reach for it when the behavior under test lives in
-event dispatch — outside-click dismissal, click-through swallowing,
-right-click menus — not to press a registered handler faster.
+ordering all run. `mouseClickPoint` is the same injection aimed at a
+window-relative point — the window is a required name, resolved like
+`screenshot`, and off-frame points fail instead of clamping. Reach for
+these when the behavior under test lives in event dispatch —
+outside-click dismissal, click-through swallowing, right-click menus —
+not to press a registered handler faster.
 
 A miss names nearby catalog ids and tells the agent to register.
 `.accessibilityIdentifier` alone is not enough for any channel.

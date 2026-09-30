@@ -102,6 +102,26 @@ struct LatchProtocolTests {
         #expect(button == "right")
     }
 
+    @Test("decodes mouseClickPoint with a button")
+    func mouseClickPointButton() throws {
+        let json = Data(
+            #"""
+            {"token":"abc","command":"mouseClickPoint","args":{"window":"main","x":12.5,"y":40,"button":"right"}}
+            """#.utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard
+            case .mouseClickPoint(let window, let x, let y, let button) =
+                request.command
+        else {
+            Issue.record("expected .mouseClickPoint, got \(request.command)")
+            return
+        }
+        #expect(window == "main")
+        #expect(x == 12.5)
+        #expect(y == 40)
+        #expect(button == "right")
+    }
+
     @Test("decodes mouseClick without a button")
     func mouseClickDefault() throws {
         let json = Data(

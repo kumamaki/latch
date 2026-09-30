@@ -178,6 +178,9 @@
             case .mouseClick(let id, let button):
                 try await ops.mouseClick(id: id, button: button)
                 return .success()
+            case .mouseClickPoint(let window, let x, let y, let button):
+                try await ops.mouseClickPoint(window: window, x: x, y: y, button: button)
+                return .success()
             case .screenshot(let window):
                 let path = try await ops.screenshot(window: window)
                 return .success(.screenshot(path: path, note: LatchScreenshot.captureNote))

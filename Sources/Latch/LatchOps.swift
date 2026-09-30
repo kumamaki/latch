@@ -16,6 +16,8 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
     func axSet(id: String, value: String) async throws
     func axDismiss(button: String?) async throws
     func mouseClick(id: String, button: String?) async throws
+    func mouseClickPoint(window: String, x: Double, y: Double, button: String?)
+        async throws
     func screenshot(window: String) async throws -> String
 }
 
@@ -104,6 +106,12 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
 
         public func mouseClick(id: String, button: String?) async throws {
             try LatchAX.click(id: id, button: button)
+        }
+
+        public func mouseClickPoint(
+            window: String, x: Double, y: Double, button: String?
+        ) async throws {
+            try LatchAX.clickPoint(window: window, x: x, y: y, button: button)
         }
 
         public func screenshot(window: String) async throws -> String {

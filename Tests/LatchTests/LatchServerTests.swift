@@ -301,6 +301,7 @@ actor FakeLatchOps: LatchOpsProviding {
     var pressError: LatchError?
     var lastDismissButton: String?
     var lastClicked: (id: String, button: String?)?
+    var lastClickedPoint: (window: String, x: Double, y: Double, button: String?)?
     var didDismiss = false
     var dismissError: LatchError?
     var dumpCalls: [(window: String?, labeled: Bool)] = []
@@ -372,6 +373,11 @@ actor FakeLatchOps: LatchOpsProviding {
     }
     func mouseClick(id: String, button: String?) async throws {
         lastClicked = (id, button)
+    }
+    func mouseClickPoint(
+        window: String, x: Double, y: Double, button: String?
+    ) async throws {
+        lastClickedPoint = (window, x, y, button)
     }
     func screenshot(window: String) async throws -> String {
         screenshotWindows.append(window)

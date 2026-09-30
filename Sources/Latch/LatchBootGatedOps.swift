@@ -49,6 +49,12 @@
             try await inner.mouseClick(id: id, button: button)
         }
 
+        func mouseClickPoint(
+            window: String, x: Double, y: Double, button: String?
+        ) async throws {
+            try await inner.mouseClickPoint(window: window, x: x, y: y, button: button)
+        }
+
         func screenshot(window: String) async throws -> String {
             try await inner.screenshot(window: window)
         }

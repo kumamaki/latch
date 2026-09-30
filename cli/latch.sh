@@ -39,6 +39,7 @@ Commands:
   ax set <id> <value>
   ax dismiss [button]
   mouse click <id> [left|right]
+  mouse click-point <window> <x> <y> [left|right]
   catalog [window]
   screenshot <window>
 EOF
@@ -690,6 +691,14 @@ case "$command" in
                     query mouseClick "$(printf '{"id":%s,"button":%s}' "$(json_escape "$1")" "$(json_escape "$2")")"
                 else
                     query mouseClick "$(printf '{"id":%s}' "$(json_escape "$1")")"
+                fi
+                ;;
+            click-point)
+                [[ $# -ge 3 ]] || usage
+                if [[ $# -ge 4 ]]; then
+                    query mouseClickPoint "$(printf '{"window":%s,"x":%s,"y":%s,"button":%s}' "$(json_escape "$1")" "$(json_escape "$2")" "$(json_escape "$3")" "$(json_escape "$4")")"
+                else
+                    query mouseClickPoint "$(printf '{"window":%s,"x":%s,"y":%s}' "$(json_escape "$1")" "$(json_escape "$2")" "$(json_escape "$3")")"
                 fi
                 ;;
             *) usage ;;

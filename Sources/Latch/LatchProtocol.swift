@@ -34,6 +34,7 @@ import Foundation
         case axSet(id: String, value: String)
         case axDismiss(button: String?)
         case mouseClick(id: String, button: String?)
+        case mouseClickPoint(window: String, x: Double, y: Double, button: String?)
         case screenshot(window: String)
 
         fileprivate static func decode(
@@ -73,6 +74,11 @@ import Foundation
                 let args = try container.decode(MouseClickArgs.self, forKey: .args)
                 let button = args.button.flatMap { $0.isEmpty ? nil : $0 }
                 return .mouseClick(id: args.id, button: button)
+            case "mouseClickPoint":
+                let args = try container.decode(MouseClickPointArgs.self, forKey: .args)
+                let button = args.button.flatMap { $0.isEmpty ? nil : $0 }
+                return .mouseClickPoint(
+                    window: args.window, x: args.x, y: args.y, button: button)
             case "screenshot":
                 let args = try container.decode(WindowArgs.self, forKey: .args)
                 return .screenshot(window: args.window)
@@ -110,6 +116,13 @@ import Foundation
 
         private struct MouseClickArgs: Decodable {
             let id: String
+            let button: String?
+        }
+
+        private struct MouseClickPointArgs: Decodable {
+            let window: String
+            let x: Double
+            let y: Double
             let button: String?
         }
     }

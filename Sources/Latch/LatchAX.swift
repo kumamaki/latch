@@ -99,17 +99,7 @@
             guard let hit = preferredHit(hits) else {
                 throw LatchError.elementNotFound(id: id)
             }
-            let down: NSEvent.EventType
-            let up: NSEvent.EventType
-            switch button {
-            case nil, "left":
-                (down, up) = (.leftMouseDown, .leftMouseUp)
-            case "right":
-                (down, up) = (.rightMouseDown, .rightMouseUp)
-            case let other?:
-                throw LatchError.invalidValue(
-                    id: id, value: other, expected: "left or right")
-            }
+            let types = try clickTypes(button: button, id: id)
             let frame = hit.frame
             guard frame != .zero, let window = hostWindow(of: hit) else {
                 throw LatchError.actionUnavailable(id: id, action: "click")
@@ -120,8 +110,68 @@
                 x: frame.midX,
                 y: NSScreen.screens[0].frame.height - frame.midY
             )
+            try postClick(types, in: window, atScreen: screenPoint)
+        }
+
+        /// Post a real mouse click at a point inside a named window.
+        /// `x`/`y` are points from the top-left of the window's outer
+        /// frame, so a drive can aim at spots between catalog rows —
+        /// dead space that should only dismiss a menu — without a
+        /// catalog id to anchor to.
+        @MainActor
+        public static func clickPoint(
+            window name: String, x: Double, y: Double, button: String?
+        ) throws {
+            let types = try clickTypes(button: button, id: name)
+            guard let window = preferredWindow(named: name) else {
+                throw LatchError.unknownWindow(name: name)
+            }
+            guard window.isVisible || window.isMiniaturized else {
+                throw LatchError.windowNotVisible(name: name)
+            }
+            guard x.isFinite, y.isFinite else {
+                throw LatchError.invalidValue(
+                    id: name, value: "\(x),\(y)", expected: "finite points")
+            }
+            let frame = window.frame
+            guard frame.width > 0, frame.height > 0,
+                x >= 0, y >= 0, x < frame.width, y < frame.height
+            else {
+                throw LatchError.invalidValue(
+                    id: name, value: "\(x),\(y)",
+                    expected: "0 ≤ x < \(Int(frame.width)), 0 ≤ y < \(Int(frame.height))")
+            }
+            // The caller's origin is the window's top-left; AppKit
+            // window frames count up from the screen's bottom-left.
+            let screenPoint = CGPoint(
+                x: frame.minX + x,
+                y: frame.maxY - y
+            )
+            try postClick(types, in: window, atScreen: screenPoint)
+        }
+
+        private static func clickTypes(
+            button: String?, id: String
+        ) throws -> (down: NSEvent.EventType, up: NSEvent.EventType) {
+            switch button {
+            case nil, "left":
+                return (.leftMouseDown, .leftMouseUp)
+            case "right":
+                return (.rightMouseDown, .rightMouseUp)
+            case let other?:
+                throw LatchError.invalidValue(
+                    id: id, value: other, expected: "left or right")
+            }
+        }
+
+        @MainActor
+        private static func postClick(
+            _ types: (down: NSEvent.EventType, up: NSEvent.EventType),
+            in window: NSWindow,
+            atScreen screenPoint: CGPoint
+        ) throws {
             let location = window.convertPoint(fromScreen: screenPoint)
-            for type in [down, up] {
+            for type in [types.down, types.up] {
                 guard
                     let event = NSEvent.mouseEvent(
                         with: type,
@@ -132,7 +182,7 @@
                         context: nil,
                         eventNumber: 0,
                         clickCount: 1,
-                        pressure: type == down ? 1 : 0
+                        pressure: type == types.down ? 1 : 0
                     )
                 else {
                     throw LatchError.opsUnavailable(
