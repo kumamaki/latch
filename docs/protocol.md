@@ -60,6 +60,7 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 | `axPress` | `{id, action?}` | `{}` |
 | `axSet` | `{id, value}` | `{}` |
 | `axDismiss` | `{button?}` | `{}` — press a button on the frontmost system dialog (NSAlert, SwiftUI `.alert`). Omit `button` for the default. A miss lists the titles. |
+| `mouseClick` | `{id, button?}` | `{}` — synthesize a real mouse click (`left` default, `right` for context menus) at the element's frame center via `NSApp.sendEvent`. Runs the full dispatch path: hit-testing, local event monitors, window ordering. |
 | `screenshot` | `{window}` | `{path, note}` — `note` warns that material layers (Liquid Glass, vibrancy) and Metal content may not composite in the capture |
 
 Unknown command names fail. Product verbs are not in the kernel.

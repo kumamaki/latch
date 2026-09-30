@@ -38,6 +38,7 @@ Commands:
   ax press <id> [action]
   ax set <id> <value>
   ax dismiss [button]
+  mouse click <id> [left|right]
   catalog [window]
   screenshot <window>
 EOF
@@ -674,6 +675,21 @@ case "$command" in
                     query axDismiss "$(printf '{"button":%s}' "$(json_escape "$1")")"
                 else
                     query axDismiss
+                fi
+                ;;
+            *) usage ;;
+        esac
+        ;;
+    mouse)
+        verb="${1-}"
+        shift || true
+        case "$verb" in
+            click)
+                [[ $# -ge 1 ]] || usage
+                if [[ $# -ge 2 ]]; then
+                    query mouseClick "$(printf '{"id":%s,"button":%s}' "$(json_escape "$1")" "$(json_escape "$2")")"
+                else
+                    query mouseClick "$(printf '{"id":%s}' "$(json_escape "$1")")"
                 fi
                 ;;
             *) usage ;;

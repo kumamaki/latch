@@ -99,6 +99,27 @@ struct LatchServerTests {
         #expect(pressed.action == "start")
     }
 
+    @Test("mouseClick forwards the button")
+    func mouseClickButton() async throws {
+        let ops = FakeLatchOps()
+        let (server, socketURL, token) = try await Self.makeServer(ops: ops)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: socketURL)
+        }
+
+        let response = try Self.roundTrip(
+            socketPath: socketURL.path,
+            request:
+                #"{"token":"\#(token)","command":"mouseClick","args":{"id":"row.1","button":"right"}}"#
+        )
+        let json = try #require(Self.parse(response))
+        #expect(json["ok"] as? Bool == true)
+        let clicked = try #require(await ops.lastClicked)
+        #expect(clicked.id == "row.1")
+        #expect(clicked.button == "right")
+    }
+
     @Test("axDismiss forwards the button title")
     func axDismissNamed() async throws {
         let ops = FakeLatchOps()
@@ -279,6 +300,7 @@ actor FakeLatchOps: LatchOpsProviding {
     var lastPressed: (id: String, action: String?)?
     var pressError: LatchError?
     var lastDismissButton: String?
+    var lastClicked: (id: String, button: String?)?
     var didDismiss = false
     var dismissError: LatchError?
     var dumpCalls: [(window: String?, labeled: Bool)] = []
@@ -347,6 +369,9 @@ actor FakeLatchOps: LatchOpsProviding {
         if let dismissError { throw dismissError }
         didDismiss = true
         lastDismissButton = button
+    }
+    func mouseClick(id: String, button: String?) async throws {
+        lastClicked = (id, button)
     }
     func screenshot(window: String) async throws -> String {
         screenshotWindows.append(window)

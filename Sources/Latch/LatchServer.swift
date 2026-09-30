@@ -175,6 +175,9 @@
             case .axDismiss(let button):
                 try await ops.axDismiss(button: button)
                 return .success()
+            case .mouseClick(let id, let button):
+                try await ops.mouseClick(id: id, button: button)
+                return .success()
             case .screenshot(let window):
                 let path = try await ops.screenshot(window: window)
                 return .success(.screenshot(path: path, note: LatchScreenshot.captureNote))
