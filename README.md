@@ -99,7 +99,10 @@ itself.
   Recording permission never comes up.
 - **AX is a probe.** An unlabeled `ax dump` walks the in-process AX tree
   for orientation. Press, set, and find never fall through to it. A miss
-  means register the control. `ax dismiss` presses the frontmost system
+  means register the control. `mouse click` is the third channel: it
+  resolves a catalog id to a frame and sends a real `NSEvent`, so
+  behavior that only lives in event dispatch — outside-click dismissal,
+  right-click menus — is testable. `ax dismiss` presses the frontmost system
   alert in this app (NSAlert, SwiftUI `.alert`). Named dump nests that
   sheet under the window so the alert copy is readable.
 
@@ -118,7 +121,8 @@ guessing synonyms.
 | `docs/` | Wire protocol, in-process API, agent contract |
 
 Product verbs (`add-note`, `seed`) stay in your app. The kernel knows
-ping, boot, windows, `ax *`, and screenshot, and nothing else.
+ping, boot, windows, `ax *`, `mouseClick`, and screenshot, and nothing
+else.
 
 ## Quick start
 
