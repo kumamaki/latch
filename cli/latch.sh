@@ -40,6 +40,12 @@ Commands:
   ax dismiss [button]
   mouse click <id> [left|right]
   mouse click-point <window> <x> <y> [left|right]
+  mouse drag <from-id> <to-id>
+  mouse drag-point <window> <x> <y> <to-x> <to-y>
+  mouse drag-point <window> <x> <y> <to-window> <to-x> <to-y>
+  mouse drag-session <from-id> <to-id>
+  mouse drag-session-point <window> <x> <y> <to-x> <to-y>
+  mouse drag-session-point <window> <x> <y> <to-window> <to-x> <to-y>
   catalog [window]
   screenshot <window>
 EOF
@@ -48,6 +54,10 @@ EOF
 
 json_escape() {
     python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$1"
+}
+
+json_number() {
+    python3 -c 'import json,sys; print(json.dumps(float(sys.argv[1])))' "$1"
 }
 
 parse_latch_json() {
@@ -696,9 +706,35 @@ case "$command" in
             click-point)
                 [[ $# -ge 3 ]] || usage
                 if [[ $# -ge 4 ]]; then
-                    query mouseClickPoint "$(printf '{"window":%s,"x":%s,"y":%s,"button":%s}' "$(json_escape "$1")" "$(json_escape "$2")" "$(json_escape "$3")" "$(json_escape "$4")")"
+                    query mouseClickPoint "$(printf '{"window":%s,"x":%s,"y":%s,"button":%s}' "$(json_escape "$1")" "$(json_number "$2")" "$(json_number "$3")" "$(json_escape "$4")")"
                 else
-                    query mouseClickPoint "$(printf '{"window":%s,"x":%s,"y":%s}' "$(json_escape "$1")" "$(json_escape "$2")" "$(json_escape "$3")")"
+                    query mouseClickPoint "$(printf '{"window":%s,"x":%s,"y":%s}' "$(json_escape "$1")" "$(json_number "$2")" "$(json_number "$3")")"
+                fi
+                ;;
+            drag)
+                [[ $# -ge 2 ]] || usage
+                query mouseDrag "$(printf '{"from":%s,"to":%s}' "$(json_escape "$1")" "$(json_escape "$2")")"
+                ;;
+            drag-point)
+                if [[ $# -eq 6 ]]; then
+                    query mouseDragPoint "$(printf '{"window":%s,"x":%s,"y":%s,"toWindow":%s,"toX":%s,"toY":%s}' "$(json_escape "$1")" "$(json_number "$2")" "$(json_number "$3")" "$(json_escape "$4")" "$(json_number "$5")" "$(json_number "$6")")"
+                elif [[ $# -eq 5 ]]; then
+                    query mouseDragPoint "$(printf '{"window":%s,"x":%s,"y":%s,"toX":%s,"toY":%s}' "$(json_escape "$1")" "$(json_number "$2")" "$(json_number "$3")" "$(json_number "$4")" "$(json_number "$5")")"
+                else
+                    usage
+                fi
+                ;;
+            drag-session)
+                [[ $# -ge 2 ]] || usage
+                query mouseDragSession "$(printf '{"from":%s,"to":%s}' "$(json_escape "$1")" "$(json_escape "$2")")"
+                ;;
+            drag-session-point)
+                if [[ $# -eq 6 ]]; then
+                    query mouseDragSessionPoint "$(printf '{"window":%s,"x":%s,"y":%s,"toWindow":%s,"toX":%s,"toY":%s}' "$(json_escape "$1")" "$(json_number "$2")" "$(json_number "$3")" "$(json_escape "$4")" "$(json_number "$5")" "$(json_number "$6")")"
+                elif [[ $# -eq 5 ]]; then
+                    query mouseDragSessionPoint "$(printf '{"window":%s,"x":%s,"y":%s,"toX":%s,"toY":%s}' "$(json_escape "$1")" "$(json_number "$2")" "$(json_number "$3")" "$(json_number "$4")" "$(json_number "$5")")"
+                else
+                    usage
                 fi
                 ;;
             *) usage ;;

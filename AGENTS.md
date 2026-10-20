@@ -22,12 +22,12 @@ app without computer-use or Screen Recording.
 ## Interface (locked — do not casually reopen)
 
 1. **Catalog is the model.** Press and set call registered handlers. `.accessibilityIdentifier` alone is not enough.
-2. **Catalog is the driver.** Press / set / find hit registered handlers only. Unlabeled `ax dump` is a probe. `mouseClick` injects a real `NSEvent` on a catalog-resolved frame — input for dispatch behavior (outside-click, right-click), not a press fallback. A miss means register, never fall through to AX.
+2. **Catalog is the driver.** Press / set / find hit registered handlers only. Unlabeled `ax dump` is a probe. `mouseClick` and `mouseDrag` inject real `NSEvent`s — input for dispatch behavior (outside-click, right-click, drag), not a press fallback. The catalog id must be registered, and the frame is the in-process accessibility frame of that same id. A drag between ids aims at an inset clear of labeled children. `mouseDrag` leaves the system pointer where it is. `mouseDragSession` moves the pointer along the drag and puts it back, posts the left button for that gesture, and only when this app is already in front. A press, set, or find miss means register, never fall through to AX.
 3. **Newline-JSON, one-shot.** Wait lives in the CLI so the server never pins a Task.
 4. **File token.** `0600` sibling of the socket. No Keychain, no pairing.
 5. **Socket is DEBUG-only.** `Latch.start` is a no-op in Release. `.latch` and the catalog API compile in every build; the socket, AX, screenshot, token, and catalog-registry impl compile only under `DEBUG` — Release registration is a no-op and in-process queries return empty / `notFound`.
 6. **Fail loud.** Bool is `true` / `false`. No synonym encodings.
-7. **Kernel verbs only.** ping, boot, windows, ax \*, screenshot. Product verbs stay in the app.
+7. **Kernel verbs only.** ping, boot, windows, ax \*, `mouseClick`, `mouseDrag`, `mouseDragSession`, screenshot. Product verbs stay in the app.
 8. **No out-of-process AX.** No System Events. No `screencapture`. Screenshot is `cacheDisplay` on this app's windows.
 9. **One product: the dev harness.** A production in-process catalog is a future explicit opt-in product — never an env var, an adopter flag, or a consumer's `DEBUG` convention.
 

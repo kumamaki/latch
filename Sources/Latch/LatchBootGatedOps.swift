@@ -55,6 +55,30 @@
             try await inner.mouseClickPoint(window: window, x: x, y: y, button: button)
         }
 
+        func mouseDrag(from: String, to: String) async throws {
+            try await inner.mouseDrag(from: from, to: to)
+        }
+
+        func mouseDragPoint(
+            window: String, x: Double, y: Double,
+            toWindow: String?, toX: Double, toY: Double
+        ) async throws {
+            try await inner.mouseDragPoint(
+                window: window, x: x, y: y, toWindow: toWindow, toX: toX, toY: toY)
+        }
+
+        func mouseDragSession(from: String, to: String) async throws {
+            try await inner.mouseDragSession(from: from, to: to)
+        }
+
+        func mouseDragSessionPoint(
+            window: String, x: Double, y: Double,
+            toWindow: String?, toX: Double, toY: Double
+        ) async throws {
+            try await inner.mouseDragSessionPoint(
+                window: window, x: x, y: y, toWindow: toWindow, toX: toX, toY: toY)
+        }
+
         func screenshot(window: String) async throws -> String {
             try await inner.screenshot(window: window)
         }

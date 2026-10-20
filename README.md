@@ -87,9 +87,10 @@ itself.
   code path the human control uses. Latch synthesizes nothing from
   pixels or AX guesses.
 - **The driving surface is DEBUG-only.** `Latch.start` binds a unix
-  socket in Debug builds. Release builds compile none of it: no socket,
-  no catalog, no AX probe, no screenshot. `.latch` passes content
-  through and `Latch.start` is a no-op.
+  socket in Debug builds. `.latch` and the catalog calls compile in
+  every build. Release registration is a no-op: `snapshot()` is empty
+  and `press` / `set` / `find` throw `notFound`. The socket, AX probe,
+  screenshot, and token compile only in Debug.
 - **Auth is a file.** A `0600` token sits next to the socket. Same user,
   same machine, no network, no Keychain, no pairing UI, no TCC prompt.
 - **One request, one response.** The CLI speaks newline-JSON over the
@@ -99,11 +100,17 @@ itself.
   Recording permission never comes up.
 - **AX is a probe.** An unlabeled `ax dump` walks the in-process AX tree
   for orientation. Press, set, and find never fall through to it. A miss
-  means register the control. `mouse click` is the third channel: it
-  resolves a catalog id to a frame and sends a real `NSEvent`, so
-  behavior that only lives in event dispatch — outside-click dismissal,
-  right-click menus — is testable. `ax dismiss` presses the frontmost system
-  alert in this app (NSAlert, SwiftUI `.alert`). Named dump nests that
+  means register the control. `mouse click` and `mouse drag` are the
+  third channel: the id is registered, the frame is that id's
+  accessibility frame, and they send a real `NSEvent`, so behavior
+  that only lives in event dispatch —
+  outside-click dismissal, right-click menus, drags — is testable.
+  `mouse drag` aims at an inset clear of labeled children and leaves
+  the pointer where it is. `mouse drag-session` is the dragging-session
+  path: the pointer tracks the drag and returns, the left button is
+  posted for the gesture, and the app has to already be in front. `ax dismiss`
+  presses the frontmost system alert in this app (NSAlert, SwiftUI
+  `.alert`). Named dump nests that
   sheet under the window so the alert copy is readable.
 
 Encodings fail loud. A bool is `true` or `false` on the wire; `yes`,
@@ -121,8 +128,8 @@ guessing synonyms.
 | `docs/` | Wire protocol, in-process API, agent contract |
 
 Product verbs (`add-note`, `seed`) stay in your app. The kernel knows
-ping, boot, windows, `ax *`, `mouseClick`, and screenshot, and nothing
-else.
+ping, boot, windows, `ax *`, `mouseClick`, `mouseDrag`,
+`mouseDragSession`, and screenshot, and nothing else.
 
 ## Quick start
 
@@ -194,7 +201,7 @@ try Latch.dismiss()
 The in-process API drives DEBUG builds: development runs, tests,
 internal tools. The model only sees what you registered, and hidden
 views vanish from the snapshot. `Latch.dismiss` is chrome for a system
-dialog, not a catalog press. Release builds carry no catalog —
+dialog, not a catalog press. Release registration is a no-op —
 `snapshot()` is empty and `press` / `set` / `find` throw `notFound`.
 A production assistant needs its own drive path; Latch does not ship
 one. See [docs/in-process.md](docs/in-process.md).

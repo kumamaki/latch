@@ -62,6 +62,10 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 | `axDismiss` | `{button?}` | `{}` — press a button on the frontmost system dialog (NSAlert, SwiftUI `.alert`). Omit `button` for the default. A miss lists the titles. |
 | `mouseClick` | `{id, button?}` | `{}` — synthesize a real mouse click (`left` default, `right` for context menus) at the element's frame center via `NSApp.sendEvent`. Runs the full dispatch path: hit-testing, local event monitors, window ordering. |
 | `mouseClickPoint` | `{window, x, y, button?}` | `{}` — same injected click, aimed at a point instead of a catalog id. `x`/`y` are points from the top-left of the named window's outer frame; points outside the frame are rejected, not clamped. For dead space between rows and spots with no catalog id. |
+| `mouseDrag` | `{from, to}` | `{}` — mouse drag from one catalog id to another. Both ids are registered and carry that `accessibilityIdentifier`. The press point is an inset inside the element's frame that is clear of labeled children, so the center of a container is not a child row. Left button only. The system pointer stays where it is. |
+| `mouseDragPoint` | `{window, x, y, toX, toY, toWindow?}` | `{}` — same mouse drag between window points. Coordinates match `mouseClickPoint`. `toWindow` defaults to `window`. The system pointer stays where it is. |
+| `mouseDragSession` | `{from, to}` | `{}` — dragging session between the same two catalog ids, same aim as `mouseDrag`. The system pointer tracks the path and returns when the command finishes. The left button is posted for the gesture. The app has to already be in front. |
+| `mouseDragSessionPoint` | `{window, x, y, toX, toY, toWindow?}` | `{}` — same dragging session between window points. The system pointer tracks the path and returns. The left button is posted for the gesture. |
 | `screenshot` | `{window}` | `{path, note}` — `note` warns that material layers (Liquid Glass, vibrancy) and Metal content may not composite in the capture |
 
 Unknown command names fail. Product verbs are not in the kernel.
@@ -109,6 +113,22 @@ window-relative point — the window is a required name, resolved like
 these when the behavior under test lives in event dispatch —
 outside-click dismissal, click-through swallowing, right-click menus —
 not to press a registered handler faster.
+
+`mouseDrag` is that same input channel held down. It posts
+`leftMouseDown`, `leftMouseDragged` samples about 8 points apart, and
+`leftMouseUp` through `sendEvent`. The system pointer stays where it
+is. `DragGesture` and `mouseDragged` read the event location. A path
+shorter than `DragGesture`'s 10-point minimum is a click.
+`mouseDragPoint` is the same sequence aimed at window points.
+
+`mouseDragSession` is the other consumer. SwiftUI `draggable` / `onDrag`
+and `NSDraggingSession` follow the system pointer and the left button,
+so this command moves the pointer along the path, posts that button
+for the gesture, and puts the pointer back when mouse-up has been
+delivered. It does not activate the app and it does not ask for
+Accessibility permission. If this app is not already in front the
+command fails. `mouseDragSessionPoint` is the same session aimed at
+window points.
 
 A miss names nearby catalog ids and tells the agent to register.
 `.accessibilityIdentifier` alone is not enough for any channel.

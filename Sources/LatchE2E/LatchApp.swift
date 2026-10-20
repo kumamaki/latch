@@ -226,6 +226,67 @@ public actor LatchApp {
         }
     }
 
+    /// Mouse drag from one catalog id to another. Same input channel as
+    /// `click`: a real left-button sequence, aimed at an inset clear of
+    /// labeled children. The system pointer stays where it is.
+    public func drag(from source: String, to dest: String) async throws {
+        try await withDiff(action: "mouseDrag", id: "\(source)->\(dest)") {
+            _ = try await self.send(
+                "mouseDrag",
+                args: ["from": .string(source), "to": .string(dest)])
+        }
+    }
+
+    public func dragPoint(
+        window: String, x: Double, y: Double,
+        toWindow: String? = nil, toX: Double, toY: Double
+    ) async throws {
+        let args = Self.dragPointArgs(
+            window: window, x: x, y: y, toWindow: toWindow, toX: toX, toY: toY)
+        try await withDiff(action: "mouseDragPoint", id: window) {
+            _ = try await self.send("mouseDragPoint", args: args)
+        }
+    }
+
+    /// Dragging session from one catalog id to another. The system
+    /// pointer tracks the path and returns when the command finishes.
+    /// The app has to already be in front.
+    public func dragSession(from source: String, to dest: String) async throws {
+        try await withDiff(action: "mouseDragSession", id: "\(source)->\(dest)") {
+            _ = try await self.send(
+                "mouseDragSession",
+                args: ["from": .string(source), "to": .string(dest)])
+        }
+    }
+
+    public func dragSessionPoint(
+        window: String, x: Double, y: Double,
+        toWindow: String? = nil, toX: Double, toY: Double
+    ) async throws {
+        let args = Self.dragPointArgs(
+            window: window, x: x, y: y, toWindow: toWindow, toX: toX, toY: toY)
+        try await withDiff(action: "mouseDragSessionPoint", id: window) {
+            _ = try await self.send("mouseDragSessionPoint", args: args)
+        }
+    }
+
+    private static func dragPointArgs(
+        window: String, x: Double, y: Double,
+        toWindow: String?, toX: Double, toY: Double
+    ) -> [String: JSONValue] {
+        var fields: [String: JSONValue] = [
+            "window": .string(window),
+            "x": .number(x),
+            "y": .number(y),
+            "toX": .number(toX),
+            "toY": .number(toY),
+        ]
+        if let toWindow {
+            fields["toWindow"] = .string(toWindow)
+        }
+        return fields
+    }
+
     public func set(_ id: String, value: String) async throws {
         try await withDiff(action: "axSet", id: id) {
             _ = try await self.send("axSet", args: ["id": .string(id), "value": .string(value)])

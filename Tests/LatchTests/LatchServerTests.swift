@@ -120,6 +120,48 @@ struct LatchServerTests {
         #expect(clicked.button == "right")
     }
 
+    @Test("mouseDrag forwards both ids")
+    func mouseDragForwards() async throws {
+        let ops = FakeLatchOps()
+        let (server, socketURL, token) = try await Self.makeServer(ops: ops)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: socketURL)
+        }
+
+        let response = try Self.roundTrip(
+            socketPath: socketURL.path,
+            request:
+                #"{"token":"\#(token)","command":"mouseDrag","args":{"from":"bin.source","to":"bin.dest"}}"#
+        )
+        let json = try #require(Self.parse(response))
+        #expect(json["ok"] as? Bool == true)
+        let drag = try #require(await ops.lastDrag)
+        #expect(drag.from == "bin.source")
+        #expect(drag.to == "bin.dest")
+    }
+
+    @Test("mouseDragSession forwards both ids")
+    func mouseDragSessionForwards() async throws {
+        let ops = FakeLatchOps()
+        let (server, socketURL, token) = try await Self.makeServer(ops: ops)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: socketURL)
+        }
+
+        let response = try Self.roundTrip(
+            socketPath: socketURL.path,
+            request:
+                #"{"token":"\#(token)","command":"mouseDragSession","args":{"from":"bin.source","to":"bin.dest"}}"#
+        )
+        let json = try #require(Self.parse(response))
+        #expect(json["ok"] as? Bool == true)
+        let drag = try #require(await ops.lastDragSession)
+        #expect(drag.from == "bin.source")
+        #expect(drag.to == "bin.dest")
+    }
+
     @Test("axDismiss forwards the button title")
     func axDismissNamed() async throws {
         let ops = FakeLatchOps()
@@ -302,6 +344,16 @@ actor FakeLatchOps: LatchOpsProviding {
     var lastDismissButton: String?
     var lastClicked: (id: String, button: String?)?
     var lastClickedPoint: (window: String, x: Double, y: Double, button: String?)?
+    var lastDrag: (from: String, to: String)?
+    var lastDragPoint:
+        (
+            window: String, x: Double, y: Double, toWindow: String?, toX: Double, toY: Double
+        )?
+    var lastDragSession: (from: String, to: String)?
+    var lastDragSessionPoint:
+        (
+            window: String, x: Double, y: Double, toWindow: String?, toX: Double, toY: Double
+        )?
     var didDismiss = false
     var dismissError: LatchError?
     var dumpCalls: [(window: String?, labeled: Bool)] = []
@@ -378,6 +430,24 @@ actor FakeLatchOps: LatchOpsProviding {
         window: String, x: Double, y: Double, button: String?
     ) async throws {
         lastClickedPoint = (window, x, y, button)
+    }
+    func mouseDrag(from: String, to: String) async throws {
+        lastDrag = (from, to)
+    }
+    func mouseDragPoint(
+        window: String, x: Double, y: Double,
+        toWindow: String?, toX: Double, toY: Double
+    ) async throws {
+        lastDragPoint = (window, x, y, toWindow, toX, toY)
+    }
+    func mouseDragSession(from: String, to: String) async throws {
+        lastDragSession = (from, to)
+    }
+    func mouseDragSessionPoint(
+        window: String, x: Double, y: Double,
+        toWindow: String?, toX: Double, toY: Double
+    ) async throws {
+        lastDragSessionPoint = (window, x, y, toWindow, toX, toY)
     }
     func screenshot(window: String) async throws -> String {
         screenshotWindows.append(window)

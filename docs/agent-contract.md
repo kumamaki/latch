@@ -42,8 +42,9 @@ other coding agent can run them.
 - Catalog is the driver. Press / set / find never fall through to AX.
   `.accessibilityIdentifier` is not enough. `ax dismiss` is chrome for
   NSAlert / SwiftUI `.alert`, not a catalog id.
-- `.latch` and `Latch.start` compile in every build. In Release they
-  are inert: no socket, no catalog, no AX, no screenshot.
+- `.latch` and the catalog calls compile in every build. In Release
+  registration is a no-op: `snapshot()` is empty and `press` / `set` /
+  `find` throw `notFound`. No socket, no AX, no screenshot.
 - In-app assistant: `Latch.snapshot` / `press` / `set`, DEBUG builds
   only. No socket.
 - Product verbs stay in the app.

@@ -18,6 +18,16 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
     func mouseClick(id: String, button: String?) async throws
     func mouseClickPoint(window: String, x: Double, y: Double, button: String?)
         async throws
+    func mouseDrag(from: String, to: String) async throws
+    func mouseDragPoint(
+        window: String, x: Double, y: Double,
+        toWindow: String?, toX: Double, toY: Double
+    ) async throws
+    func mouseDragSession(from: String, to: String) async throws
+    func mouseDragSessionPoint(
+        window: String, x: Double, y: Double,
+        toWindow: String?, toX: Double, toY: Double
+    ) async throws
     func screenshot(window: String) async throws -> String
 }
 
@@ -112,6 +122,30 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
             window: String, x: Double, y: Double, button: String?
         ) async throws {
             try LatchAX.clickPoint(window: window, x: x, y: y, button: button)
+        }
+
+        public func mouseDrag(from: String, to: String) async throws {
+            try LatchAX.drag(from: from, to: to)
+        }
+
+        public func mouseDragPoint(
+            window: String, x: Double, y: Double,
+            toWindow: String?, toX: Double, toY: Double
+        ) async throws {
+            try LatchAX.dragPoint(
+                window: window, x: x, y: y, toWindow: toWindow, toX: toX, toY: toY)
+        }
+
+        public func mouseDragSession(from: String, to: String) async throws {
+            try LatchAX.mouseDragSession(from: from, to: to)
+        }
+
+        public func mouseDragSessionPoint(
+            window: String, x: Double, y: Double,
+            toWindow: String?, toX: Double, toY: Double
+        ) async throws {
+            try LatchAX.mouseDragSessionPoint(
+                window: window, x: x, y: y, toWindow: toWindow, toX: toX, toY: toY)
         }
 
         public func screenshot(window: String) async throws -> String {

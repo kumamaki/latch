@@ -181,6 +181,20 @@
             case .mouseClickPoint(let window, let x, let y, let button):
                 try await ops.mouseClickPoint(window: window, x: x, y: y, button: button)
                 return .success()
+            case .mouseDrag(let from, let to):
+                try await ops.mouseDrag(from: from, to: to)
+                return .success()
+            case .mouseDragPoint(let window, let x, let y, let toWindow, let toX, let toY):
+                try await ops.mouseDragPoint(
+                    window: window, x: x, y: y, toWindow: toWindow, toX: toX, toY: toY)
+                return .success()
+            case .mouseDragSession(let from, let to):
+                try await ops.mouseDragSession(from: from, to: to)
+                return .success()
+            case .mouseDragSessionPoint(let window, let x, let y, let toWindow, let toX, let toY):
+                try await ops.mouseDragSessionPoint(
+                    window: window, x: x, y: y, toWindow: toWindow, toX: toX, toY: toY)
+                return .success()
             case .screenshot(let window):
                 let path = try await ops.screenshot(window: window)
                 return .success(.screenshot(path: path, note: LatchScreenshot.captureNote))

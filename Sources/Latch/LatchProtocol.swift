@@ -35,6 +35,14 @@ import Foundation
         case axDismiss(button: String?)
         case mouseClick(id: String, button: String?)
         case mouseClickPoint(window: String, x: Double, y: Double, button: String?)
+        case mouseDrag(from: String, to: String)
+        case mouseDragPoint(
+            window: String, x: Double, y: Double,
+            toWindow: String?, toX: Double, toY: Double)
+        case mouseDragSession(from: String, to: String)
+        case mouseDragSessionPoint(
+            window: String, x: Double, y: Double,
+            toWindow: String?, toX: Double, toY: Double)
         case screenshot(window: String)
 
         fileprivate static func decode(
@@ -79,6 +87,24 @@ import Foundation
                 let button = args.button.flatMap { $0.isEmpty ? nil : $0 }
                 return .mouseClickPoint(
                     window: args.window, x: args.x, y: args.y, button: button)
+            case "mouseDrag":
+                let args = try container.decode(MouseDragArgs.self, forKey: .args)
+                return .mouseDrag(from: args.from, to: args.to)
+            case "mouseDragPoint":
+                let args = try container.decode(MouseDragPointArgs.self, forKey: .args)
+                let toWindow = args.toWindow.flatMap { $0.isEmpty ? nil : $0 }
+                return .mouseDragPoint(
+                    window: args.window, x: args.x, y: args.y,
+                    toWindow: toWindow, toX: args.toX, toY: args.toY)
+            case "mouseDragSession":
+                let args = try container.decode(MouseDragArgs.self, forKey: .args)
+                return .mouseDragSession(from: args.from, to: args.to)
+            case "mouseDragSessionPoint":
+                let args = try container.decode(MouseDragPointArgs.self, forKey: .args)
+                let toWindow = args.toWindow.flatMap { $0.isEmpty ? nil : $0 }
+                return .mouseDragSessionPoint(
+                    window: args.window, x: args.x, y: args.y,
+                    toWindow: toWindow, toX: args.toX, toY: args.toY)
             case "screenshot":
                 let args = try container.decode(WindowArgs.self, forKey: .args)
                 return .screenshot(window: args.window)
@@ -124,6 +150,20 @@ import Foundation
             let x: Double
             let y: Double
             let button: String?
+        }
+
+        private struct MouseDragArgs: Decodable {
+            let from: String
+            let to: String
+        }
+
+        private struct MouseDragPointArgs: Decodable {
+            let window: String
+            let x: Double
+            let y: Double
+            let toWindow: String?
+            let toX: Double
+            let toY: Double
         }
     }
 

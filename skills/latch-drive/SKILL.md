@@ -55,10 +55,17 @@ bash <latch>/cli/latch.sh --app <app> doctor
 | Command | Hits |
 |---|---|
 | `catalog` / `ax dump --labeled` | Scene catalog (registered handlers) |
-| `ax find` / `press` / `set` | Catalog only. A miss names nearby ids. |
-| `mouse click <id>` / `mouse click <id> right` | Real `NSEvent` on the catalog-resolved frame. Use for dispatch behavior — outside-click dismissal, click-through, right-click menus — not as a faster `press`. |
+| `ax find` / `ax press` / `ax set` | Catalog only. A miss names nearby ids. |
+| `mouse click <id>` / `mouse click <id> right` | Real `NSEvent` on the accessibility frame of that catalog id. Use for dispatch behavior — outside-click dismissal, click-through, right-click menus — not as a faster `press`. |
+| `mouse drag <from-id> <to-id>` | Mouse drag between two catalog ids. Aims at an inset clear of labeled children. The pointer stays where it is. For `DragGesture` and `mouseDragged`. |
+| `mouse drag-session <from-id> <to-id>` | Same aim as `mouse drag`. The pointer tracks the path and returns. The app has to already be in front. Posts the left button for the gesture, without an Accessibility prompt, so a dragging session can follow it. |
 | `ax dump` (no `--labeled`) | In-process AX probe. Not the driver. Named dump includes attached sheets. |
-| `ax dismiss` / `ax dismiss <title>` | Frontmost system dialog in this app. Not a catalog id. |
+| `ax dismiss` / `ax dismiss <button>` | Frontmost system dialog in this app. Not a catalog id. |
+
+Window-point forms are `mouse click-point`, `mouse drag-point`, and
+`mouse drag-session-point`. Same rules, aimed at a point in the window
+instead of a catalog id. Wire arguments live in the Latch repo's
+`docs/protocol.md`.
 
 A control is driveable only when it is registered.
 `.accessibilityIdentifier` alone is not enough. Do not pin AX.
@@ -107,6 +114,8 @@ bash <latch>/cli/latch.sh --app <app> ax set <id> <value>
 bash <latch>/cli/latch.sh --app <app> wait ax <id> --value <value>
 bash <latch>/cli/latch.sh --app <app> wait ax <id> --enabled
 bash <latch>/cli/latch.sh --app <app> ax press <id>
+bash <latch>/cli/latch.sh --app <app> mouse drag <from-id> <to-id>
+bash <latch>/cli/latch.sh --app <app> mouse drag-session <from-id> <to-id>
 bash <latch>/cli/latch.sh --app <app> ax dismiss
 bash <latch>/cli/latch.sh --app <app> ax dismiss Cancel
 bash <latch>/cli/latch.sh --app <app> screenshot main

@@ -20,8 +20,9 @@ macOS 15+, Swift 6.
 
 - Catalog is the driver. Press / set / find hit registered handlers
   only. Unlabeled `ax dump` is a probe.
-- Kernel verbs only: ping, boot, windows, `ax *`, screenshot. Product
-  verbs stay in the host app.
+- Kernel verbs only: ping, boot, windows, `ax *`, `mouseClick`,
+  `mouseDrag`, `mouseDragSession`, screenshot. Product verbs stay in
+  the host app.
 - Socket is DEBUG-only. Do not ship it as a product feature.
 - Fail loud. Bool is `true` / `false`. No synonym encodings.
 - No out-of-process AX. No System Events. No `screencapture`.

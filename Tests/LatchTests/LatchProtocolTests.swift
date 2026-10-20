@@ -122,6 +122,80 @@ struct LatchProtocolTests {
         #expect(button == "right")
     }
 
+    @Test("decodes mouseDrag between ids")
+    func mouseDragIDs() throws {
+        let json = Data(
+            #"""
+            {"token":"abc","command":"mouseDrag","args":{"from":"bin.source","to":"bin.dest"}}
+            """#.utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard case .mouseDrag(let from, let to) = request.command else {
+            Issue.record("expected .mouseDrag, got \(request.command)")
+            return
+        }
+        #expect(from == "bin.source")
+        #expect(to == "bin.dest")
+    }
+
+    @Test("decodes mouseDragPoint in one window")
+    func mouseDragPointSameWindow() throws {
+        let json = Data(
+            #"""
+            {"token":"abc","command":"mouseDragPoint","args":{"window":"main","x":12,"y":40,"toX":80,"toY":40}}
+            """#.utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard
+            case .mouseDragPoint(let window, let x, let y, let toWindow, let toX, let toY) =
+                request.command
+        else {
+            Issue.record("expected .mouseDragPoint, got \(request.command)")
+            return
+        }
+        #expect(window == "main")
+        #expect(x == 12)
+        #expect(y == 40)
+        #expect(toWindow == nil)
+        #expect(toX == 80)
+        #expect(toY == 40)
+    }
+
+    @Test("decodes mouseDragSession between ids")
+    func mouseDragSessionIDs() throws {
+        let json = Data(
+            #"""
+            {"token":"abc","command":"mouseDragSession","args":{"from":"bin.source","to":"bin.dest"}}
+            """#.utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard case .mouseDragSession(let from, let to) = request.command else {
+            Issue.record("expected .mouseDragSession, got \(request.command)")
+            return
+        }
+        #expect(from == "bin.source")
+        #expect(to == "bin.dest")
+    }
+
+    @Test("decodes mouseDragSessionPoint in one window")
+    func mouseDragSessionPointSameWindow() throws {
+        let json = Data(
+            #"""
+            {"token":"abc","command":"mouseDragSessionPoint","args":{"window":"main","x":12,"y":40,"toX":80,"toY":40}}
+            """#.utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard
+            case .mouseDragSessionPoint(let window, let x, let y, let toWindow, let toX, let toY) =
+                request.command
+        else {
+            Issue.record("expected .mouseDragSessionPoint, got \(request.command)")
+            return
+        }
+        #expect(window == "main")
+        #expect(x == 12)
+        #expect(y == 40)
+        #expect(toWindow == nil)
+        #expect(toX == 80)
+        #expect(toY == 40)
+    }
+
     @Test("decodes mouseClick without a button")
     func mouseClickDefault() throws {
         let json = Data(

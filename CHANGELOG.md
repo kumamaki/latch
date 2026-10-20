@@ -4,6 +4,21 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Kernel
+
+- `mouseDrag` drags from one catalog id to another. The press point is
+  an inset clear of labeled children, so the center of a container is
+  not a child row. `mouseDragPoint` is the same gesture between window
+  points (`toWindow` optional). Both post a real left-button sequence
+  and leave the system pointer where it is. `latch.sh mouse drag` and
+  `mouse drag-point` expose them.
+- `mouseDragSession` is the dragging-session path between the same two
+  ids. The pointer tracks the path and returns when the command
+  finishes, and the left button is posted for the gesture so a
+  dragging session can follow it. The app has to already be in front.
+  `mouseDragSessionPoint` aims at window points. `latch.sh mouse
+  drag-session` and `mouse drag-session-point` expose them.
+
 ## 0.4.0 — 2026-09-30
 
 ### Kernel
