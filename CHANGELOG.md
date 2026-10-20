@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.5.0 — 2026-10-20
+
 ### Kernel
 
 - `mouseDrag` drags from one catalog id to another. The press point is
