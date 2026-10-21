@@ -76,6 +76,28 @@ struct LatchServerTests {
                 + "may not composite in this capture; verify that UI by eye or via AX."
         )
         #expect(await ops.screenshotWindows == ["main"])
+        #expect(await ops.screenshotIDs == [nil])
+    }
+
+    @Test("screenshot forwards the element id")
+    func screenshotElement() async throws {
+        let ops = FakeLatchOps()
+        await ops.setScreenshotPath("/tmp/note.png")
+        let (server, socketURL, token) = try await Self.makeServer(ops: ops)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: socketURL)
+        }
+
+        let response = try Self.roundTrip(
+            socketPath: socketURL.path,
+            request:
+                #"{"token":"\#(token)","command":"screenshot","args":{"window":"main","id":"note.row"}}"#
+        )
+        let json = try #require(Self.parse(response))
+        #expect(json["ok"] as? Bool == true)
+        #expect(await ops.screenshotWindows == ["main"])
+        #expect(await ops.screenshotIDs == ["note.row"])
     }
 
     @Test("axPress forwards the named action")
@@ -339,6 +361,7 @@ struct LatchServerTests {
 actor FakeLatchOps: LatchOpsProviding {
     var screenshotPath = "/tmp/shot.png"
     var screenshotWindows: [String] = []
+    var screenshotIDs: [String?] = []
     var lastPressed: (id: String, action: String?)?
     var pressError: LatchError?
     var lastDismissButton: String?
@@ -451,6 +474,13 @@ actor FakeLatchOps: LatchOpsProviding {
     }
     func screenshot(window: String) async throws -> String {
         screenshotWindows.append(window)
+        screenshotIDs.append(nil)
+        return screenshotPath
+    }
+
+    func screenshot(window: String, id: String?) async throws -> String {
+        screenshotWindows.append(window)
+        screenshotIDs.append(id)
         return screenshotPath
     }
 }

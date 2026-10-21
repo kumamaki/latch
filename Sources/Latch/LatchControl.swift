@@ -24,6 +24,8 @@ public struct LatchControl: ViewModifier {
 
         private final class Mount {
             weak var window: NSWindow?
+            var host: ObjectIdentifier?
+            var registeredID: String?
         }
     #endif
 
@@ -65,10 +67,9 @@ public struct LatchControl: ViewModifier {
             let currentValue = value()
             content
                 .background {
-                    LatchHostProbe { window in
-                        publish(host: window)
+                    LatchControlProbe { window, probe in
+                        report(host: window, probe: probe)
                     }
-                    .frame(width: 0, height: 0)
                     .accessibilityHidden(true)
                 }
                 .onAppear { publish(host: nil) }
@@ -82,7 +83,8 @@ public struct LatchControl: ViewModifier {
                 .onChange(of: isEnabled) { _, _ in publish(host: nil) }
                 .onChange(of: currentValue) { _, _ in publish(host: nil) }
                 .onDisappear {
-                    LatchCatalog.unregister(id: id, token: token)
+                    LatchCatalog.unregister(id: mount.registeredID ?? id, token: token)
+                    mount.registeredID = nil
                 }
         #else
             content
@@ -90,8 +92,28 @@ public struct LatchControl: ViewModifier {
     }
 
     #if DEBUG
+        private func report(host: NSWindow?, probe: NSView?) {
+            guard !Latch.isPreviewProcess else { return }
+            guard let host else {
+                LatchCatalog.setFrameSource(id: id, token: token, view: nil)
+                mount.window = nil
+                mount.host = nil
+                return
+            }
+            LatchCatalog.setFrameSource(id: id, token: token, view: probe)
+            mount.window = host
+            let identity = ObjectIdentifier(host)
+            guard identity != mount.host else { return }
+            mount.host = identity
+            publish(host: host)
+        }
+
         private func publish(host: NSWindow?) {
             guard !Latch.isPreviewProcess else { return }
+            if let registeredID = mount.registeredID, registeredID != id {
+                LatchCatalog.unregister(id: registeredID, token: token)
+                mount.registeredID = nil
+            }
             if let host {
                 mount.window = host
             }
@@ -113,6 +135,7 @@ public struct LatchControl: ViewModifier {
                     press: press,
                     set: set
                 )
+                mount.registeredID = id
             } catch {
                 assertionFailure("Latch catalog: \(error)")
             }
@@ -121,30 +144,58 @@ public struct LatchControl: ViewModifier {
 }
 
 #if DEBUG
-    private struct LatchHostProbe: NSViewRepresentable {
-        var onWindow: (NSWindow?) -> Void
+    private struct LatchControlProbe: NSViewRepresentable {
+        var onReport: (NSWindow?, NSView?) -> Void
 
         func makeNSView(context: Context) -> ProbeView {
             let view = ProbeView()
-            view.onWindow = onWindow
+            view.onReport = onReport
             return view
         }
 
         func updateNSView(_ view: ProbeView, context: Context) {
-            view.onWindow = onWindow
-            view.report()
+            view.onReport = onReport
+            view.report(force: true)
         }
 
         final class ProbeView: NSView {
-            var onWindow: ((NSWindow?) -> Void)?
+            var onReport: ((NSWindow?, NSView?) -> Void)?
+            private var lastWindow: ObjectIdentifier?
+            private var hasFrameSource = false
 
             override func viewDidMoveToWindow() {
                 super.viewDidMoveToWindow()
                 report()
             }
 
-            func report() {
-                onWindow?(window)
+            override func layout() {
+                super.layout()
+                report()
+            }
+
+            /// A background probe must not eat clicks meant for the
+            /// control it measures.
+            override func hitTest(_ point: NSPoint) -> NSView? {
+                nil
+            }
+
+            func report(force: Bool = false) {
+                guard !Latch.isPreviewProcess else { return }
+                guard let window else {
+                    if lastWindow != nil || hasFrameSource {
+                        lastWindow = nil
+                        hasFrameSource = false
+                        onReport?(nil, nil)
+                    }
+                    return
+                }
+                let identity = ObjectIdentifier(window)
+                let hasUsableBounds = bounds.width >= 1 && bounds.height >= 1
+                guard force || identity != lastWindow || (hasUsableBounds && !hasFrameSource)
+                else { return }
+                lastWindow = identity
+                if hasUsableBounds { hasFrameSource = true }
+                onReport?(window, self)
             }
         }
     }

@@ -119,7 +119,14 @@ bash <latch>/cli/latch.sh --app <app> mouse drag-session <from-id> <to-id>
 bash <latch>/cli/latch.sh --app <app> ax dismiss
 bash <latch>/cli/latch.sh --app <app> ax dismiss Cancel
 bash <latch>/cli/latch.sh --app <app> screenshot main
+bash <latch>/cli/latch.sh --app <app> screenshot main <id>
 ```
+
+`screenshot <window> <id>` crops the window bitmap to that catalog
+element's visible area. `.latch` registrations use current view geometry
+and respect ancestor clipping; AppKit registrations use the accessibility
+frame, clipped by a visible ancestor view when available. The id must be
+registered and mounted in that window.
 
 Screenshots skip material layers — Liquid Glass, vibrancy, and
 Metal-backed content may not composite. The response `note` repeats

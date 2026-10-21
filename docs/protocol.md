@@ -66,7 +66,7 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 | `mouseDragPoint` | `{window, x, y, toX, toY, toWindow?}` | `{}` — same mouse drag between window points. Coordinates match `mouseClickPoint`. `toWindow` defaults to `window`. The system pointer stays where it is. |
 | `mouseDragSession` | `{from, to}` | `{}` — dragging session between the same two catalog ids, same aim as `mouseDrag`. The system pointer tracks the path and returns when the command finishes. The left button is posted for the gesture. The app has to already be in front. |
 | `mouseDragSessionPoint` | `{window, x, y, toX, toY, toWindow?}` | `{}` — same dragging session between window points. The system pointer tracks the path and returns. The left button is posted for the gesture. |
-| `screenshot` | `{window}` | `{path, note}` — `note` warns that material layers (Liquid Glass, vibrancy) and Metal content may not composite in the capture |
+| `screenshot` | `{window, id?}` | `{path, note}` — `id` crops to that catalog element's frame; omit it for the whole window. `note` warns that material layers (Liquid Glass, vibrancy) and Metal content may not composite in the capture |
 
 Unknown command names fail. Product verbs are not in the kernel.
 
@@ -134,6 +134,15 @@ A miss names nearby catalog ids and tells the agent to register.
 `.accessibilityIdentifier` alone is not enough for any channel.
 `axDismiss` is chrome: it presses a system dialog in this app, not a
 catalog id.
+
+Screenshot by `id` uses the same registration rule. `.latch` controls
+use their live visible view bounds, including clipping by ancestor
+views; an AppKit registration falls back to that id's accessibility
+frame, clipped by its nearest visible ancestor view when available. The
+crop must overlap the named window and have visible pixels. Only an
+omitted `id` selects the whole window; an empty `id` fails as a catalog
+miss. The crop comes from the window bitmap, so material layers behave
+exactly as in a whole-window shot. The filename carries the id.
 
 Named unlabeled dump nests attached sheets under that window so an
 alert is visible next to the parent content. `cell` / `statictext` /

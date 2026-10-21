@@ -4,6 +4,16 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Kernel
+
+- `screenshot` takes an optional catalog `id`. With one, the window
+  bitmap is cropped to that element's visible frame at backing scale
+  (`.latch` uses live clipped geometry; AppKit ids use their
+  accessibility frame). Omit the id for the whole window. The id must
+  be registered and mounted in the named window, and a miss or an
+  off-window frame fails loud.
+  `latch.sh screenshot <window> <id>` exposes it.
+
 ## 0.5.0 — 2026-10-20
 
 ### Kernel

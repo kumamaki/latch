@@ -47,7 +47,7 @@ Commands:
   mouse drag-session-point <window> <x> <y> <to-x> <to-y>
   mouse drag-session-point <window> <x> <y> <to-window> <to-x> <to-y>
   catalog [window]
-  screenshot <window>
+  screenshot <window> [id]
 EOF
     exit 64
 }
@@ -744,8 +744,12 @@ case "$command" in
         flatten_catalog "$(labeled_dump "${1-}")"
         ;;
     screenshot)
-        [[ $# -ge 1 ]] || usage
-        query screenshot "$(printf '{"window":%s}' "$(json_escape "$1")")"
+        [[ $# -ge 1 && $# -le 2 ]] || usage
+        if [[ $# -eq 2 ]]; then
+            query screenshot "$(printf '{"window":%s,"id":%s}' "$(json_escape "$1")" "$(json_escape "$2")")"
+        else
+            query screenshot "$(printf '{"window":%s}' "$(json_escape "$1")")"
+        fi
         ;;
     *) usage ;;
 esac

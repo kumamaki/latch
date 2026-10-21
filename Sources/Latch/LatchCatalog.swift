@@ -165,10 +165,29 @@ public enum LatchCatalog {
             var generation: Int
         }
 
+        private final class FrameSource {
+            weak var view: NSView?
+
+            init(view: NSView) {
+                self.view = view
+            }
+        }
+
+        enum ScreenshotFrame {
+            case visible(NSRect)
+            case clipped
+            case otherWindow
+            case needsAccessibility
+        }
+
         /// Owners of one catalog id. A second window of the same scene
         /// registers beside the one already on screen; reads follow the
         /// on-screen owner instead of the latest mount.
         private static var entries: [String: [ObjectIdentifier: Entry]] = [:]
+        /// Weak probes for mounted SwiftUI controls, keyed by catalog id
+        /// and owner. Geometry is read in the current window at capture
+        /// time so window moves and clip-view scrolling stay current.
+        private static var frameSources: [String: [ObjectIdentifier: FrameSource]] = [:]
         private static var nextGeneration = 0
         private static let windowSyncToken = Token()
         private static var updateSubscribers: [UUID: UpdateSubscriber] = [:]
@@ -184,6 +203,7 @@ public enum LatchCatalog {
     public static func reset() {
         #if DEBUG
             entries.removeAll()
+            frameSources.removeAll()
             nextGeneration = 0
             updateFlushScheduled = false
             updateGeneration += 1
@@ -286,6 +306,7 @@ public enum LatchCatalog {
     public static func unregister(id: String, token: Token) {
         #if DEBUG
             let owner = ObjectIdentifier(token)
+            removeFrameSource(id: id, owner: owner)
             guard entries[id]?[owner] != nil else { return }
             entries[id]?.removeValue(forKey: owner)
             if entries[id]?.isEmpty != false {
@@ -319,6 +340,42 @@ public enum LatchCatalog {
     }
 
     #if DEBUG
+        static func screenshotFrame(id: String, in window: NSWindow) -> ScreenshotFrame {
+            guard let group = entries[id] else { return .needsAccessibility }
+            let windowID = ObjectIdentifier(window)
+            let matches = group.values.filter { $0.host == windowID }
+            guard let entry = matches.max(by: loses) else {
+                let hasUnknownHost = group.values.contains { $0.host == nil }
+                let hasOtherHost = group.values.contains { $0.host != nil }
+                return hasOtherHost && !hasUnknownHost ? .otherWindow : .needsAccessibility
+            }
+            guard let view = frameSources[id]?[entry.token]?.view,
+                view.window === window
+            else {
+                return .needsAccessibility
+            }
+            let visible = view.visibleRect.intersection(view.bounds)
+            guard visible.width >= 1, visible.height >= 1 else { return .clipped }
+            return .visible(window.convertToScreen(view.convert(visible, to: nil)))
+        }
+
+        static func setFrameSource(id: String, token: Token, view: NSView?) {
+            let owner = ObjectIdentifier(token)
+            guard let view, view.bounds.width >= 1, view.bounds.height >= 1 else {
+                removeFrameSource(id: id, owner: owner)
+                return
+            }
+            if frameSources[id]?[owner]?.view === view { return }
+            frameSources[id, default: [:]][owner] = FrameSource(view: view)
+        }
+
+        private static func removeFrameSource(id: String, owner: ObjectIdentifier) {
+            frameSources[id]?.removeValue(forKey: owner)
+            if frameSources[id]?.isEmpty == true {
+                frameSources.removeValue(forKey: id)
+            }
+        }
+
         /// On-screen instance wins. Two owners with no window (a remount
         /// that has not moved to a window yet) keep the later registration.
         private static func active(id: String) -> Entry? {

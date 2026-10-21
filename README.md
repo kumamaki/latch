@@ -96,8 +96,9 @@ itself.
 - **One request, one response.** The CLI speaks newline-JSON over the
   socket. Waiting and polling live in the CLI, never in the server.
 - **Screenshots stay in-process.** `cacheDisplay` renders this app's own
-  window frames (title bar and toolbar included) to PNG. Screen
-  Recording permission never comes up.
+  window frames (title bar and toolbar included) to PNG, or crops that
+  bitmap to one registered catalog element. Screen Recording permission
+  never comes up.
 - **AX is a probe.** An unlabeled `ax dump` walks the in-process AX tree
   for orientation. Press, set, and find never fall through to it. A miss
   means register the control. `mouse click` and `mouse drag` are the
@@ -227,8 +228,9 @@ by pasting that path into every command.
 - You register controls by hand. That is deliberate; the catalog is an
   allow-list, and the agent can only touch what you put on it.
 - Screenshots include the title bar and toolbar. Metal-backed layers
-  may still render blank. The catalog and the AX probe stay the source
-  of truth there.
+  may still render blank. Element shots crop the same window bitmap to
+  a registered id's frame, so they do not fix material layers. The
+  catalog and the AX probe stay the source of truth there.
 - Latch is a development harness. The socket serves one local user in
   Debug builds, and Release builds carry none of the driving surface.
 

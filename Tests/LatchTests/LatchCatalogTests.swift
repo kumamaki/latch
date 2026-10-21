@@ -334,6 +334,131 @@ struct LatchCatalogTests {
         #expect(LatchAX.catalogName(from: "window.fetchBox") == "fetchBox")
     }
 
+    @Test("screenshot crops to a registered element")
+    @MainActor
+    func screenshotElementCrop() throws {
+        let name = uniqueWindowName()
+        let fixture = NamedWindowFixture(name: name)
+        defer { fixture.close() }
+
+        let content = try #require(fixture.window.contentView)
+        let element = NSView(frame: NSRect(x: 24, y: 18, width: 64, height: 40))
+        element.setAccessibilityElement(true)
+        element.setAccessibilityRole(.group)
+        element.setAccessibilityIdentifier("\(name).target")
+        content.addSubview(element)
+
+        let token = LatchCatalog.Token()
+        try LatchCatalog.register(
+            id: "\(name).target", role: "group", window: name, token: token,
+            host: fixture.window)
+        defer { LatchCatalog.unregister(id: "\(name).target", token: token) }
+
+        let path = try LatchScreenshot.capture(
+            windowName: name, elementID: "\(name).target", app: "latch-test")
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        #expect(URL(fileURLWithPath: path).lastPathComponent.contains(".target-"))
+
+        let data = try Data(contentsOf: URL(fileURLWithPath: path))
+        let rep = try #require(NSBitmapImageRep(data: data))
+        let scale = fixture.window.backingScaleFactor
+        #expect(abs(CGFloat(rep.pixelsWide) - 64 * scale) <= 1)
+        #expect(abs(CGFloat(rep.pixelsHigh) - 40 * scale) <= 1)
+    }
+
+    @Test("screenshot uses the catalog frame when AX has no id")
+    @MainActor
+    func screenshotCatalogFrame() throws {
+        let name = uniqueWindowName()
+        let fixture = NamedWindowFixture(name: name)
+        defer { fixture.close() }
+
+        let content = try #require(fixture.window.contentView)
+        let id = "\(name).probe"
+        let size = NSSize(width: 40, height: 24)
+        let host = NSHostingView(
+            rootView: Color.red
+                .frame(width: size.width, height: size.height)
+                .latch(id, role: "label"))
+        host.frame = NSRect(origin: NSPoint(x: 40, y: 25), size: size)
+        content.addSubview(host)
+        host.layoutSubtreeIfNeeded()
+        fixture.window.displayIfNeeded()
+
+        let path = try LatchScreenshot.capture(
+            windowName: name, elementID: id, app: "latch-test")
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        let data = try Data(contentsOf: URL(fileURLWithPath: path))
+        let rep = try #require(NSBitmapImageRep(data: data))
+        let scale = fixture.window.backingScaleFactor
+        #expect(abs(CGFloat(rep.pixelsWide) - size.width * scale) <= 1)
+        #expect(abs(CGFloat(rep.pixelsHigh) - size.height * scale) <= 1)
+    }
+
+    @Test("screenshot uses the frame from the exact named window")
+    @MainActor
+    func screenshotExactWindowFrame() throws {
+        let name = uniqueWindowName()
+        let first = NamedWindowFixture(name: name)
+        let second = NamedWindowFixture(name: name, orderFront: false)
+        second.window.identifier = NSUserInterfaceItemIdentifier("\(name)-AppWindow-2")
+        second.window.orderFrontRegardless()
+        defer {
+            first.close()
+            second.close()
+        }
+
+        let firstToken = LatchCatalog.Token()
+        let secondToken = LatchCatalog.Token()
+        let id = "\(name).target"
+        try LatchCatalog.register(
+            id: id, role: "group", window: name, token: firstToken, host: first.window)
+        try LatchCatalog.register(
+            id: id, role: "group", window: name, token: secondToken, host: second.window)
+        defer {
+            LatchCatalog.unregister(id: id, token: firstToken)
+            LatchCatalog.unregister(id: id, token: secondToken)
+        }
+
+        for (fixture, token, size) in [
+            (first, firstToken, NSSize(width: 64, height: 40)),
+            (second, secondToken, NSSize(width: 32, height: 20)),
+        ] {
+            let content = try #require(fixture.window.contentView)
+            let view = NSView(frame: NSRect(origin: NSPoint(x: 20, y: 20), size: size))
+            content.addSubview(view)
+            LatchCatalog.setFrameSource(id: id, token: token, view: view)
+        }
+        let path = try LatchScreenshot.capture(
+            windowName: "\(name)-AppWindow-2", elementID: id, app: "latch-test")
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        let data = try Data(contentsOf: URL(fileURLWithPath: path))
+        let rep = try #require(NSBitmapImageRep(data: data))
+        let scale = second.window.backingScaleFactor
+        #expect(abs(CGFloat(rep.pixelsWide) - 32 * scale) <= 1)
+        #expect(abs(CGFloat(rep.pixelsHigh) - 20 * scale) <= 1)
+    }
+
+    @Test("screenshot of an unregistered element names the miss")
+    @MainActor
+    func screenshotElementMiss() throws {
+        let name = uniqueWindowName()
+        let fixture = NamedWindowFixture(name: name)
+        defer { fixture.close() }
+
+        do {
+            _ = try LatchScreenshot.capture(
+                windowName: name, elementID: "\(name).missing", app: "latch-test")
+            Issue.record("expected elementNotFound")
+        } catch let error as LatchError {
+            guard case .elementNotFound(let id, _) = error else {
+                Issue.record("expected elementNotFound, got \(error)")
+                return
+            }
+            #expect(id == "\(name).missing")
+        }
+    }
+
     @Test("a second instance keeps its own name")
     @MainActor
     func secondInstanceIsListedAndDoesNotStealTheScreen() throws {

@@ -81,5 +81,6 @@ instead of the value, the control is not registered as a field.
 ## Screenshot
 
 `cacheDisplay` on this app's window frame (title bar and toolbar
-included). Metal layers may come back blank. Catalog frames stay 0.
-That is not a Latch outage.
+included), or cropped to one registered element's visible area with
+`screenshot <window> <id>`. Metal layers may come back blank. Catalog
+frames stay 0. That is not a Latch outage.

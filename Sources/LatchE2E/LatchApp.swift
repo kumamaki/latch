@@ -302,8 +302,12 @@ public actor LatchApp {
     }
 
     @discardableResult
-    public func screenshot(window: String = "main") async throws -> URL {
-        let data = try await send("screenshot", args: ["window": .string(window)])
+    public func screenshot(window: String = "main", id: String? = nil) async throws -> URL {
+        var args: [String: JSONValue] = ["window": .string(window)]
+        if let id {
+            args["id"] = .string(id)
+        }
+        let data = try await send("screenshot", args: args)
         guard let path = data["path"]?.stringValue else {
             throw LatchE2EError.server(
                 code: "protocol", message: "screenshot response without path")

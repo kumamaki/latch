@@ -20,7 +20,8 @@ Latch is a development harness. The socket is DEBUG-only. Treat it as one.
   Recording.
 - No product verbs. An agent can only press and set what the app
   registered.
-- Screenshots are `cacheDisplay` of this app's own window frames.
+- Screenshots are `cacheDisplay` of this app's own window frames, or a
+  crop of that bitmap to a registered element's frame.
 
 ## Reporting a vulnerability
 

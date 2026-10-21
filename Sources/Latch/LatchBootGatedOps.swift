@@ -82,5 +82,9 @@
         func screenshot(window: String) async throws -> String {
             try await inner.screenshot(window: window)
         }
+
+        func screenshot(window: String, id: String?) async throws -> String {
+            try await inner.screenshot(window: window, id: id)
+        }
     }
 #endif

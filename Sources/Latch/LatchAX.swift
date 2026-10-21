@@ -90,6 +90,83 @@
             return (hit.object, node)
         }
 
+        /// Visible frame for a catalog id inside `window`, in AppKit screen
+        /// space. `.latch` supplies live view geometry; AppKit registrations
+        /// fall back to the id's accessibility frame. Catalog registration
+        /// is checked first so a screenshot miss still teaches "register".
+        @MainActor
+        static func elementFrame(
+            id: String, in window: NSWindow, windowName: String
+        ) throws -> NSRect {
+            do {
+                _ = try LatchCatalog.find(id: id)
+            } catch let error as LatchCatalog.Error {
+                throw LatchError(error)
+            }
+            // SwiftUI controls often have no reachable AX id, so use their
+            // live view geometry first. The probe resolves window-local and
+            // clipped geometry at capture time.
+            switch LatchCatalog.screenshotFrame(id: id, in: window) {
+            case .visible(let frame):
+                return frame
+            case .clipped:
+                throw LatchError.actionUnavailable(
+                    id: id,
+                    action: "screenshot (outside the visible area of window \(windowName))")
+            case .otherWindow:
+                throw LatchError.actionUnavailable(
+                    id: id,
+                    action: "screenshot (not mounted in window \(windowName))")
+            case .needsAccessibility:
+                break
+            }
+            var hits: [Lens] = []
+            collect(id: id, in: .window(window), depth: 0, into: &hits)
+            guard let hit = preferredHit(hits) else {
+                throw LatchError.actionUnavailable(
+                    id: id,
+                    action:
+                        "screenshot (no frame in window \(windowName); "
+                        + "AppKit ids need an accessibilityIdentifier)"
+                )
+            }
+            guard let frame = visibleFrame(of: hit, in: window) else {
+                throw LatchError.actionUnavailable(
+                    id: id, action: "screenshot (no visible frame in window \(windowName))")
+            }
+            return frame
+        }
+
+        @MainActor
+        private static func visibleFrame(of hit: Lens, in window: NSWindow) -> NSRect? {
+            var frame = hit.frame
+            guard frame.width >= 1, frame.height >= 1 else { return nil }
+            var current: Lens? = hit
+            var seen: Set<ObjectIdentifier> = []
+            var depth = 0
+            while let lens = current, depth < maxDepth {
+                switch lens {
+                case .view(let view):
+                    guard view.window === window else { return nil }
+                    let visible = view.visibleRect.intersection(view.bounds)
+                    guard visible.width >= 1, visible.height >= 1 else { return nil }
+                    let clip = window.convertToScreen(view.convert(visible, to: nil))
+                    frame = frame.intersection(clip)
+                    return frame.width >= 1 && frame.height >= 1 ? frame : nil
+                case .window(let parentWindow):
+                    guard parentWindow === window else { return nil }
+                    return frame
+                case .element, .object:
+                    guard seen.insert(ObjectIdentifier(lens.object)).inserted else {
+                        return nil
+                    }
+                    current = lens.parent.flatMap { Lens($0) }
+                }
+                depth += 1
+            }
+            return current == nil ? frame : nil
+        }
+
         /// Post a real mouse click at the element's frame center via
         /// `NSApp.sendEvent`. Unlike catalog `press`, this runs the whole
         /// dispatch path — hit-testing, local event monitors, window

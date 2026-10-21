@@ -29,6 +29,16 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
         toWindow: String?, toX: Double, toY: Double
     ) async throws
     func screenshot(window: String) async throws -> String
+    func screenshot(window: String, id: String?) async throws -> String
+}
+
+extension LatchOpsProviding {
+    /// Older custom ops providers can keep supporting whole-window captures.
+    /// Providers opt into element screenshots by implementing this overload.
+    public func screenshot(window: String, id: String?) async throws -> String {
+        guard let id else { return try await screenshot(window: window) }
+        throw LatchError.actionUnavailable(id: id, action: "element screenshot")
+    }
 }
 
 /// Default ops: catalog drive, unlabeled AX dump, screenshot.
@@ -150,6 +160,10 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
 
         public func screenshot(window: String) async throws -> String {
             try LatchScreenshot.capture(windowName: window, app: appName)
+        }
+
+        public func screenshot(window: String, id: String?) async throws -> String {
+            try LatchScreenshot.capture(windowName: window, elementID: id, app: appName)
         }
 
         public static func liveWindows() -> [LatchWindowStatus] {

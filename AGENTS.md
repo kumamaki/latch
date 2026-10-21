@@ -29,7 +29,9 @@ app without computer-use or Screen Recording.
 6. **Fail loud.** Bool is `true` / `false`. No synonym encodings.
 7. **Kernel verbs only.** ping, boot, windows, ax \*, `mouseClick`, `mouseDrag`, `mouseDragSession`, screenshot. Product verbs stay in the app.
 8. **No out-of-process AX.** No System Events. No `screencapture`. Screenshot is `cacheDisplay` on this app's windows.
+   Element crops resolve live view geometry in the selected window and respect current visible bounds; do not cache screen-space frames from layout callbacks.
 9. **One product: the dev harness.** A production in-process catalog is a future explicit opt-in product — never an env var, an adopter flag, or a consumer's `DEBUG` convention.
+10. **Public protocols are adopter APIs.** New requirements need a default implementation that preserves existing conformers, unless the release is explicitly breaking.
 
 ## Commands
 
