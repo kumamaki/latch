@@ -194,7 +194,7 @@ into a web or GPUI project.
 **Git**:
 
 ```swift
-.package(url: "https://github.com/kumamaki/latch", from: "0.5.0")
+.package(url: "https://github.com/kumamaki/latch", from: "0.6.0")
 // target:
 .product(name: "Latch", package: "Latch")
 ```

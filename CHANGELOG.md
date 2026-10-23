@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.6.0 — 2026-10-23
+
 ### Kernel
 
 - `screenshot` takes an optional catalog `id`. With one, the window
