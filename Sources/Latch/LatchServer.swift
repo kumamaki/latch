@@ -195,8 +195,8 @@
                 try await ops.mouseDragSessionPoint(
                     window: window, x: x, y: y, toWindow: toWindow, toX: toX, toY: toY)
                 return .success()
-            case .screenshot(let window, let id):
-                let path = try await ops.screenshot(window: window, id: id)
+            case .screenshot(let window, let options):
+                let path = try await ops.screenshot(window: window, options: options)
                 return .success(.screenshot(path: path, note: LatchScreenshot.captureNote))
             }
         }

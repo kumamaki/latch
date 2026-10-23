@@ -5,6 +5,11 @@ import Foundation
 /// everything down. Replaces the plist launch / cleanup glue that
 /// lived in e2e setup scripts.
 public actor LatchApp {
+    public enum ScreenshotFrame: String, Sendable {
+        case black
+        case white
+    }
+
     public struct Config: Sendable {
         public var executableURL: URL
         public var slug: String
@@ -302,10 +307,21 @@ public actor LatchApp {
     }
 
     @discardableResult
-    public func screenshot(window: String = "main", id: String? = nil) async throws -> URL {
+    public func screenshot(
+        window: String = "main",
+        id: String? = nil,
+        frame: ScreenshotFrame? = nil,
+        padding: Double? = nil
+    ) async throws -> URL {
         var args: [String: JSONValue] = ["window": .string(window)]
         if let id {
             args["id"] = .string(id)
+        }
+        if let frame {
+            args["frame"] = .string(frame.rawValue)
+        }
+        if let padding {
+            args["padding"] = .number(padding)
         }
         let data = try await send("screenshot", args: args)
         guard let path = data["path"]?.stringValue else {

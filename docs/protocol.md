@@ -66,9 +66,17 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 | `mouseDragPoint` | `{window, x, y, toX, toY, toWindow?}` | `{}` — same mouse drag between window points. Coordinates match `mouseClickPoint`. `toWindow` defaults to `window`. The system pointer stays where it is. |
 | `mouseDragSession` | `{from, to}` | `{}` — dragging session between the same two catalog ids, same aim as `mouseDrag`. The system pointer tracks the path and returns when the command finishes. The left button is posted for the gesture. The app has to already be in front. |
 | `mouseDragSessionPoint` | `{window, x, y, toX, toY, toWindow?}` | `{}` — same dragging session between window points. The system pointer tracks the path and returns. The left button is posted for the gesture. |
-| `screenshot` | `{window, id?}` | `{path, note}` — `id` crops to that catalog element's frame; omit it for the whole window. `note` warns that material layers (Liquid Glass, vibrancy) and Metal content may not composite in the capture |
+| `screenshot` | `{window, id?, frame?, padding?}` | `{path, note}` — `id` crops to that catalog element's frame; omit it for the whole window. Set `frame` to `white` or `black` for rounded image corners and a matching matte. `padding` sets matte width in points (0–256); when omitted with a frame, it defaults to 32. Supplying `padding` alone uses a white matte. Styling is applied after an optional crop. `note` warns that material layers (Liquid Glass, vibrancy) and Metal content may not composite in the capture |
 
 Unknown command names fail. Product verbs are not in the kernel.
+
+The CLI exposes these options as `screenshot <window> [id]
+[--frame white|black] [--padding <points>]`. Plain screenshots keep the
+window's original rectangular bitmap. Request either style option to add
+rounded corners and a monochrome matte; padding is measured in points and
+scaled to the capture's backing resolution. `--frame` alone uses 32 points
+of padding, while `--padding` alone selects white. Values outside 0–256 or
+non-finite values fail.
 
 `axPress` and `axSet` refuse when the catalog node is disabled. Find
 and dump still return it. Wire code is `unavailable`; the message names

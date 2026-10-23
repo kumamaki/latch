@@ -25,12 +25,13 @@ struct LatchProtocolTests {
             {"token":"abc","command":"screenshot","args":{"window":"main"}}
             """#.utf8)
         let request = try decoder.decode(LatchRequest.self, from: json)
-        guard case .screenshot(let window, let id) = request.command else {
+        guard case .screenshot(let window, let options) = request.command else {
             Issue.record("expected .screenshot, got \(request.command)")
             return
         }
         #expect(window == "main")
-        #expect(id == nil)
+        #expect(options.id == nil)
+        #expect(options.presentation == nil)
     }
 
     @Test("decodes screenshot of one element")
@@ -40,12 +41,30 @@ struct LatchProtocolTests {
             {"token":"abc","command":"screenshot","args":{"window":"main","id":"note.row"}}
             """#.utf8)
         let request = try decoder.decode(LatchRequest.self, from: json)
-        guard case .screenshot(let window, let id) = request.command else {
+        guard case .screenshot(let window, let options) = request.command else {
             Issue.record("expected .screenshot, got \(request.command)")
             return
         }
         #expect(window == "main")
-        #expect(id == "note.row")
+        #expect(options.id == "note.row")
+        #expect(options.presentation == nil)
+    }
+
+    @Test("decodes screenshot presentation options")
+    func screenshotPresentation() throws {
+        let json = Data(
+            #"""
+            {"token":"abc","command":"screenshot","args":{"window":"main","frame":"black","padding":48}}
+            """#.utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard case .screenshot(let window, let options) = request.command else {
+            Issue.record("expected .screenshot, got \(request.command)")
+            return
+        }
+        #expect(window == "main")
+        #expect(options.id == nil)
+        #expect(options.presentation?.frameColor == .black)
+        #expect(options.presentation?.padding == 48)
     }
 
     @Test("an empty screenshot id remains explicit")
@@ -55,11 +74,11 @@ struct LatchProtocolTests {
             {"token":"abc","command":"screenshot","args":{"window":"main","id":""}}
             """#.utf8)
         let request = try decoder.decode(LatchRequest.self, from: json)
-        guard case .screenshot(_, let id) = request.command else {
+        guard case .screenshot(_, let options) = request.command else {
             Issue.record("expected .screenshot, got \(request.command)")
             return
         }
-        #expect(id == "")
+        #expect(options.id == "")
     }
 
     @Test("decodes axPress with named action")

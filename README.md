@@ -35,6 +35,7 @@ examples/Notes/latch.sh ax set composer.title Hello
 examples/Notes/latch.sh wait ax composer.save --enabled
 examples/Notes/latch.sh ax press composer.save
 examples/Notes/latch.sh screenshot main
+examples/Notes/latch.sh screenshot main --frame white --padding 48
 ```
 
 Your app should have the same named command. Put a thin wrapper at
@@ -98,7 +99,9 @@ itself.
 - **Screenshots stay in-process.** `cacheDisplay` renders this app's own
   window frames (title bar and toolbar included) to PNG, or crops that
   bitmap to one registered catalog element. Screen Recording permission
-  never comes up.
+  never comes up. Optional `--frame white|black` adds rounded corners and
+  a matching matte; `--padding <points>` sets its width (32 points by
+  default, 0–256). Padding alone uses white. Plain captures stay unstyled.
 - **AX is a probe.** An unlabeled `ax dump` walks the in-process AX tree
   for orientation. Press, set, and find never fall through to it. A miss
   means register the control. `mouse click` and `mouse drag` are the

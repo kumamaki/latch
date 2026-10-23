@@ -120,6 +120,8 @@ bash <latch>/cli/latch.sh --app <app> ax dismiss
 bash <latch>/cli/latch.sh --app <app> ax dismiss Cancel
 bash <latch>/cli/latch.sh --app <app> screenshot main
 bash <latch>/cli/latch.sh --app <app> screenshot main <id>
+bash <latch>/cli/latch.sh --app <app> screenshot main --frame black
+bash <latch>/cli/latch.sh --app <app> screenshot main <id> --padding 48
 ```
 
 `screenshot <window> <id>` crops the window bitmap to that catalog
@@ -127,6 +129,10 @@ element's visible area. `.latch` registrations use current view geometry
 and respect ancestor clipping; AppKit registrations use the accessibility
 frame, clipped by a visible ancestor view when available. The id must be
 registered and mounted in that window.
+
+Add `--frame white|black` for rounded corners and a matching matte.
+`--padding <points>` controls its width (0–256 points, default 32); using
+padding without `--frame` selects white. Styling also works without an id.
 
 Screenshots skip material layers — Liquid Glass, vibrancy, and
 Metal-backed content may not composite. The response `note` repeats

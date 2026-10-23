@@ -86,5 +86,9 @@
         func screenshot(window: String, id: String?) async throws -> String {
             try await inner.screenshot(window: window, id: id)
         }
+
+        func screenshot(window: String, options: LatchScreenshotOptions) async throws -> String {
+            try await inner.screenshot(window: window, options: options)
+        }
     }
 #endif

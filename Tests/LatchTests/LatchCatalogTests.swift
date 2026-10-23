@@ -334,7 +334,7 @@ struct LatchCatalogTests {
         #expect(LatchAX.catalogName(from: "window.fetchBox") == "fetchBox")
     }
 
-    @Test("screenshot crops to a registered element")
+    @Test("screenshot crops and frames a registered element")
     @MainActor
     func screenshotElementCrop() throws {
         let name = uniqueWindowName()
@@ -364,6 +364,25 @@ struct LatchCatalogTests {
         let scale = fixture.window.backingScaleFactor
         #expect(abs(CGFloat(rep.pixelsWide) - 64 * scale) <= 1)
         #expect(abs(CGFloat(rep.pixelsHigh) - 40 * scale) <= 1)
+
+        let framedPath = try LatchScreenshot.capture(
+            windowName: name,
+            options: LatchScreenshotOptions(
+                id: "\(name).target",
+                presentation: LatchScreenshotPresentation(frameColor: .black, padding: 8)),
+            app: "latch-test")
+        defer { try? FileManager.default.removeItem(atPath: framedPath) }
+        let framedData = try Data(contentsOf: URL(fileURLWithPath: framedPath))
+        let framedRep = try #require(NSBitmapImageRep(data: framedData))
+        #expect(abs(CGFloat(framedRep.pixelsWide) - (64 + 16) * scale) <= 1)
+        #expect(abs(CGFloat(framedRep.pixelsHigh) - (40 + 16) * scale) <= 1)
+
+        let mattePixel = try #require(
+            framedRep.colorAt(x: framedRep.pixelsWide / 2, y: 0))
+        let outerCorner = try #require(framedRep.colorAt(x: 0, y: 0))
+        #expect(mattePixel.alphaComponent > 0.99)
+        #expect(mattePixel.redComponent < 0.01)
+        #expect(outerCorner.alphaComponent < 0.01)
     }
 
     @Test("screenshot uses the catalog frame when AX has no id")

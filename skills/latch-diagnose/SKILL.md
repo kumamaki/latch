@@ -82,5 +82,7 @@ instead of the value, the control is not registered as a field.
 
 `cacheDisplay` on this app's window frame (title bar and toolbar
 included), or cropped to one registered element's visible area with
-`screenshot <window> <id>`. Metal layers may come back blank. Catalog
-frames stay 0. That is not a Latch outage.
+`screenshot <window> <id>`. Add `--frame white|black` and optionally
+`--padding <points>` (default 32; range 0–256) for rounded corners and a
+matching matte. Metal layers may come back blank. Catalog frames stay 0.
+That is not a Latch outage.

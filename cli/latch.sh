@@ -47,7 +47,9 @@ Commands:
   mouse drag-session-point <window> <x> <y> <to-x> <to-y>
   mouse drag-session-point <window> <x> <y> <to-window> <to-x> <to-y>
   catalog [window]
-  screenshot <window> [id]
+  screenshot <window> [id] [--frame white|black] [--padding <points>]
+    --frame adds rounded screenshot corners and a white or black matte
+    --padding uses points (0–256); frame-only default is 32, padding alone uses white
 EOF
     exit 64
 }
@@ -58,6 +60,22 @@ json_escape() {
 
 json_number() {
     python3 -c 'import json,sys; print(json.dumps(float(sys.argv[1])))' "$1"
+}
+
+json_screenshot_padding() {
+    python3 - "$1" <<'PY'
+import json, math, sys
+
+try:
+    value = float(sys.argv[1])
+except ValueError:
+    print("error: screenshot padding must be a number from 0 to 256 points.", file=sys.stderr)
+    sys.exit(64)
+if not math.isfinite(value) or not 0 <= value <= 256:
+    print("error: screenshot padding must be a number from 0 to 256 points.", file=sys.stderr)
+    sys.exit(64)
+print(json.dumps(value))
+PY
 }
 
 parse_latch_json() {
@@ -744,12 +762,60 @@ case "$command" in
         flatten_catalog "$(labeled_dump "${1-}")"
         ;;
     screenshot)
-        [[ $# -ge 1 && $# -le 2 ]] || usage
-        if [[ $# -eq 2 ]]; then
-            query screenshot "$(printf '{"window":%s,"id":%s}' "$(json_escape "$1")" "$(json_escape "$2")")"
-        else
-            query screenshot "$(printf '{"window":%s}' "$(json_escape "$1")")"
+        [[ $# -ge 1 ]] || usage
+        screenshot_window="$1"
+        shift
+        screenshot_id=""
+        screenshot_frame=""
+        screenshot_padding=""
+        screenshot_has_id=0
+        screenshot_has_frame=0
+        screenshot_has_padding=0
+
+        if [[ $# -gt 0 && "$1" != --* ]]; then
+            screenshot_id="$1"
+            screenshot_has_id=1
+            shift
         fi
+
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --frame)
+                    [[ $# -ge 2 ]] || usage
+                    [[ "$screenshot_has_frame" -eq 0 ]] || usage
+                    case "$2" in
+                        white|black) screenshot_frame="$2" ;;
+                        *) echo "error: screenshot frame must be white or black." >&2; exit 64 ;;
+                    esac
+                    screenshot_has_frame=1
+                    shift 2
+                    ;;
+                --padding)
+                    [[ $# -ge 2 ]] || usage
+                    [[ "$screenshot_has_padding" -eq 0 ]] || usage
+                    screenshot_padding="$(json_screenshot_padding "$2")"
+                    screenshot_has_padding=1
+                    shift 2
+                    ;;
+                *) usage ;;
+            esac
+        done
+
+        screenshot_args="$(printf '{"window":%s' "$(json_escape "$screenshot_window")")"
+        if [[ "$screenshot_has_id" -eq 1 ]]; then
+            screenshot_args+=",\"id\":$(json_escape "$screenshot_id")"
+        fi
+        if [[ "$screenshot_has_frame" -eq 1 || "$screenshot_has_padding" -eq 1 ]]; then
+            if [[ "$screenshot_has_frame" -eq 0 ]]; then
+                screenshot_frame="white"
+            fi
+            screenshot_args+=",\"frame\":$(json_escape "$screenshot_frame")"
+        fi
+        if [[ "$screenshot_has_padding" -eq 1 ]]; then
+            screenshot_args+=",\"padding\":$screenshot_padding"
+        fi
+        screenshot_args+="}"
+        query screenshot "$screenshot_args"
         ;;
     *) usage ;;
 esac

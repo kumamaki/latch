@@ -13,6 +13,10 @@ All notable changes to Latch live here.
   be registered and mounted in the named window, and a miss or an
   off-window frame fails loud.
   `latch.sh screenshot <window> <id>` exposes it.
+- Add `--frame white|black` for rounded screenshot corners and a matching
+  matte. `--padding <points>` controls matte width from 0 to 256 points;
+  the default is 32, and padding alone selects white. Plain captures stay
+  unstyled. Options work with whole-window and element screenshots.
 
 ## 0.5.0 — 2026-10-20
 

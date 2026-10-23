@@ -26,7 +26,7 @@
 
         @MainActor
         public static func capture(windowName: String, app: String) throws -> String {
-            try capture(windowName: windowName, elementID: nil, app: app)
+            try capture(windowName: windowName, options: LatchScreenshotOptions(), app: app)
         }
 
         /// Full window, or one catalog element cropped out of it. The crop
@@ -36,6 +36,26 @@
         public static func capture(
             windowName: String, elementID: String?, app: String
         ) throws -> String {
+            try capture(
+                windowName: windowName,
+                options: LatchScreenshotOptions(id: elementID),
+                app: app)
+        }
+
+        @MainActor
+        public static func capture(
+            windowName: String, options: LatchScreenshotOptions, app: String
+        ) throws -> String {
+            if let presentation = options.presentation {
+                guard presentation.padding.isFinite,
+                    (0...LatchScreenshotPresentation.maximumPadding).contains(
+                        presentation.padding)
+                else {
+                    throw LatchError.screenshotFailed(
+                        reason: "Frame padding must be between 0 and "
+                            + "\(Int(LatchScreenshotPresentation.maximumPadding)) points.")
+                }
+            }
             guard let window = LatchAX.preferredWindow(named: windowName) else {
                 throw LatchError.unknownWindow(name: windowName)
             }
@@ -55,10 +75,26 @@
             }
             root.cacheDisplay(in: bounds, to: rep)
             let png: Data
-            if let elementID {
-                png = try elementPNG(
-                    from: rep, root: root, window: window,
-                    elementID: elementID, windowName: windowName)
+            if let presentation = options.presentation {
+                let source: CGImage
+                if let elementID = options.id {
+                    source = try elementImage(
+                        from: rep, root: root, window: window,
+                        elementID: elementID, windowName: windowName)
+                } else if let image = rep.cgImage {
+                    source = image
+                } else {
+                    throw LatchError.screenshotFailed(reason: "Could not read the window bitmap.")
+                }
+                let framed = try framedImage(
+                    source, presentation: presentation,
+                    backingScale: CGFloat(rep.pixelsWide) / bounds.width)
+                png = try pngData(from: framed)
+            } else if let elementID = options.id {
+                png = try pngData(
+                    from: elementImage(
+                        from: rep, root: root, window: window,
+                        elementID: elementID, windowName: windowName))
             } else {
                 guard let data = rep.representation(using: .png, properties: [:]) else {
                     throw LatchError.screenshotFailed(reason: "Could not encode PNG.")
@@ -79,9 +115,13 @@
             )
             let safeStamp = stamp.replacingOccurrences(of: ":", with: "")
             let windowComponent = fileComponent(windowName)
-            let elementSuffix = elementID.map { "-\(fileComponent($0))" } ?? ""
+            let elementSuffix = options.id.map { "-\(fileComponent($0))" } ?? ""
+            let presentationSuffix =
+                options.presentation.map {
+                    "-frame-\($0.frameColor.rawValue)-\(fileComponent(String($0.padding)))pt"
+                } ?? ""
             let url = directory.appendingPathComponent(
-                "\(windowComponent)\(elementSuffix)-\(safeStamp).png")
+                "\(windowComponent)\(elementSuffix)\(presentationSuffix)-\(safeStamp).png")
             do {
                 try png.write(to: url, options: .atomic)
             } catch {
@@ -94,13 +134,13 @@
         /// and AX frames are in AppKit screen space; the rep is in backing
         /// pixels, and image row 0 is the top of the view.
         @MainActor
-        private static func elementPNG(
+        private static func elementImage(
             from rep: NSBitmapImageRep,
             root: NSView,
             window: NSWindow,
             elementID: String,
             windowName: String
-        ) throws -> Data {
+        ) throws -> CGImage {
             let frame = try LatchAX.elementFrame(
                 id: elementID, in: window, windowName: windowName)
             guard let image = rep.cgImage else {
@@ -132,8 +172,67 @@
                 throw LatchError.screenshotFailed(
                     reason: "Could not crop to element \(elementID).")
             }
+            return cropped
+        }
+
+        private static func framedImage(
+            _ image: CGImage,
+            presentation: LatchScreenshotPresentation,
+            backingScale: CGFloat
+        ) throws -> CGImage {
+            let padding = Int((presentation.padding * backingScale).rounded(.up))
+            let width = image.width + padding * 2
+            let height = image.height + padding * 2
+            let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
             guard
-                let png = NSBitmapImageRep(cgImage: cropped).representation(
+                let context = CGContext(
+                    data: nil,
+                    width: width,
+                    height: height,
+                    bitsPerComponent: 8,
+                    bytesPerRow: 0,
+                    space: colorSpace,
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else {
+                throw LatchError.screenshotFailed(reason: "Could not allocate the framed bitmap.")
+            }
+
+            let canvas = CGRect(x: 0, y: 0, width: width, height: height)
+            let imageRect = CGRect(x: padding, y: padding, width: image.width, height: image.height)
+            let frameRadius = min(28 * backingScale, min(canvas.width, canvas.height) / 2)
+            let imageRadius = min(
+                16 * backingScale, CGFloat(min(image.width, image.height)) / 4)
+            let gray: CGFloat = presentation.frameColor == .white ? 1 : 0
+
+            context.clear(canvas)
+            context.setFillColor(CGColor(gray: gray, alpha: 1))
+            context.addPath(
+                CGPath(
+                    roundedRect: canvas,
+                    cornerWidth: frameRadius,
+                    cornerHeight: frameRadius,
+                    transform: nil))
+            context.fillPath()
+            context.saveGState()
+            context.addPath(
+                CGPath(
+                    roundedRect: imageRect,
+                    cornerWidth: imageRadius,
+                    cornerHeight: imageRadius,
+                    transform: nil))
+            context.clip()
+            context.interpolationQuality = .high
+            context.draw(image, in: imageRect)
+            context.restoreGState()
+            guard let framed = context.makeImage() else {
+                throw LatchError.screenshotFailed(reason: "Could not render the screenshot frame.")
+            }
+            return framed
+        }
+
+        private static func pngData(from image: CGImage) throws -> Data {
+            guard
+                let png = NSBitmapImageRep(cgImage: image).representation(
                     using: .png, properties: [:])
             else {
                 throw LatchError.screenshotFailed(reason: "Could not encode PNG.")

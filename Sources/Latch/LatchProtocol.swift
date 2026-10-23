@@ -43,7 +43,7 @@ import Foundation
         case mouseDragSessionPoint(
             window: String, x: Double, y: Double,
             toWindow: String?, toX: Double, toY: Double)
-        case screenshot(window: String, id: String?)
+        case screenshot(window: String, options: LatchScreenshotOptions)
 
         fileprivate static func decode(
             name: String,
@@ -107,7 +107,7 @@ import Foundation
                     toWindow: toWindow, toX: args.toX, toY: args.toY)
             case "screenshot":
                 let args = try container.decode(ScreenshotArgs.self, forKey: .args)
-                return .screenshot(window: args.window, id: args.id)
+                return .screenshot(window: args.window, options: args.options)
             default:
                 throw LatchError.unknownCommand(name: name)
             }
@@ -120,6 +120,20 @@ import Foundation
         private struct ScreenshotArgs: Decodable {
             let window: String
             let id: String?
+            let frame: LatchScreenshotPresentation.FrameColor?
+            let padding: Double?
+
+            var options: LatchScreenshotOptions {
+                let presentation: LatchScreenshotPresentation?
+                if frame != nil || padding != nil {
+                    presentation = LatchScreenshotPresentation(
+                        frameColor: frame ?? .white,
+                        padding: padding ?? LatchScreenshotPresentation.defaultPadding)
+                } else {
+                    presentation = nil
+                }
+                return LatchScreenshotOptions(id: id, presentation: presentation)
+            }
         }
 
         private struct AxDumpArgs: Decodable {

@@ -1,6 +1,39 @@
 import AppKit
 import Foundation
 
+/// A monochrome matte around a screenshot. Padding is measured in points.
+public struct LatchScreenshotPresentation: Sendable, Equatable {
+    public enum FrameColor: String, Codable, Sendable {
+        case black
+        case white
+    }
+
+    public static let defaultPadding = 32.0
+    public static let maximumPadding = 256.0
+
+    public let frameColor: FrameColor
+    public let padding: Double
+
+    public init(
+        frameColor: FrameColor = .white,
+        padding: Double = LatchScreenshotPresentation.defaultPadding
+    ) {
+        self.frameColor = frameColor
+        self.padding = padding
+    }
+}
+
+/// Options for a whole-window screenshot or a registered element crop.
+public struct LatchScreenshotOptions: Sendable, Equatable {
+    public let id: String?
+    public let presentation: LatchScreenshotPresentation?
+
+    public init(id: String? = nil, presentation: LatchScreenshotPresentation? = nil) {
+        self.id = id
+        self.presentation = presentation
+    }
+}
+
 /// Capability the DEBUG Latch socket dispatches against.
 ///
 /// The host app implements this. Kernel verbs live here. Product verbs
@@ -30,6 +63,7 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
     ) async throws
     func screenshot(window: String) async throws -> String
     func screenshot(window: String, id: String?) async throws -> String
+    func screenshot(window: String, options: LatchScreenshotOptions) async throws -> String
 }
 
 extension LatchOpsProviding {
@@ -38,6 +72,18 @@ extension LatchOpsProviding {
     public func screenshot(window: String, id: String?) async throws -> String {
         guard let id else { return try await screenshot(window: window) }
         throw LatchError.actionUnavailable(id: id, action: "element screenshot")
+    }
+
+    /// Existing providers inherit plain screenshot behavior. They can opt
+    /// into framed output by implementing this overload.
+    public func screenshot(window: String, options: LatchScreenshotOptions) async throws
+        -> String
+    {
+        guard options.presentation == nil else {
+            throw LatchError.actionUnavailable(
+                id: options.id ?? window, action: "framed screenshot")
+        }
+        return try await screenshot(window: window, id: options.id)
     }
 }
 
@@ -164,6 +210,12 @@ extension LatchOpsProviding {
 
         public func screenshot(window: String, id: String?) async throws -> String {
             try LatchScreenshot.capture(windowName: window, elementID: id, app: appName)
+        }
+
+        public func screenshot(window: String, options: LatchScreenshotOptions) async throws
+            -> String
+        {
+            try LatchScreenshot.capture(windowName: window, options: options, app: appName)
         }
 
         public static func liveWindows() -> [LatchWindowStatus] {
