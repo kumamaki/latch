@@ -188,11 +188,20 @@ public enum LatchCatalog {
         /// and owner. Geometry is read in the current window at capture
         /// time so window moves and clip-view scrolling stay current.
         private static var frameSources: [String: [ObjectIdentifier: FrameSource]] = [:]
+        /// Registrations naming each parent id. Register checks an id's
+        /// children on every mount, so that lookup must not walk the
+        /// whole catalog: a list mounts hundreds of ids at once.
+        private static var children: [String: Set<Owner>] = [:]
         private static var nextGeneration = 0
         private static let windowSyncToken = Token()
         private static var updateSubscribers: [UUID: UpdateSubscriber] = [:]
         private static var updateFlushScheduled = false
         private static var updateGeneration = 0
+
+        private struct Owner: Hashable {
+            let id: String
+            let token: ObjectIdentifier
+        }
 
         private struct UpdateSubscriber {
             let window: String?
@@ -204,6 +213,7 @@ public enum LatchCatalog {
         #if DEBUG
             entries.removeAll()
             frameSources.removeAll()
+            children.removeAll()
             nextGeneration = 0
             updateFlushScheduled = false
             updateGeneration += 1
@@ -276,6 +286,13 @@ public enum LatchCatalog {
             let resolvedChoices = (choices?.isEmpty == true) ? nil : choices
             nextGeneration += 1
             var group = entries[id] ?? [:]
+            let registration = Owner(id: id, token: owner)
+            if let previous = group[owner]?.node.parent {
+                removeChild(registration, of: previous)
+            }
+            if let parent {
+                children[parent, default: []].insert(registration)
+            }
             group[owner] = Entry(
                 token: owner,
                 node: Node(
@@ -307,7 +324,10 @@ public enum LatchCatalog {
         #if DEBUG
             let owner = ObjectIdentifier(token)
             removeFrameSource(id: id, owner: owner)
-            guard entries[id]?[owner] != nil else { return }
+            guard let entry = entries[id]?[owner] else { return }
+            if let parent = entry.node.parent {
+                removeChild(Owner(id: id, token: owner), of: parent)
+            }
             entries[id]?.removeValue(forKey: owner)
             if entries[id]?.isEmpty != false {
                 entries.removeValue(forKey: id)
@@ -367,6 +387,13 @@ public enum LatchCatalog {
             }
             if frameSources[id]?[owner]?.view === view { return }
             frameSources[id, default: [:]][owner] = FrameSource(view: view)
+        }
+
+        private static func removeChild(_ registration: Owner, of parent: String) {
+            children[parent]?.remove(registration)
+            if children[parent]?.isEmpty == true {
+                children.removeValue(forKey: parent)
+            }
         }
 
         private static func removeFrameSource(id: String, owner: ObjectIdentifier) {
@@ -454,7 +481,8 @@ public enum LatchCatalog {
                     current = ancestor.node.parent
                 }
             }
-            for child in eachEntry() where child.node.parent == id {
+            for registration in children[id] ?? [] {
+                guard let child = entries[registration.id]?[registration.token] else { continue }
                 if let childWindow = child.node.window, let window, childWindow != window {
                     throw Error.invalidParent(
                         id: child.node.id,

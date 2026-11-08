@@ -17,11 +17,13 @@ public enum Latch {
 
         /// SwiftUI preview processes must not publish into the host catalog
         /// or bind the adopter socket.
+        /// Every mount asks, so the environment is read once.
         static var isPreviewProcess: Bool {
-            if let previewProcessOverride { return previewProcessOverride }
-            return ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
-                == "1"
+            previewProcessOverride ?? launchedForPreviews
         }
+
+        private static let launchedForPreviews =
+            ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     #endif
 
     /// Bind the DEBUG socket. Release is a no-op. Does not affect the catalog.
