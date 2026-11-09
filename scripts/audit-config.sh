@@ -42,6 +42,17 @@ latch_artifacts() {
     echo "$objects"
 }
 
+# Where the swiftmodule lands (the bin path or its Modules/) also varies.
+module_dir() {
+    local module
+    module="$(find "$1" -name Latch.swiftmodule -not -path '*LatchE2E*' | head -1)"
+    if [[ -z "$module" ]]; then
+        echo "audit: no Latch.swiftmodule under ${1}" >&2
+        exit 1
+    fi
+    dirname "$module"
+}
+
 # macOS bash 3.2 has no mapfile.
 debug_libs=()
 while IFS= read -r artifact; do debug_libs+=("$artifact"); done < <(latch_artifacts "$debug_bin")
@@ -102,11 +113,13 @@ let _ = LatchDefaultOps.self
 let _ = LatchServer.self
 SWIFT
 
+debug_modules="$(module_dir "$debug_bin")"
+release_modules="$(module_dir "$release_bin")"
 target="arm64-apple-macosx15.0"
-xcrun swiftc -typecheck -I "$release_bin" -target "$target" "$probe_dir/api.swift"
-xcrun swiftc -typecheck -I "$debug_bin" -target "$target" "$probe_dir/api.swift"
-xcrun swiftc -typecheck -I "$debug_bin" -target "$target" "$probe_dir/debug_only.swift"
-if xcrun swiftc -typecheck -I "$release_bin" -target "$target" "$probe_dir/debug_only.swift" 2>/dev/null; then
+xcrun swiftc -typecheck -I "$release_modules" -target "$target" "$probe_dir/api.swift"
+xcrun swiftc -typecheck -I "$debug_modules" -target "$target" "$probe_dir/api.swift"
+xcrun swiftc -typecheck -I "$debug_modules" -target "$target" "$probe_dir/debug_only.swift"
+if xcrun swiftc -typecheck -I "$release_modules" -target "$target" "$probe_dir/debug_only.swift" 2>/dev/null; then
     echo "audit: DEBUG-only API resolves against the Release swiftmodule" >&2
     exit 1
 fi
