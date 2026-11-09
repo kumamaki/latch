@@ -356,6 +356,25 @@ public actor LatchApp {
         }
     }
 
+    /// Every value `id` has published, oldest first. Only ids opted in
+    /// with `Latch.start(app:history:)` have a history; any other id
+    /// fails with a server error.
+    public func history(_ id: String) async throws -> [HistoryEntry] {
+        let data = try await send(
+            "axFind", args: ["id": .string(id), "history": .bool(true)], record: false)
+        guard let entries = data["history"]?["entries"]?.arrayValue else {
+            throw LatchE2EError.server(
+                code: "protocol", message: "axFind reply for \(id) has no history")
+        }
+        return try entries.map { json in
+            guard let entry = HistoryEntry(json: json) else {
+                throw LatchE2EError.server(
+                    code: "protocol", message: "malformed history entry for \(id)")
+            }
+            return entry
+        }
+    }
+
     public struct WindowStatus: Sendable, Equatable {
         public let name: String
         public let visible: Bool

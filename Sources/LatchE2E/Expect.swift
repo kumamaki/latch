@@ -103,6 +103,38 @@ public struct Expectation: Sendable {
         }
     }
 
+    /// Wait until the id's recorded history contains `states` in order,
+    /// gaps allowed. History only grows, so unlike `through` a state that
+    /// lasted a few milliseconds still counts. The id must be opted in
+    /// with `Latch.start(app:history:)`. On timeout the error shows
+    /// everything recorded.
+    public func toHaveRecorded(_ states: [String], timeout: TimeInterval = 5) async throws {
+        guard !states.isEmpty else {
+            throw LatchE2EError.invalidConfig(reason: "toHaveRecorded([]) has no states")
+        }
+        let wanted = states.joined(separator: " → ")
+        let label = "\(id) recorded \(wanted)"
+        let started = Date()
+        var attempts = 0
+        while true {
+            attempts += 1
+            let recorded = try await app.history(id)
+            if Self.isSubsequence(states, of: recorded.map(\.value)) {
+                try await app.recordExpectation(
+                    label: label, outcome: "pass", attempts: attempts, detail: nil)
+                return
+            }
+            if Date().timeIntervalSince(started) >= timeout {
+                let got = recorded.map(\.description).joined(separator: " → ")
+                try await app.recordExpectation(
+                    label: label, outcome: "failed", attempts: attempts, detail: got)
+                throw LatchE2EError.expectationFailed(
+                    got: got.isEmpty ? "nothing recorded" : got, want: wanted)
+            }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+    }
+
     /// Whether `needle` appears in `observed` in order, gaps allowed.
     static func isSubsequence(_ needle: [String], of observed: [String]) -> Bool {
         guard !needle.isEmpty else { return true }

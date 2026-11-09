@@ -7,7 +7,7 @@ import SwiftUI
 @main
 struct DragFixtureApp: App {
     init() {
-        Latch.start(app: "drag-fixture")
+        Latch.start(app: "drag-fixture", history: ["flip."])
     }
 
     var body: some Scene {
@@ -18,6 +18,7 @@ struct DragFixtureApp: App {
     }
 }
 
+@MainActor
 @Observable
 final class DragFixtureModel {
     var gesture = "0"
@@ -25,6 +26,19 @@ final class DragFixtureModel {
     var source = "token"
     var dest = ""
     var row = "idle"
+    var flip = "a"
+
+    /// Walks `flip` a → b → c, `gap` apart. Each step is its own
+    /// main-actor turn, so a short gap outruns any poll.
+    func runFlip(gap: Duration) {
+        flip = "a"
+        _ = Task {
+            for step in ["b", "c"] {
+                try await Task.sleep(for: gap)
+                flip = step
+            }
+        }
+    }
 }
 
 private struct DragFixtureRoot: View {
@@ -32,7 +46,10 @@ private struct DragFixtureRoot: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            GestureWell(model: model)
+            HStack(spacing: 24) {
+                GestureWell(model: model)
+                FlipPanel(model: model)
+            }
             HStack(spacing: 24) {
                 Bin(
                     model: model, id: "bin.source", child: "bin.source.row", payload: "token",
@@ -45,6 +62,22 @@ private struct DragFixtureRoot: View {
         .onAppear {
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+}
+
+private struct FlipPanel: View {
+    let model: DragFixtureModel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(model.flip)
+                .latch(
+                    "flip.state", role: "label", title: "Flip", value: model.flip, window: "main")
+            Button("Fast") { model.runFlip(gap: .milliseconds(10)) }
+                .latch("flip.fast", window: "main") { model.runFlip(gap: .milliseconds(10)) }
+            Button("Slow") { model.runFlip(gap: .milliseconds(400)) }
+                .latch("flip.slow", window: "main") { model.runFlip(gap: .milliseconds(400)) }
         }
     }
 }

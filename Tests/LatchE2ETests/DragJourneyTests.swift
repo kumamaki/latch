@@ -48,7 +48,7 @@ struct DragJourneyTests {
         }
     }
 
-    private static func fixtureBinary() throws -> URL {
+    static func fixtureBinary() throws -> URL {
         let repo = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
