@@ -12,39 +12,52 @@ cd "$root"
 impl='Latch\.(LatchServer|UnixSocketServer|LatchAX|LatchScreenshot|LatchToken|LatchPaths|LatchCatalogDump|LatchBootGatedOps|LatchSocketPhase|LatchValueHistory|LatchHistoryReply)(\.| |$)'
 
 impl_count() {
-    nm "$1" | xcrun swift-demangle | grep -cE "$impl" || true
+    nm "$@" | xcrun swift-demangle | grep -cE "$impl" || true
 }
 
 sock_string_count() {
-    strings "$1" | grep -c "latch\.sock" || true
+    strings "$@" | grep -c "latch\.sock" || true
 }
 
-# --product forces the static archive: after `swift test` a plain build
-# is a no-op and leaves no libLatch.a.
 swift build --product Latch
 swift build -c release --product Latch
 debug_bin="$(swift build --show-bin-path)"
 release_bin="$(swift build -c release --show-bin-path)"
 
-debug_lib="${debug_bin}/libLatch.a"
-release_lib="${release_bin}/libLatch.a"
-for lib in "$debug_lib" "$release_lib"; do
-    if [[ ! -f "$lib" ]]; then
-        echo "audit: missing ${lib}" >&2
+# The toolchain decides whether a library product leaves a libLatch.a or
+# only the module's object files, so audit whichever it produced.
+latch_artifacts() {
+    local archive="$1/libLatch.a"
+    if [[ -f "$archive" ]]; then
+        echo "$archive"
+        return
+    fi
+    local objects
+    objects="$(find "$1" -path '*Latch.build/*.o' -not -path '*LatchE2E*' | sort)"
+    if [[ -z "$objects" ]]; then
+        echo "audit: no Latch archive or objects under ${1}" >&2
+        find "$1" -maxdepth 3 -iname '*Latch*' >&2
         exit 1
     fi
-done
+    echo "$objects"
+}
 
-dbg_syms="$(impl_count "$debug_lib")"
-rel_syms="$(impl_count "$release_lib")"
-dbg_sock="$(sock_string_count "$debug_lib")"
-rel_sock="$(sock_string_count "$release_lib")"
+# macOS bash 3.2 has no mapfile.
+debug_libs=()
+while IFS= read -r artifact; do debug_libs+=("$artifact"); done < <(latch_artifacts "$debug_bin")
+release_libs=()
+while IFS= read -r artifact; do release_libs+=("$artifact"); done < <(latch_artifacts "$release_bin")
+
+dbg_syms="$(impl_count "${debug_libs[@]}")"
+rel_syms="$(impl_count "${release_libs[@]}")"
+dbg_sock="$(sock_string_count "${debug_libs[@]}")"
+rel_sock="$(sock_string_count "${release_libs[@]}")"
 echo "impl symbols: debug=${dbg_syms} release=${rel_syms}"
 echo "latch.sock strings: debug=${dbg_sock} release=${rel_sock}"
 
 if [[ "$rel_syms" -ne 0 ]]; then
     echo "audit: Release libLatch.a carries driving-surface impl" >&2
-    nm "$release_lib" | xcrun swift-demangle | grep -E "$impl" >&2 || true
+    nm "${release_libs[@]}" | xcrun swift-demangle | grep -E "$impl" >&2 || true
     exit 1
 fi
 if [[ "$rel_sock" -ne 0 ]]; then
