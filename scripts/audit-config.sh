@@ -19,8 +19,10 @@ sock_string_count() {
     strings "$1" | grep -c "latch\.sock" || true
 }
 
-swift build
-swift build -c release
+# --product forces the static archive: after `swift test` a plain build
+# is a no-op and leaves no libLatch.a.
+swift build --product Latch
+swift build -c release --product Latch
 debug_bin="$(swift build --show-bin-path)"
 release_bin="$(swift build -c release --show-bin-path)"
 
