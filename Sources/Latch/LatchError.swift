@@ -27,6 +27,7 @@ public enum LatchError: Error, Sendable, CustomStringConvertible {
     case invalidValue(id: String, value: String, expected: String)
     case coreNotReady
     case opsUnavailable(reason: String)
+    case historyNotRecorded(id: String)
 
     public var description: String {
         switch self {
@@ -84,6 +85,9 @@ public enum LatchError: Error, Sendable, CustomStringConvertible {
             return "App is not ready."
         case .opsUnavailable(let reason):
             return reason
+        case .historyNotRecorded(let id):
+            return
+                "Catalog entry \(id) has no recorded history. Pass history: [\"<prefix>\"] to Latch.start."
         }
     }
 }

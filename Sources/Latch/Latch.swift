@@ -26,16 +26,23 @@ public enum Latch {
             ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     #endif
 
-    /// Bind the DEBUG socket. Release is a no-op. Does not affect the catalog.
+    /// Bind the DEBUG socket. Release is a no-op.
+    ///
+    /// `history` lists catalog id prefixes whose values are recorded on
+    /// every republish, readable with `ax find <id> --history`. Call
+    /// `start` before the first window mounts: registrations that came
+    /// earlier are not recorded. A non-empty list replaces the previous one.
     ///
     /// Idempotent while starting or listening. Boot stays `starting` until
     /// the socket is up; a failed bind reports `failed`.
     public static func start(
         app: String,
-        ops: (any LatchOpsProviding)? = nil
+        ops: (any LatchOpsProviding)? = nil,
+        history: [String] = []
     ) {
         #if DEBUG
             if isPreviewProcess { return }
+            if !history.isEmpty { LatchCatalog.configureHistory(prefixes: history) }
             switch socketPhase {
             case .starting, .listening:
                 return

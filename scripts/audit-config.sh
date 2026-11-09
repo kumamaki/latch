@@ -9,7 +9,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
-impl='Latch\.(LatchServer|UnixSocketServer|LatchAX|LatchScreenshot|LatchToken|LatchPaths|LatchCatalogDump|LatchBootGatedOps|LatchSocketPhase)(\.| |$)'
+impl='Latch\.(LatchServer|UnixSocketServer|LatchAX|LatchScreenshot|LatchToken|LatchPaths|LatchCatalogDump|LatchBootGatedOps|LatchSocketPhase|LatchValueHistory|LatchHistoryReply)(\.| |$)'
 
 impl_count() {
     nm "$1" | xcrun swift-demangle | grep -cE "$impl" || true

@@ -195,6 +195,27 @@ struct LatchCLITests {
         #expect(result.stderr.contains("diagnostic: onboarding ✓ 0 nodes"))
     }
 
+    @Test("ax find --history reaches the server and a plain find does not ask for it")
+    func axFindHistoryFlag() async throws {
+        let app = uniqueApp()
+        let (server, ops, dataDirectory) = try await startServer(app: app)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: dataDirectory)
+        }
+        try withExtendedLifetime(ops) {
+            let plain = try runCLI(arguments: ["--app", app, "ax", "find", "editor.title"])
+            #expect(plain.status == 0)
+            #expect(!plain.stdout.contains("\"history\""))
+
+            let flagged = try runCLI(
+                arguments: ["--app", app, "ax", "find", "--history", "editor.title"])
+            #expect(flagged.status == 1)
+            #expect(flagged.stderr.contains("unavailable"))
+            #expect(flagged.stderr.contains("no recorded history"))
+        }
+    }
+
     @Test("wait window --hidden needs an existing hidden row")
     func waitWindowHiddenRequiresExists() async throws {
         let app = uniqueApp()

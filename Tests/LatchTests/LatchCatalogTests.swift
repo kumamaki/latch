@@ -34,6 +34,36 @@ struct LatchCatalogTests {
         #expect(stored == "Hello")
     }
 
+    @Test("history records opted-in ids only and outlives unregister")
+    @MainActor
+    func historyRecordsOptedInIDs() throws {
+        LatchCatalog.configureHistory(prefixes: ["fetch.row."])
+        var lifecycle = "idle"
+        let token = LatchCatalog.Token()
+        func publish() throws {
+            try LatchCatalog.register(
+                id: "fetch.row.1.lifecycle", role: "label", value: { lifecycle },
+                token: token)
+        }
+        try publish()
+        lifecycle = "running"
+        try publish()
+        try publish()
+        LatchCatalog.unregister(id: "fetch.row.1.lifecycle", token: token)
+        lifecycle = "idle"
+        try publish()
+
+        let reply = try LatchCatalog.history(id: "fetch.row.1.lifecycle")
+        #expect(reply.entries.map(\.value) == ["idle", "running", "idle"])
+        #expect(reply.entries.map(\.at) == reply.entries.map(\.at).sorted())
+        #expect(reply.now >= (reply.entries.last?.at ?? 0))
+
+        try LatchCatalog.register(
+            id: "prefs.dark", role: "toggle", value: { "true" },
+            token: LatchCatalog.Token())
+        #expect(throws: LatchError.self) { try LatchCatalog.history(id: "prefs.dark") }
+    }
+
     @Test("same-role remount takes the id")
     @MainActor
     func sameRoleTakeover() throws {

@@ -34,7 +34,9 @@ Commands:
   wait window <name> [--hidden] [--timeout 30]
   wait ax <id> [--value <string>] [--enabled|--disabled] [--timeout 30]
   ax dump [--labeled] [window]
-  ax find <id>
+  ax find <id> [--history]
+    --history adds the recorded (time, value) sequence; the id must be opted in
+    with Latch.start(app:history:). Times are ms on the app's monotonic clock.
   ax press <id> [action]
   ax set <id> <value>
   ax dismiss [button]
@@ -684,8 +686,16 @@ case "$command" in
                 fi
                 ;;
             find)
-                [[ $# -ge 1 ]] || usage
-                query axFind "$(printf '{"id":%s}' "$(json_escape "$1")")"
+                history=false
+                id=""
+                while [[ $# -gt 0 ]]; do
+                    case "$1" in
+                        --history) history=true; shift ;;
+                        *) [[ -z "$id" ]] || usage; id="$1"; shift ;;
+                    esac
+                done
+                [[ -n "$id" ]] || usage
+                query axFind "$(printf '{"id":%s,"history":%s}' "$(json_escape "$id")" "$history")"
                 ;;
             press)
                 [[ $# -ge 1 ]] || usage

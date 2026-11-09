@@ -163,9 +163,11 @@
             case .axDump(let window, let labeled):
                 let root = try await ops.axDump(window: window, labeled: labeled)
                 return .success(.axTree(root: root))
-            case .axFind(let id):
+            case .axFind(let id, let history):
                 let node = try await ops.axFind(id: id)
-                return .success(.axNode(node))
+                let recorded =
+                    history ? try await MainActor.run { try LatchCatalog.history(id: id) } : nil
+                return .success(.axNode(node, history: recorded))
             case .axPress(let id, let action):
                 try await ops.axPress(id: id, action: action)
                 return .success()
@@ -218,7 +220,7 @@
             case .invalidValue:
                 return .protocol
             case .windowNotVisible, .windowEmpty, .screenshotFailed, .actionUnavailable,
-                .disabled, .coreNotReady, .opsUnavailable:
+                .disabled, .coreNotReady, .opsUnavailable, .historyNotRecorded:
                 return .unavailable
             default:
                 return .ipc

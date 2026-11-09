@@ -29,7 +29,7 @@ import Foundation
         case windowShow(name: String)
         case windowHide(name: String)
         case axDump(window: String?, labeled: Bool)
-        case axFind(id: String)
+        case axFind(id: String, history: Bool)
         case axPress(id: String, action: String?)
         case axSet(id: String, value: String)
         case axDismiss(button: String?)
@@ -66,8 +66,8 @@ import Foundation
                 let args = try container.decodeIfPresent(AxDumpArgs.self, forKey: .args)
                 return .axDump(window: args?.window, labeled: args?.labeled ?? false)
             case "axFind":
-                let args = try container.decode(AxIdArgs.self, forKey: .args)
-                return .axFind(id: args.id)
+                let args = try container.decode(AxFindArgs.self, forKey: .args)
+                return .axFind(id: args.id, history: args.history ?? false)
             case "axPress":
                 let args = try container.decode(AxPressArgs.self, forKey: .args)
                 return .axPress(id: args.id, action: args.action)
@@ -141,8 +141,9 @@ import Foundation
             let labeled: Bool?
         }
 
-        private struct AxIdArgs: Decodable {
+        private struct AxFindArgs: Decodable {
             let id: String
+            let history: Bool?
         }
 
         private struct AxPressArgs: Decodable {
@@ -220,7 +221,7 @@ import Foundation
         case boot(state: String)
         case windows(items: [LatchWindowStatus])
         case axTree(root: LatchAXNode)
-        case axNode(LatchAXNode)
+        case axNode(LatchAXNode, history: LatchHistoryReply?)
         case screenshot(path: String, note: String)
 
         func encode(to encoder: Encoder) throws {
@@ -244,9 +245,10 @@ import Foundation
             case .axTree(let root):
                 var container = encoder.container(keyedBy: TreeKeys.self)
                 try container.encode(root, forKey: .root)
-            case .axNode(let node):
+            case .axNode(let node, let history):
                 var container = encoder.container(keyedBy: NodeKeys.self)
                 try container.encode(node, forKey: .node)
+                try container.encodeIfPresent(history, forKey: .history)
             case .screenshot(let path, let note):
                 var container = encoder.container(keyedBy: ScreenshotKeys.self)
                 try container.encode(path, forKey: .path)
@@ -260,7 +262,7 @@ import Foundation
         private enum BootKeys: String, CodingKey { case state }
         private enum WindowsKeys: String, CodingKey { case items }
         private enum TreeKeys: String, CodingKey { case root }
-        private enum NodeKeys: String, CodingKey { case node }
+        private enum NodeKeys: String, CodingKey { case node, history }
         private enum ScreenshotKeys: String, CodingKey { case path, note }
     }
 #endif

@@ -364,4 +364,43 @@ struct LatchProtocolTests {
         #expect(root.catalogCount == 2)
         #expect(window.catalogCount == 2)
     }
+
+    @Test("axFind decodes the history request, defaulting to off")
+    func axFindHistory() throws {
+        for (args, wanted) in [
+            (#"{"id":"a"}"#, false), (#"{"id":"a","history":true}"#, true),
+        ] {
+            let json = Data(
+                #"{"token":"t","command":"axFind","args":\#(args)}"#.utf8)
+            let request = try decoder.decode(LatchRequest.self, from: json)
+            guard case .axFind(let id, let history) = request.command else {
+                Issue.record("expected .axFind, got \(request.command)")
+                return
+            }
+            #expect(id == "a")
+            #expect(history == wanted)
+        }
+    }
+
+    @Test("axFind reply carries history only when attached")
+    func axFindReplyHistory() throws {
+        let node = LatchAXNode(
+            id: "fetch.row.1", role: "label", title: nil, value: "b", enabled: true,
+            actions: [], frame: .zero, children: [])
+        let history = LatchHistoryReply(
+            now: 90, entries: [.init(at: 40, value: "a"), .init(at: 52, value: "b")])
+        func keys(_ data: LatchResponseData) throws -> [String: Any] {
+            let encoded = try JSONEncoder().encode(LatchResponse.success(data))
+            let object = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+            return try #require(object?["data"] as? [String: Any])
+        }
+
+        #expect(try keys(.axNode(node, history: nil))["history"] == nil)
+        let reply = try #require(
+            try keys(.axNode(node, history: history))["history"] as? [String: Any])
+        #expect(reply["now"] as? Int == 90)
+        let entries = try #require(reply["entries"] as? [[String: Any]])
+        #expect(entries.map { $0["at"] as? Int } == [40, 52])
+        #expect(entries.map { $0["value"] as? String } == ["a", "b"])
+    }
 }

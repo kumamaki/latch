@@ -197,6 +197,10 @@ public enum LatchCatalog {
         private static var updateSubscribers: [UUID: UpdateSubscriber] = [:]
         private static var updateFlushScheduled = false
         private static var updateGeneration = 0
+        private static var valueHistory = LatchValueHistory()
+        private static var historyPrefixes: [String] = []
+        /// Zero point of history timestamps: the first read of the clock.
+        private static let historyOrigin = ContinuousClock.now
 
         private struct Owner: Hashable {
             let id: String
@@ -215,6 +219,8 @@ public enum LatchCatalog {
             frameSources.removeAll()
             children.removeAll()
             nextGeneration = 0
+            valueHistory.removeAll()
+            historyPrefixes = []
             updateFlushScheduled = false
             updateGeneration += 1
             for subscriber in updateSubscribers.values {
@@ -316,6 +322,7 @@ public enum LatchCatalog {
                 generation: nextGeneration
             )
             entries[id] = group
+            recordHistory(id: id, value: value)
             notifyChanged()
         #endif
     }
@@ -360,6 +367,35 @@ public enum LatchCatalog {
     }
 
     #if DEBUG
+        /// Record the value history of every id starting with one of
+        /// `prefixes`. Replaces the previous set; history already recorded stays.
+        static func configureHistory(prefixes: [String]) {
+            _ = historyOrigin
+            historyPrefixes = prefixes
+        }
+
+        static func history(id: String) throws -> LatchHistoryReply {
+            guard isRecorded(id) else { throw LatchError.historyNotRecorded(id: id) }
+            return LatchHistoryReply(
+                now: historyMilliseconds(), entries: valueHistory.entries(id: id))
+        }
+
+        private static func isRecorded(_ id: String) -> Bool {
+            historyPrefixes.contains { id.hasPrefix($0) }
+        }
+
+        /// Runs on every register, so an adopter that opted into nothing
+        /// pays one `isEmpty` check per mount.
+        private static func recordHistory(id: String, value: () -> String?) {
+            guard !historyPrefixes.isEmpty, isRecorded(id), let current = value() else { return }
+            valueHistory.record(id: id, value: current, at: historyMilliseconds())
+        }
+
+        private static func historyMilliseconds() -> Int {
+            let elapsed = historyOrigin.duration(to: .now).components
+            return Int(elapsed.seconds) * 1000 + Int(elapsed.attoseconds / 1_000_000_000_000_000)
+        }
+
         static func screenshotFrame(id: String, in window: NSWindow) -> ScreenshotFrame {
             guard let group = entries[id] else { return .needsAccessibility }
             let windowID = ObjectIdentifier(window)
