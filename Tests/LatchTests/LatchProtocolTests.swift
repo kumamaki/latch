@@ -208,6 +208,21 @@ struct LatchProtocolTests {
         #expect(toY == 40)
     }
 
+    @Test("decodes axDrag between ids")
+    func axDragIDs() throws {
+        let json = Data(
+            #"""
+            {"token":"abc","command":"axDrag","args":{"from":"bin.source","to":"bin.dest"}}
+            """#.utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard case .axDrag(let from, let to) = request.command else {
+            Issue.record("expected .axDrag, got \(request.command)")
+            return
+        }
+        #expect(from == "bin.source")
+        #expect(to == "bin.dest")
+    }
+
     @Test("decodes mouseDragSession between ids")
     func mouseDragSessionIDs() throws {
         let json = Data(

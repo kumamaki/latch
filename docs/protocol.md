@@ -59,6 +59,7 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 | `axFind` | `{id, history?}` | `{node}`; with `history: true` also `{history}`, see [Value history](#value-history) |
 | `axPress` | `{id, action?}` | `{}` |
 | `axSet` | `{id, value}` | `{}` |
+| `axDrag` | `{from, to}` | `{}` — hands the payload registered by `.latchDragSource` on `from` to the drop registered by `.latchDropTarget` on `to`. No events and no pointer; the app need not be in front. Either id missing is a catalog miss; no handler on either side is `actionUnavailable`; a disabled entry is refused. |
 | `axDismiss` | `{button?}` | `{}` — press a button on the frontmost system dialog (NSAlert, SwiftUI `.alert`). Omit `button` for the default. A miss lists the titles. |
 | `mouseClick` | `{id, button?}` | `{}` — synthesize a real mouse click (`left` default, `right` for context menus) at the element's frame center via `NSApp.sendEvent`. Runs the full dispatch path: hit-testing, local event monitors, window ordering. |
 | `mouseClickPoint` | `{window, x, y, button?}` | `{}` — same injected click, aimed at a point instead of a catalog id. `x`/`y` are points from the top-left of the named window's outer frame; points outside the frame are rejected, not clamped. For dead space between rows and spots with no catalog id. |
@@ -173,6 +174,9 @@ not to press a registered handler faster.
 is. `DragGesture` and `mouseDragged` read the event location. A path
 shorter than `DragGesture`'s 10-point minimum is a click.
 `mouseDragPoint` is the same sequence aimed at window points.
+
+`axDrag` is the drag that needs none of this: it never posts an event, so
+prefer it unless the point is the real dragging machinery.
 
 `mouseDragSession` is the other consumer. SwiftUI `draggable` / `onDrag`
 and `NSDraggingSession` follow the system pointer and the left button,

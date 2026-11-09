@@ -39,6 +39,7 @@ Commands:
     with Latch.start(app:history:). Times are ms on the app's monotonic clock.
   ax press <id> [action]
   ax set <id> <value>
+  ax drag <from-id> <to-id>
   ax dismiss [button]
   mouse click <id> [left|right]
   mouse click-point <window> <x> <y> [left|right]
@@ -708,6 +709,10 @@ case "$command" in
             set)
                 [[ $# -ge 2 ]] || usage
                 query axSet "$(printf '{"id":%s,"value":%s}' "$(json_escape "$1")" "$(json_escape "$2")")"
+                ;;
+            drag)
+                [[ $# -ge 2 ]] || usage
+                query axDrag "$(printf '{"from":%s,"to":%s}' "$(json_escape "$1")" "$(json_escape "$2")")"
                 ;;
             dismiss)
                 if [[ $# -ge 1 ]]; then

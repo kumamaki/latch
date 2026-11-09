@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 
@@ -45,6 +46,30 @@ struct DragJourneyTests {
                 let source = try await app.node("bin.source")?.value
                 return dest == "token" && row == "idle" && source == ""
             }
+        }
+    }
+
+    @Test("catalog drop moves a token and leaves the pointer alone")
+    func dropJourney() async throws {
+        let journey = try Journey(scenario: "drop-bins")
+        let app = LatchApp(
+            config: LatchApp.Config(
+                executableURL: try Self.fixtureBinary(),
+                slug: "drag-fixture"
+            ),
+            journey: journey
+        )
+        try await app.run { app in
+            try await app.poll("bins mounted", timeout: 15) { app in
+                try await app.node("bin.dest") != nil
+            }
+            let pointer = NSEvent.mouseLocation
+
+            try await app.drop("bin.source", onto: "bin.dest")
+
+            #expect(try await app.node("bin.dest")?.value == "token")
+            #expect(try await app.node("bin.source")?.value == "")
+            #expect(NSEvent.mouseLocation == pointer)
         }
     }
 

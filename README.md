@@ -110,9 +110,13 @@ itself.
   that only lives in event dispatch —
   outside-click dismissal, right-click menus, drags — is testable.
   `mouse drag` aims at an inset clear of labeled children and leaves
-  the pointer where it is. `mouse drag-session` is the dragging-session
-  path: the pointer tracks the drag and returns, the left button is
-  posted for the gesture, and the app has to already be in front. `ax dismiss`
+  the pointer where it is. To move something between two controls, use
+  `ax drag`: the source declares its payload, the destination its drop,
+  and Latch hands one to the other with no pointer and no focus.
+  `mouse drag-session` is the escape hatch for proving the real
+  `draggable` wiring: the pointer tracks the drag and returns, the left
+  button is posted for the gesture, and the app has to already be in
+  front. `ax dismiss`
   presses the frontmost system alert in this app (NSAlert, SwiftUI
   `.alert`). Named dump nests that
   sheet under the window so the alert copy is readable.

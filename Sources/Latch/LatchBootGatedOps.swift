@@ -41,6 +41,10 @@
             try await inner.axSet(id: id, value: value)
         }
 
+        func axDrag(from: String, to: String) async throws {
+            try await inner.axDrag(from: from, to: to)
+        }
+
         func axDismiss(button: String?) async throws {
             try await inner.axDismiss(button: button)
         }

@@ -47,6 +47,7 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
     func axFind(id: String) async throws -> LatchAXNode
     func axPress(id: String, action: String?) async throws
     func axSet(id: String, value: String) async throws
+    func axDrag(from: String, to: String) async throws
     func axDismiss(button: String?) async throws
     func mouseClick(id: String, button: String?) async throws
     func mouseClickPoint(window: String, x: Double, y: Double, button: String?)
@@ -67,6 +68,12 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
 }
 
 extension LatchOpsProviding {
+    /// Older custom ops providers have no catalog drag. Providers opt in
+    /// by implementing this verb.
+    public func axDrag(from: String, to: String) async throws {
+        throw LatchError.actionUnavailable(id: from, action: "drag")
+    }
+
     /// Older custom ops providers can keep supporting whole-window captures.
     /// Providers opt into element screenshots by implementing this overload.
     public func screenshot(window: String, id: String?) async throws -> String {
@@ -161,6 +168,14 @@ extension LatchOpsProviding {
         public func axSet(id: String, value: String) async throws {
             do {
                 try LatchCatalog.set(id: id, value: value)
+            } catch let error as LatchCatalog.Error {
+                throw LatchError(error)
+            }
+        }
+
+        public func axDrag(from: String, to: String) async throws {
+            do {
+                try LatchCatalog.drag(from: from, to: to)
             } catch let error as LatchCatalog.Error {
                 throw LatchError(error)
             }

@@ -218,6 +218,17 @@ public actor LatchApp {
         }
     }
 
+    /// Moves the payload of `source` into the drop handler of `dest`
+    /// through the catalog. The pointer stays put and the app can stay
+    /// in the background.
+    public func drop(_ source: String, onto dest: String) async throws {
+        try await withDiff(action: "axDrag", id: "\(source)->\(dest)") {
+            _ = try await self.send(
+                "axDrag",
+                args: ["from": .string(source), "to": .string(dest)])
+        }
+    }
+
     /// A real synthesized mouse click at the element's frame center.
     /// Runs the full dispatch path — hit-testing, event monitors — so it
     /// covers behavior `press` cannot: outside-click dismissal, context

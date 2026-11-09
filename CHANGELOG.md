@@ -4,6 +4,17 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Kernel
+
+- `axDrag` moves a drag between two catalog ids without touching the
+  pointer or needing the app in front. The source declares its payload
+  with `.latchDragSource(id) { … }`, the destination its drop with
+  `.latchDropTarget(id) { … }`; the verb hands one to the other.
+  `latch.sh ax drag <from> <to>` and `LatchApp.drop(_:onto:)` expose it.
+  `LatchOpsProviding.axDrag` has a default that refuses, so existing
+  providers compile. `mouseDragSession` stays for proving the real
+  `draggable` / `NSDraggingSession` wiring.
+
 ## 0.7.0 — 2026-11-09
 
 ### Kernel

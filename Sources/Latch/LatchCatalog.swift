@@ -202,6 +202,22 @@ public enum LatchCatalog {
         /// Zero point of history timestamps: the first read of the clock.
         private static let historyOrigin = ContinuousClock.now
 
+        /// One drag handler per id. A drag source and a drop target are
+        /// separate modifiers on a control that `.latch` already
+        /// registered, so they outlive that entry's re-registration.
+        private struct DragSource {
+            let token: ObjectIdentifier
+            let payload: () throws -> String
+        }
+
+        private struct DropTarget {
+            let token: ObjectIdentifier
+            let drop: (String) throws -> Void
+        }
+
+        private static var dragSources: [String: DragSource] = [:]
+        private static var dropTargets: [String: DropTarget] = [:]
+
         private struct Owner: Hashable {
             let id: String
             let token: ObjectIdentifier
@@ -218,6 +234,8 @@ public enum LatchCatalog {
             entries.removeAll()
             frameSources.removeAll()
             children.removeAll()
+            dragSources.removeAll()
+            dropTargets.removeAll()
             nextGeneration = 0
             valueHistory.removeAll()
             historyPrefixes = []
@@ -340,6 +358,55 @@ public enum LatchCatalog {
                 entries.removeValue(forKey: id)
             }
             notifyChanged()
+        #endif
+    }
+
+    /// Declares the text `id` would put on the pasteboard when dragged.
+    public static func registerDragSource(
+        id: String, token: Token, payload: @escaping () throws -> String
+    ) {
+        #if DEBUG
+            dragSources[id] = DragSource(token: ObjectIdentifier(token), payload: payload)
+        #endif
+    }
+
+    /// Declares what `id` does with dropped text.
+    public static func registerDropTarget(
+        id: String, token: Token, drop: @escaping (String) throws -> Void
+    ) {
+        #if DEBUG
+            dropTargets[id] = DropTarget(token: ObjectIdentifier(token), drop: drop)
+        #endif
+    }
+
+    public static func unregisterDrag(id: String, token: Token) {
+        #if DEBUG
+            let owner = ObjectIdentifier(token)
+            if dragSources[id]?.token == owner { dragSources.removeValue(forKey: id) }
+            if dropTargets[id]?.token == owner { dropTargets.removeValue(forKey: id) }
+        #endif
+    }
+
+    /// Hands the payload of `source` to the drop handler of `destination`.
+    /// Nothing touches the system pointer or the drag pasteboard.
+    public static func drag(from source: String, to destination: String) throws {
+        #if DEBUG
+            guard let sourceEntry = active(id: source) else { throw missing(id: source) }
+            guard let destinationEntry = active(id: destination) else {
+                throw missing(id: destination)
+            }
+            guard sourceEntry.enabled() else { throw Error.disabled(id: source) }
+            guard destinationEntry.enabled() else { throw Error.disabled(id: destination) }
+            guard let dragSource = dragSources[source] else {
+                throw Error.actionUnavailable(id: source, action: "drag")
+            }
+            guard let dropTarget = dropTargets[destination] else {
+                throw Error.actionUnavailable(id: destination, action: "drop")
+            }
+            try dropTarget.drop(try dragSource.payload())
+            notifyChanged()
+        #else
+            throw Error.notFound(id: source)
         #endif
     }
 

@@ -147,6 +147,37 @@ struct LatchCatalogTests {
         }
     }
 
+    @Test("drag hands the source payload to the drop target and refuses what cannot")
+    @MainActor
+    func dragMovesPayloadOrFailsLoud() throws {
+        let token = LatchCatalog.Token()
+        var dropped: [String] = []
+        for id in ["bin.source", "bin.dest", "bin.bare"] {
+            try LatchCatalog.register(id: id, role: "group", token: token)
+        }
+        try LatchCatalog.register(
+            id: "bin.off", role: "group", enabled: { false }, token: token)
+        LatchCatalog.registerDragSource(id: "bin.source", token: token) { "token" }
+        LatchCatalog.registerDropTarget(id: "bin.dest", token: token) { dropped.append($0) }
+
+        try LatchCatalog.drag(from: "bin.source", to: "bin.dest")
+        #expect(dropped == ["token"])
+
+        #expect(throws: LatchCatalog.Error.actionUnavailable(id: "bin.bare", action: "drag")) {
+            try LatchCatalog.drag(from: "bin.bare", to: "bin.dest")
+        }
+        #expect(throws: LatchCatalog.Error.actionUnavailable(id: "bin.bare", action: "drop")) {
+            try LatchCatalog.drag(from: "bin.source", to: "bin.bare")
+        }
+        #expect(throws: LatchCatalog.Error.disabled(id: "bin.off")) {
+            try LatchCatalog.drag(from: "bin.source", to: "bin.off")
+        }
+        #expect(throws: LatchCatalog.Error.self) {
+            try LatchCatalog.drag(from: "bin.source", to: "bin.missing")
+        }
+        #expect(dropped == ["token"])
+    }
+
     @Test("parse helpers fail loud on bad values")
     @MainActor
     func parseHelpersFailLoud() throws {

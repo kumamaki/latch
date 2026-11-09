@@ -174,6 +174,9 @@
             case .axSet(let id, let value):
                 try await ops.axSet(id: id, value: value)
                 return .success()
+            case .axDrag(let from, let to):
+                try await ops.axDrag(from: from, to: to)
+                return .success()
             case .axDismiss(let button):
                 try await ops.axDismiss(button: button)
                 return .success()

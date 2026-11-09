@@ -32,6 +32,7 @@ import Foundation
         case axFind(id: String, history: Bool)
         case axPress(id: String, action: String?)
         case axSet(id: String, value: String)
+        case axDrag(from: String, to: String)
         case axDismiss(button: String?)
         case mouseClick(id: String, button: String?)
         case mouseClickPoint(window: String, x: Double, y: Double, button: String?)
@@ -74,6 +75,9 @@ import Foundation
             case "axSet":
                 let args = try container.decode(AxSetArgs.self, forKey: .args)
                 return .axSet(id: args.id, value: args.value)
+            case "axDrag":
+                let args = try container.decode(MouseDragArgs.self, forKey: .args)
+                return .axDrag(from: args.from, to: args.to)
             case "axDismiss":
                 let args = try container.decodeIfPresent(AxDismissArgs.self, forKey: .args)
                 let button = args?.button.flatMap { $0.isEmpty ? nil : $0 }

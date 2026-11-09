@@ -28,6 +28,11 @@ final class DragFixtureModel {
     var row = "idle"
     var flip = "a"
 
+    func receive(_ item: String) {
+        dest = item
+        source = ""
+    }
+
     /// Walks `flip` a → b → c, `gap` apart. Each step is its own
     /// main-actor turn, so a short gap outruns any poll.
     func runFlip(gap: Duration) {
@@ -152,13 +157,14 @@ private struct Bin: View {
         let base = Color.black.opacity(0.04).contentShape(Rectangle())
         if let payload {
             base.draggable(payload)
+                .latchDragSource(id) { payload }
         } else if drop {
             base.dropDestination(for: String.self) { items, _ in
                 guard let item = items.first else { return false }
-                model.dest = item
-                model.source = ""
+                model.receive(item)
                 return true
             }
+            .latchDropTarget(id) { model.receive($0) }
         } else {
             base
         }
