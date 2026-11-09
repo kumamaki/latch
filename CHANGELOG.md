@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.7.0 — 2026-11-09
+
 ### Kernel
 
 - Value history. `Latch.start(app:history:)` takes id prefixes; each
