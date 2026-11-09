@@ -25,7 +25,10 @@ in-app assistant needs its own drive path — Latch does not ship one.
 In DEBUG the model only sees what you registered. Hidden views vanish.
 Live telemetry stays unlabeled. A miss is a catalog miss; there is no
 AX fallback in-process. Mouse click and drag are socket commands, not
-`Latch` methods. Press and set refuse when `enabled` is false.
+`Latch` methods. `LatchCatalog.drag(from:to:)` is the in-process drag:
+it hands the payload registered by `.latchDragSource` to the drop
+registered by `.latchDropTarget`, and throws `notFound` in Release.
+Press, set, and drag refuse when `enabled` is false.
 Find still returns the node. `Latch.dismiss` is chrome for the
 frontmost system dialog, not a catalog press.
 
