@@ -132,8 +132,9 @@ guessing synonyms.
 | `docs/` | Wire protocol, in-process API, agent contract |
 
 Product verbs (`add-note`, `seed`) stay in your app. The kernel knows
-ping, boot, windows, `ax *`, `mouseClick`, `mouseDrag`,
-`mouseDragSession`, and screenshot, and nothing else.
+ping, boot, windows, `ax *` (`ax find <id> --history` returns the values an
+opted-in id published), `mouseClick`, `mouseDrag`, `mouseDragSession`, and
+screenshot, and nothing else.
 
 ## Quick start
 
@@ -209,6 +210,42 @@ dialog, not a catalog press. Release registration is a no-op —
 `snapshot()` is empty and `press` / `set` / `find` throw `notFound`.
 A production assistant needs its own drive path; Latch does not ship
 one. See [docs/in-process.md](docs/in-process.md).
+
+## Value history and LatchE2E
+
+Polling misses a state that lasts a few milliseconds. Opt ids in by prefix
+and read back what they published:
+
+```swift
+Latch.start(app: "myapp", history: ["fetch.row."])
+```
+
+```sh
+bash cli/latch.sh --app myapp ax find fetch.row.7.lifecycle --history
+```
+
+Each reply entry is `{at, value}` in milliseconds on the app's monotonic
+clock. History records republishes, so two changes inside one main-actor
+turn collapse. [docs/protocol.md](docs/protocol.md#value-history) has the
+wire and the limits.
+
+`LatchE2E` is the Swift test client for the same socket. It launches your
+app, drives it through the catalog, and waits by polling:
+
+```swift
+let app = LatchApp(config: .init(executableURL: binary, slug: "myapp"))
+try await app.run { app in
+    try await app.press("editor.save")
+    try await app.expect("editor.status").value("saved")
+    try await app.expect("fetch.row.7.lifecycle")
+        .toHaveRecorded(["running", "stopping", "idle"])
+    let recorded = try await app.history("fetch.row.7.lifecycle")  // [HistoryEntry]
+}
+```
+
+`through` samples the live value, so it can miss a short state.
+`toHaveRecorded` checks the recorded history instead and prints
+everything recorded when it fails.
 
 ## Paths
 

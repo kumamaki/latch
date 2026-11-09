@@ -4,6 +4,24 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Kernel
+
+- Value history. `Latch.start(app:history:)` takes id prefixes; each
+  matching catalog id records `(time, value)` on every republish that
+  changes it, in a ring of 64 entries per id (256 ids kept, least recently
+  written dropped). History is keyed by id and survives `unregister`.
+  `axFind` takes `history: true` and replies with `history: {now, entries}`
+  beside `node`; `latch.sh ax find <id> --history` exposes it. Times are
+  integer milliseconds on a monotonic clock, not wall time. An id that was
+  not opted in fails with `unavailable`. Two changes inside one main-actor
+  turn collapse, and a node that never republishes has no history.
+
+### LatchE2E
+
+- `app.history(id)` returns the recorded `[HistoryEntry]`, and
+  `expect(id).toHaveRecorded([...])` asserts an ordered subsequence of it,
+  so a state shorter than the poll interval still counts.
+
 ## 0.6.0 — 2026-10-23
 
 ### Kernel

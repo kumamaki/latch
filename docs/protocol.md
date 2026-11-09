@@ -56,7 +56,7 @@ Codes: `unauthenticated` · `unknownCommand` · `ipc` · `notFound` · `unavaila
 | `windowShow` | `{window}` | `{}` |
 | `windowHide` | `{window}` | `{}` |
 | `axDump` | `{window?, labeled?}` | `{root}` |
-| `axFind` | `{id}` | `{node}` |
+| `axFind` | `{id, history?}` | `{node}`; with `history: true` also `{history}`, see [Value history](#value-history) |
 | `axPress` | `{id, action?}` | `{}` |
 | `axSet` | `{id, value}` | `{}` |
 | `axDismiss` | `{button?}` | `{}` — press a button on the frontmost system dialog (NSAlert, SwiftUI `.alert`). Omit `button` for the default. A miss lists the titles. |
@@ -95,6 +95,51 @@ SwiftUI `WindowGroup` identifiers (`main-AppWindow-1`) match as `main` while tha
 main display. AppKit animation completions may not fire while asleep.
 CLI `wait` timeout names that on the `timeout:` line and prints a
 `diagnostic:` compact window list (`name ✓/✗ n nodes`).
+
+## Value history
+
+`Latch.start(app:history: ["fetch.row."])` opts every catalog id with one
+of those prefixes into recording. Each time such an id registers (a
+SwiftUI `.latch` re-registers when its value changes, an AppKit
+`Binding.publish` on every call) the catalog reads the value and appends
+it unless it equals the last recorded one. A caller then asserts after the
+fact that the sequence contains a state, so a 10 ms state is as reliable as
+a 10 s one. Polling cannot promise that.
+
+`axFind` with `history: true` adds a sibling of `node`:
+
+```json
+{"ok":true,"data":{"node":{…},"history":{"now":5123,"entries":[
+  {"at":5001,"value":"download/running"},
+  {"at":5090,"value":"download/stopping"},
+  {"at":5101,"value":"download/idle"}]}}}
+```
+
+- `at` and `now` are integer milliseconds on a monotonic clock (Swift
+  `ContinuousClock`), counted from the first time the app touched history.
+  They order entries and measure gaps. They are not wall-clock time. `now`
+  is the same clock at reply time: read it before an action, then keep the
+  entries with `at >= now` to ask what the action caused.
+- Entries are oldest first. Each id keeps its newest 64; Latch keeps at most
+  256 ids and drops the least recently written one.
+- History is keyed by id and survives `unregister`, so a virtualized row
+  that remounts keeps its past.
+- An id that matches no opted-in prefix fails with `unavailable`, so
+  "not recorded" never looks like "nothing happened yet". An opted-in id
+  with no entries yet returns `entries: []`.
+- Without `history: true` the reply is unchanged, and a server that
+  predates history ignores the argument.
+
+Limits, not bugs:
+
+- History records what a republish observes. Two changes inside one
+  main-actor turn collapse into the last one.
+- A node that never republishes has no history. An AppKit adopter must
+  call `publish` when the value changes.
+- Nil values and removal are not recorded.
+- Registrations that happen before `Latch.start` are not recorded.
+- Two windows that register the same id write into one history.
+- For sub-turn ordering, the host's own logs stay the truth.
 
 ## Encodings
 

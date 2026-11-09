@@ -56,6 +56,7 @@ bash <latch>/cli/latch.sh --app <app> doctor
 |---|---|
 | `catalog` / `ax dump --labeled` | Scene catalog (registered handlers) |
 | `ax find` / `ax press` / `ax set` | Catalog only. A miss names nearby ids. |
+| `ax find <id> --history` | Every value the id published, oldest first, with ms timestamps. For states shorter than a poll. Only ids the host opted in with `Latch.start(app:history:)`; any other id fails loud. Two changes in one main-actor turn collapse. |
 | `mouse click <id>` / `mouse click <id> right` | Real `NSEvent` on the accessibility frame of that catalog id. Use for dispatch behavior — outside-click dismissal, click-through, right-click menus — not as a faster `press`. |
 | `mouse drag <from-id> <to-id>` | Mouse drag between two catalog ids. Aims at an inset clear of labeled children. The pointer stays where it is. For `DragGesture` and `mouseDragged`. |
 | `mouse drag-session <from-id> <to-id>` | Same aim as `mouse drag`. The pointer tracks the path and returns. The app has to already be in front. Posts the left button for the gesture, without an Accessibility prompt, so a dragging session can follow it. |
@@ -110,6 +111,7 @@ bash <latch>/cli/latch.sh --app <app> wait window main --hidden
 bash <latch>/cli/latch.sh --app <app> ids
 bash <latch>/cli/latch.sh --app <app> catalog
 bash <latch>/cli/latch.sh --app <app> ax find <id>
+bash <latch>/cli/latch.sh --app <app> ax find <id> --history
 bash <latch>/cli/latch.sh --app <app> ax set <id> <value>
 bash <latch>/cli/latch.sh --app <app> wait ax <id> --value <value>
 bash <latch>/cli/latch.sh --app <app> wait ax <id> --enabled

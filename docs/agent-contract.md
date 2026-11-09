@@ -48,4 +48,9 @@ other coding agent can run them.
 - In-app assistant: `Latch.snapshot` / `press` / `set`, DEBUG builds
   only. No socket.
 - Product verbs stay in the app.
+- A state that lasts milliseconds is asserted from value history, not
+  polled. The host opts ids in with `Latch.start(app:history:)`; then
+  `ax find <id> --history` returns every value that id published, oldest
+  first. History records republishes, so two changes in one main-actor turn
+  collapse. A non-opted-in id fails loud.
 - `Latch.start` is DEBUG-only. Do not ship the socket as a product feature.
