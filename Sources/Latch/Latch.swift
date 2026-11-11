@@ -43,6 +43,7 @@ public enum Latch {
         #if DEBUG
             if isPreviewProcess { return }
             if !history.isEmpty { LatchCatalog.configureHistory(prefixes: history) }
+            LatchAX.requestAccessibilityTree()
             switch socketPhase {
             case .starting, .listening:
                 return
