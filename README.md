@@ -251,6 +251,13 @@ try await app.run { app in
 `toHaveRecorded` checks the recorded history instead and prints
 everything recorded when it fails.
 
+When a run fails, the journey's `failure.json` holds the error, the
+catalog values at that moment, the last five action diffs, and a
+screenshot. For crash-resume scenarios, `app.killNow()` sends SIGKILL to
+the spawned process, and `app.isRunning` and
+`app.waitForTermination(timeout:)` read the process handle instead of
+`pgrep`.
+
 ## Paths
 
 ```

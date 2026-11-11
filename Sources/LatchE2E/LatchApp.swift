@@ -60,7 +60,13 @@ public actor LatchApp {
                 // not mask the test failure we are unwinding with.
                 try? await journey?.recordNote("failure screenshot unavailable: \(error)")
             }
-            try? await journey?.recordFailure(error, shotPath: shotPath)
+            var catalog: CatalogSnapshot?
+            do {
+                catalog = try await snapshot()
+            } catch {
+                try? await journey?.recordNote("failure catalog unavailable: \(error)")
+            }
+            try? await journey?.recordFailure(error, shotPath: shotPath, catalog: catalog)
             try? await journey?.finish()
             await terminate()
             throw error
@@ -163,6 +169,27 @@ public actor LatchApp {
             else { return false }
             return item.exists && item.visible == visible
         }
+    }
+
+    public var isRunning: Bool {
+        process?.isRunning ?? false
+    }
+
+    /// Whether the app exited within `timeout`. Polls the process handle,
+    /// so a quit-oracle scenario needs no `pgrep`.
+    public func waitForTermination(timeout: TimeInterval = 5) async -> Bool {
+        guard let process else { return true }
+        await waitForExit(of: process, timeout: timeout)
+        return !process.isRunning
+    }
+
+    /// SIGKILL on the spawned pid: no termination handlers run, so a
+    /// resume path sees a crash. `terminate()` is the graceful TERM.
+    public func killNow() async {
+        guard let process, process.isRunning else { return }
+        client = nil
+        kill(process.processIdentifier, SIGKILL)
+        await waitForExit(of: process, timeout: 5)
     }
 
     public func terminate() async {

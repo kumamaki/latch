@@ -18,6 +18,13 @@ public struct CatalogNode: Sendable, Equatable {
         self.enabled = json["enabled"]?.boolValue
     }
 
+    var failureEntry: JSONValue {
+        var entry: [String: JSONValue] = [:]
+        if let value { entry["value"] = .string(value) }
+        if let enabled { entry["enabled"] = .bool(enabled) }
+        return .object(entry)
+    }
+
     /// Catalog values are strings on the wire; booleans and numbers
     /// render as their protocol text so a `--value true` style match
     /// still works against toggles.

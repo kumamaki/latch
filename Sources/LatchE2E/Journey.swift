@@ -7,7 +7,7 @@ import Foundation
 ///         diffs/        catalog added/removed/changed per mutating action
 ///         shots/        screenshots, copied next to the evidence
 ///         junit.xml     CI reporting
-///         failure.json  got/want + last diff + catalog + shot on first failure
+///         failure.json  error, recent diffs, catalog values, shot on first failure
 ///         app.log       the app's own stdout + stderr
 public actor Journey {
     public let directory: URL
@@ -16,9 +16,12 @@ public actor Journey {
     private var steps: [StepRecord] = []
     private var lastDiff: CatalogDiff?
     private var lastCatalogIds: [String] = []
+    private var recentDiffs: [String] = []
     private var failureRecorded = false
     private var diffCounter = 0
     private var shotCounter = 0
+
+    private static let recentDiffLimit = 5
 
     private struct StepRecord {
         let label: String
@@ -150,6 +153,8 @@ public actor Journey {
     func recordDiff(_ diff: CatalogDiff, action: String, id: String, after: CatalogSnapshot) throws
     {
         lastDiff = diff
+        recentDiffs.append("\(action) \(id): \(diff.summary)")
+        recentDiffs = Array(recentDiffs.suffix(Self.recentDiffLimit))
         lastCatalogIds = after.ids
         diffCounter += 1
         let fileID = id.replacingOccurrences(of: "/", with: "_")
@@ -215,15 +220,23 @@ public actor Journey {
         try append(["event": .string("note"), "note": .string(note)])
     }
 
-    func recordFailure(_ error: Error, shotPath: URL?) throws {
+    func recordFailure(_ error: Error, shotPath: URL?, catalog: CatalogSnapshot?) throws {
         guard !failureRecorded else { return }
         failureRecorded = true
         var payload: [String: JSONValue] = [
             "error": .string(String(describing: error)),
             "lastDiff": .string(lastDiff?.summary ?? "none"),
             "catalogIds": .array(lastCatalogIds.map(JSONValue.string)),
+            "recentDiffs": .array(recentDiffs.map(JSONValue.string)),
             "appLog": .string(appLogURL.path),
         ]
+        if let catalog {
+            payload["catalog"] = .object(
+                Dictionary(
+                    uniqueKeysWithValues: catalog.ids.compactMap { id in
+                        catalog.node(id).map { (id, $0.failureEntry) }
+                    }))
+        }
         if let shotPath {
             payload["shot"] = .string(shotPath.path)
         }

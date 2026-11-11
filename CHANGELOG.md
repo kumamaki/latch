@@ -4,6 +4,15 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### LatchE2E
+
+- `failure.json` now carries the catalog values at the moment of failure
+  and the last five action diffs.
+- `LatchApp.killNow()` sends SIGKILL to the spawned app, and `isRunning`
+  and `waitForTermination(timeout:)` read the process handle. `terminate()`
+  polls for exit instead of calling `waitUntilExit`, which could hang the
+  test process after the app had already gone.
+
 ### Kernel
 
 - `axCoverage` measures the registration gap: the controls the AX probe
