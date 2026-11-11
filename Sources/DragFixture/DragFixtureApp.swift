@@ -83,6 +83,8 @@ private struct FlipPanel: View {
                 .latch("flip.fast", window: "main") { model.runFlip(gap: .milliseconds(10)) }
             Button("Slow") { model.runFlip(gap: .milliseconds(400)) }
                 .latch("flip.slow", window: "main") { model.runFlip(gap: .milliseconds(400)) }
+            // Unregistered on purpose: the control `ax coverage` must report.
+            Button("Stray") {}
         }
     }
 }

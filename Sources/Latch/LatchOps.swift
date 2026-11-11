@@ -47,6 +47,7 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
     func axFind(id: String) async throws -> LatchAXNode
     func axPress(id: String, action: String?) async throws
     func axSet(id: String, value: String) async throws
+    func axCoverage(window: String?) async throws -> LatchCoverageReply
     func axDrag(from: String, to: String) async throws
     func axDismiss(button: String?) async throws
     func mouseClick(id: String, button: String?) async throws
@@ -68,6 +69,12 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
 }
 
 extension LatchOpsProviding {
+    /// Older custom ops providers cannot measure coverage. Providers opt in
+    /// by implementing this verb.
+    public func axCoverage(window: String?) async throws -> LatchCoverageReply {
+        throw LatchError.actionUnavailable(id: window ?? "app", action: "coverage")
+    }
+
     /// Older custom ops providers have no catalog drag. Providers opt in
     /// by implementing this verb.
     public func axDrag(from: String, to: String) async throws {
@@ -171,6 +178,10 @@ extension LatchOpsProviding {
             } catch let error as LatchCatalog.Error {
                 throw LatchError(error)
             }
+        }
+
+        public func axCoverage(window: String?) async throws -> LatchCoverageReply {
+            try LatchCoverage.report(window: window)
         }
 
         public func axDrag(from: String, to: String) async throws {

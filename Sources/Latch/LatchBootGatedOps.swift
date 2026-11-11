@@ -41,6 +41,10 @@
             try await inner.axSet(id: id, value: value)
         }
 
+        func axCoverage(window: String?) async throws -> LatchCoverageReply {
+            try await inner.axCoverage(window: window)
+        }
+
         func axDrag(from: String, to: String) async throws {
             try await inner.axDrag(from: from, to: to)
         }

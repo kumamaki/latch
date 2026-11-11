@@ -386,6 +386,30 @@ public actor LatchApp {
         }
     }
 
+    /// Actionable controls the catalog covers and the ones it misses,
+    /// named by role and title. Reports only; it drives nothing.
+    public struct Coverage: Sendable, Equatable {
+        public let covered: Int
+        public let uncovered: [String]
+    }
+
+    public func coverage(window: String? = nil) async throws -> Coverage {
+        let args: [String: JSONValue] = window.map { ["window": .string($0)] } ?? [:]
+        let data = try await send("axCoverage", args: args, record: false)
+        guard let covered = data["covered"]?.intValue,
+            let gaps = data["uncovered"]?.arrayValue
+        else {
+            throw LatchE2EError.server(
+                code: "protocol", message: "axCoverage reply without covered and uncovered")
+        }
+        return Coverage(
+            covered: covered,
+            uncovered: gaps.map { gap in
+                [gap["role"]?.stringValue, gap["title"]?.stringValue]
+                    .compactMap { $0 }.joined(separator: " ")
+            })
+    }
+
     public struct WindowStatus: Sendable, Equatable {
         public let name: String
         public let visible: Bool

@@ -32,6 +32,7 @@ import Foundation
         case axFind(id: String, history: Bool)
         case axPress(id: String, action: String?)
         case axSet(id: String, value: String)
+        case axCoverage(window: String?)
         case axDrag(from: String, to: String)
         case axDismiss(button: String?)
         case mouseClick(id: String, button: String?)
@@ -75,6 +76,9 @@ import Foundation
             case "axSet":
                 let args = try container.decode(AxSetArgs.self, forKey: .args)
                 return .axSet(id: args.id, value: args.value)
+            case "axCoverage":
+                let args = try container.decodeIfPresent(AxDumpArgs.self, forKey: .args)
+                return .axCoverage(window: args?.window)
             case "axDrag":
                 let args = try container.decode(MouseDragArgs.self, forKey: .args)
                 return .axDrag(from: args.from, to: args.to)
@@ -226,6 +230,7 @@ import Foundation
         case windows(items: [LatchWindowStatus])
         case axTree(root: LatchAXNode)
         case axNode(LatchAXNode, history: LatchHistoryReply?)
+        case coverage(LatchCoverageReply)
         case screenshot(path: String, note: String)
 
         func encode(to encoder: Encoder) throws {
@@ -253,6 +258,8 @@ import Foundation
                 var container = encoder.container(keyedBy: NodeKeys.self)
                 try container.encode(node, forKey: .node)
                 try container.encodeIfPresent(history, forKey: .history)
+            case .coverage(let reply):
+                try reply.encode(to: encoder)
             case .screenshot(let path, let note):
                 var container = encoder.container(keyedBy: ScreenshotKeys.self)
                 try container.encode(path, forKey: .path)

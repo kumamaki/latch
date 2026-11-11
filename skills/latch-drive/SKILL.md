@@ -55,6 +55,7 @@ bash <latch>/cli/latch.sh --app <app> doctor
 | Command | Hits |
 |---|---|
 | `catalog` / `ax dump --labeled` | Scene catalog (registered handlers) |
+| `coverage [window] [--fail-under <percent>]` | Actionable controls the app shows that no catalog id drives, with the nearest registered id. Reports only. `--fail-under` exits 1 below the percent, for CI. |
 | `ax find` / `ax press` / `ax set` | Catalog only. A miss names nearby ids. |
 | `ax find <id> --history` | Every value the id published, oldest first, with ms timestamps. For states shorter than a poll. Only ids the host opted in with `Latch.start(app:history:)`; any other id fails loud. Two changes in one main-actor turn collapse. |
 | `mouse click <id>` / `mouse click <id> right` | Real `NSEvent` on the accessibility frame of that catalog id. Use for dispatch behavior — outside-click dismissal, click-through, right-click menus — not as a faster `press`. |

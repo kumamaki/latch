@@ -112,6 +112,20 @@ the node in labeled dump.
 Use `LatchCatalog.Binding` when a cell recycles. `publish` on reuse,
 `clear` on teardown. Do not leave a stale id on a recycled row.
 
+## Find what is missing
+
+With the Debug app running, measure the gap instead of hunting for it:
+
+```sh
+bash <latch>/cli/latch.sh --app <slug> coverage <window>
+```
+
+Each `uncovered` row is a button, field, or switch the app shows that no
+id drives. `near` names the smallest registered id around it, which is
+often the parent stack that was registered by mistake. Register the
+control, rebuild, and run it again until the list holds only chrome the
+agent does not need.
+
 ## After
 
 If the project has a drive runbook (AGENTS.md Latch section or a copied

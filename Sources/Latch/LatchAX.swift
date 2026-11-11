@@ -1124,6 +1124,56 @@
             )
         }
 
+        private static let controlRoles: Set<String> = [
+            "button", "checkbox", "radiobutton", "textfield", "combobox",
+            "popupbutton", "menubutton", "slider", "switch", "incrementor",
+            "disclosuretriangle", "segmentedcontrol",
+        ]
+        /// Traffic lights are window chrome, not app controls.
+        private static let windowChromeSubroles: Set<String> = [
+            "closebutton", "minimizebutton", "zoombutton", "fullscreenbutton",
+        ]
+
+        /// Windows a coverage run walks: the named one, or every visible one.
+        @MainActor
+        static func coverageWindows(named name: String?) throws -> [NSWindow] {
+            let windows = targetWindows(named: name)
+            guard !windows.isEmpty else {
+                if let name { throw LatchError.unknownWindow(name: name) }
+                throw LatchError.opsUnavailable(reason: "No windows to measure.")
+            }
+            return windows
+        }
+
+        /// Controls the in-process AX probe finds in `window`, in AppKit
+        /// screen space. Whether any of them is registered is for the caller.
+        @MainActor
+        static func actionableControls(in window: NSWindow) -> [LatchAXControl] {
+            var controls: [LatchAXControl] = []
+            var remaining = maxNodes
+            collectControls(.window(window), depth: 0, remaining: &remaining, into: &controls)
+            return controls
+        }
+
+        @MainActor
+        private static func collectControls(
+            _ lens: Lens, depth: Int, remaining: inout Int, into controls: inout [LatchAXControl]
+        ) {
+            guard remaining > 0, depth <= maxDepth else { return }
+            remaining -= 1
+            let role = lens.roleName
+            let frame = lens.frame
+            let isChrome = lens.subroleName.map(windowChromeSubroles.contains) ?? false
+            if controlRoles.contains(role), !isChrome, frame.width >= 1, frame.height >= 1 {
+                controls.append(
+                    LatchAXControl(
+                        role: role, title: lens.title, identifier: lens.identifier, frame: frame))
+            }
+            for child in children(of: lens) {
+                collectControls(child, depth: depth + 1, remaining: &remaining, into: &controls)
+            }
+        }
+
         @MainActor
         static func children(of lens: Lens) -> [Lens] {
             var seen = Set<ObjectIdentifier>()
@@ -1650,6 +1700,14 @@
 
     private func axName(_ raw: String) -> String {
         raw.replacingOccurrences(of: "AX", with: "").lowercased()
+    }
+
+    /// One control the AX probe found, before it is compared to the catalog.
+    struct LatchAXControl: Sendable, Equatable {
+        let role: String
+        let title: String?
+        let identifier: String?
+        let frame: NSRect
     }
 
     extension LatchAXNode {

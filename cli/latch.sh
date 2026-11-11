@@ -50,6 +50,8 @@ Commands:
   mouse drag-session-point <window> <x> <y> <to-x> <to-y>
   mouse drag-session-point <window> <x> <y> <to-window> <to-x> <to-y>
   catalog [window]
+  coverage [window] [--fail-under <percent>]
+    lists actionable controls with no catalog id; exits 1 below the threshold
   screenshot <window> [id] [--frame white|black] [--padding <points>]
     --frame adds rounded screenshot corners and a white or black matte
     --padding uses points (0–256); frame-only default is 32, padding alone uses white
@@ -205,6 +207,53 @@ query() {
     local response
     response="$(round_trip "$command" "$args_json")"
     print_or_fail "$response"
+}
+
+coverage() {
+    local window="" threshold=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --fail-under)
+                [[ $# -ge 2 ]] || usage
+                threshold="$2"
+                shift 2
+                ;;
+            *)
+                [[ -z "$window" ]] || usage
+                window="$1"
+                shift
+                ;;
+        esac
+    done
+    local response report
+    if [[ -n "$window" ]]; then
+        response="$(round_trip axCoverage "$(printf '{"window":%s}' "$(json_escape "$window")")")"
+    else
+        response="$(round_trip axCoverage)"
+    fi
+    report="$(print_or_fail "$response")"
+    python3 - "$report" "$threshold" <<'PY'
+import json, sys
+
+report = json.loads(sys.argv[1])
+threshold = sys.argv[2]
+covered = report["covered"]
+total = covered + len(report["uncovered"])
+percent = 100.0 if total == 0 else 100.0 * covered / total
+print(json.dumps(report, indent=2))
+print(f"coverage: {covered}/{total} ({percent:.0f}%)", file=sys.stderr)
+if threshold:
+    try:
+        limit = float(threshold)
+    except ValueError:
+        print("error: --fail-under must be a number from 0 to 100.", file=sys.stderr)
+        sys.exit(64)
+    if not 0 <= limit <= 100:
+        print("error: --fail-under must be a number from 0 to 100.", file=sys.stderr)
+        sys.exit(64)
+    if percent < limit:
+        sys.exit(1)
+PY
 }
 
 labeled_dump() {
@@ -772,6 +821,9 @@ case "$command" in
                 ;;
             *) usage ;;
         esac
+        ;;
+    coverage)
+        coverage "$@"
         ;;
     catalog)
         flatten_catalog "$(labeled_dump "${1-}")"

@@ -6,6 +6,12 @@ All notable changes to Latch live here.
 
 ### Kernel
 
+- `axCoverage` measures the registration gap: the controls the AX probe
+  finds that no catalog id covers, each with the nearest registered id.
+  `latch.sh coverage [window] [--fail-under <percent>]` exposes it and
+  exits 1 below the threshold, so an adopter can gate CI on it.
+  `LatchApp.coverage(window:)` reads it in E2E.
+  `LatchOpsProviding.axCoverage` has a default that refuses.
 - `axDrag` moves a drag between two catalog ids without touching the
   pointer or needing the app in front. The source declares its payload
   with `.latchDragSource(id) { … }`, the destination its drop with

@@ -174,6 +174,8 @@
             case .axSet(let id, let value):
                 try await ops.axSet(id: id, value: value)
                 return .success()
+            case .axCoverage(let window):
+                return .success(.coverage(try await ops.axCoverage(window: window)))
             case .axDrag(let from, let to):
                 try await ops.axDrag(from: from, to: to)
                 return .success()

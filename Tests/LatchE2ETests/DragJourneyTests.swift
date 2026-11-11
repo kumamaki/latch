@@ -73,6 +73,26 @@ struct DragJourneyTests {
         }
     }
 
+    @Test("coverage reports the control nobody registered")
+    func coverageJourney() async throws {
+        let journey = try Journey(scenario: "coverage")
+        let app = LatchApp(
+            config: LatchApp.Config(
+                executableURL: try Self.fixtureBinary(),
+                slug: "drag-fixture"
+            ),
+            journey: journey
+        )
+        try await app.run { app in
+            try await app.poll("buttons mounted", timeout: 15) { app in
+                try await app.node("flip.slow") != nil
+            }
+            let coverage = try await app.coverage(window: "main")
+            #expect(coverage.covered == 2)
+            #expect(coverage.uncovered == ["button Stray"])
+        }
+    }
+
     static func fixtureBinary() throws -> URL {
         let repo = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

@@ -29,8 +29,10 @@ Expected chrome comes from, in order:
 2. List durable chrome the agent must reach (tabs, primary buttons,
    fields, window names). Confirm each window root has `.latchWindow`.
 3. Search for `.latch(` / `.latchWindow(` / `LatchCatalog.register` / `LatchCatalog.Binding`.
-4. Search for `.accessibilityIdentifier` without a matching `.latch`.
-   Those are probes, not drivers.
+4. With the Debug app running, `latch.sh --app <slug> coverage` lists
+   every button, field, and switch the app shows that no id drives.
+   Without a running app, search for `.accessibilityIdentifier` without
+   a matching `.latch`. Those are probes, not drivers.
 5. If the Debug app is running:
 
    ```sh
