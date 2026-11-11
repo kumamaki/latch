@@ -170,21 +170,28 @@ public actor LatchApp {
         client = nil
         if process.isRunning {
             process.terminate()
-            let deadline = Date().addingTimeInterval(5)
-            while process.isRunning && Date() < deadline {
-                try? await Task.sleep(for: .milliseconds(100))
-            }
-            if process.isRunning {
-                kill(process.processIdentifier, SIGKILL)
-            }
+            await waitForExit(of: process, timeout: 5)
         }
-        process.waitUntilExit()
+        if process.isRunning {
+            kill(process.processIdentifier, SIGKILL)
+            await waitForExit(of: process, timeout: 5)
+        }
         self.process = nil
         if let dataDir {
             // Ephemeral temp dir owned by this run; FileManager is the
             // right tool for it. Trashing /tmp scratch would be noise.
             try? FileManager.default.removeItem(at: dataDir)
             self.dataDir = nil
+        }
+    }
+
+    /// Polls `isRunning` instead of calling `Process.waitUntilExit`, which
+    /// blocks a cooperative thread on the run loop and can hang forever
+    /// after the child has already gone.
+    private func waitForExit(of process: Process, timeout: TimeInterval) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        while process.isRunning && Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(50))
         }
     }
 
