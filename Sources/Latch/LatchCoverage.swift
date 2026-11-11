@@ -42,6 +42,8 @@ public struct LatchCoverageReply: Sendable, Encodable, Equatable {
         struct Registered: Equatable {
             let id: String
             let frame: NSRect
+            /// Press or set reaches a handler, so a mounted one implies a control.
+            var drivable = false
         }
 
         @MainActor
@@ -51,9 +53,20 @@ public struct LatchCoverageReply: Sendable, Encodable, Equatable {
             var covered = 0
             var uncovered: [LatchCoverageGap] = []
             for window in try LatchAX.coverageWindows(named: name) {
+                let probe = LatchAX.actionableControls(in: window)
+                let registered = registeredFrames(in: window)
+                if probe.controls.isEmpty, let drivable = registered.first(where: \.drivable) {
+                    // Registered controls are on screen, so an empty probe is
+                    // a blind probe, not an app with nothing to cover.
+                    throw LatchError.opsUnavailable(
+                        reason:
+                            "The AX probe found no controls in \(window.title) after "
+                            + "\(probe.visited) nodes, but \(drivable.id) is mounted there. "
+                            + "SwiftUI may not have built its accessibility tree.")
+                }
                 let result = classify(
-                    controls: LatchAX.actionableControls(in: window),
-                    registered: registeredFrames(in: window),
+                    controls: probe.controls,
+                    registered: registered,
                     registeredIDs: ids)
                 covered += result.covered
                 uncovered += result.uncovered
@@ -68,7 +81,7 @@ public struct LatchCoverageReply: Sendable, Encodable, Equatable {
                 guard
                     case .visible(let frame) = LatchCatalog.screenshotFrame(id: node.id, in: window)
                 else { return nil }
-                return Registered(id: node.id, frame: frame)
+                return Registered(id: node.id, frame: frame, drivable: !node.actions.isEmpty)
             }
         }
 

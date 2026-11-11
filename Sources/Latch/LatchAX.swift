@@ -1134,25 +1134,9 @@
             "closebutton", "minimizebutton", "zoombutton", "fullscreenbutton",
         ]
 
-        @MainActor private static var accessibilityRequested = false
-
-        /// SwiftUI builds its accessibility tree only while an AX client is
-        /// attached, and a probe that runs in the app itself is not one. This
-        /// is the switch such clients flip from outside, so the controls
-        /// show up. The lighter flag: `AXEnhancedUserInterface` also changes
-        /// how AppKit animates windows.
-        @MainActor
-        static func requestAccessibilityTree() {
-            guard !accessibilityRequested else { return }
-            accessibilityRequested = true
-            NSApplication.shared.accessibilitySetValue(
-                true, forAttribute: NSAccessibility.Attribute(rawValue: "AXManualAccessibility"))
-        }
-
         /// Windows a coverage run walks: the named one, or every visible one.
         @MainActor
         static func coverageWindows(named name: String?) throws -> [NSWindow] {
-            requestAccessibilityTree()
             let windows = targetWindows(named: name)
             guard !windows.isEmpty else {
                 if let name { throw LatchError.unknownWindow(name: name) }
@@ -1164,11 +1148,11 @@
         /// Controls the in-process AX probe finds in `window`, in AppKit
         /// screen space. Whether any of them is registered is for the caller.
         @MainActor
-        static func actionableControls(in window: NSWindow) -> [LatchAXControl] {
+        static func actionableControls(in window: NSWindow) -> LatchAXProbe {
             var controls: [LatchAXControl] = []
             var remaining = maxNodes
             collectControls(.window(window), depth: 0, remaining: &remaining, into: &controls)
-            return controls
+            return LatchAXProbe(controls: controls, visited: maxNodes - remaining)
         }
 
         @MainActor
@@ -1716,6 +1700,13 @@
 
     private func axName(_ raw: String) -> String {
         raw.replacingOccurrences(of: "AX", with: "").lowercased()
+    }
+
+    /// What one window walk found: the controls, and how many AX nodes it
+    /// had to look through to find them.
+    struct LatchAXProbe: Sendable, Equatable {
+        let controls: [LatchAXControl]
+        let visited: Int
     }
 
     /// One control the AX probe found, before it is compared to the catalog.
