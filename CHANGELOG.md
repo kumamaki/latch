@@ -4,14 +4,6 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
-### E2E
-
-- Every `Journey` writes `transcript.txt`: its steps, each action with
-  what it changed in the catalog, and refusals. The README demo is one.
-  `just demo-transcript` regenerates it from the Gallery journey.
-- `just test` runs serially, so one E2E app cannot take the front from
-  another mid-drag.
-
 ### Examples
 
 - `examples/Gallery` (`just demo gallery`): two windows, a sheet, an
@@ -21,6 +13,11 @@ All notable changes to Latch live here.
 
 ### LatchE2E
 
+- Every `Journey` writes `transcript.txt`: its steps, each action with
+  what it changed in the catalog, and refusals. The README demo is one.
+  `just demo-transcript` regenerates it from the Gallery journey.
+- `just test` runs serially, so one E2E app cannot take the front from
+  another mid-drag.
 - `failure.json` now carries the catalog values at the moment of failure
   and the last five action diffs.
 - `LatchApp.killNow()` sends SIGKILL to the spawned app, and `isRunning`
