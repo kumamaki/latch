@@ -242,6 +242,9 @@ total = covered + len(report["uncovered"])
 percent = 100.0 if total == 0 else 100.0 * covered / total
 print(json.dumps(report, indent=2))
 print(f"coverage: {covered}/{total} ({percent:.0f}%)", file=sys.stderr)
+if threshold and total == 0:
+    print("error: the AX probe found no controls, so there is nothing to measure.", file=sys.stderr)
+    sys.exit(1)
 if threshold:
     try:
         limit = float(threshold)
