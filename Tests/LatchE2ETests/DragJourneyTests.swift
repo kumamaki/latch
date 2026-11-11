@@ -73,7 +73,11 @@ struct DragJourneyTests {
         }
     }
 
-    @Test("coverage reports the control nobody registered")
+    @Test(
+        "coverage reports the control nobody registered",
+        .enabled(
+            if: ProcessInfo.processInfo.environment["CI"] == nil,
+            "CI has no AX client, so SwiftUI gives the probe no controls"))
     func coverageJourney() async throws {
         let journey = try Journey(scenario: "coverage")
         let app = LatchApp(
