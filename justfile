@@ -8,14 +8,15 @@ set shell := ["bash", "-uc", "-o", "pipefail"]
 default:
     @just --list
 
-# Type-check and run unit tests.
+# Type-check and run unit tests. Serial: the E2E apps take the front, and a
+# real-pointer drag fails if another app activates mid-gesture.
 test:
-    swift test
+    swift test --no-parallel
 
 # Lint Swift sources and the CLI / release / check scripts.
 lint:
     swift format lint --strict --recursive Sources Tests examples Package.swift
-    shellcheck cli/latch.sh examples/Notes/latch.sh scripts/release.sh scripts/audit-config.sh scripts/smoke-consumer.sh
+    shellcheck cli/latch.sh examples/Notes/latch.sh scripts/release.sh scripts/audit-config.sh scripts/smoke-consumer.sh scripts/demo-transcript.sh
 
 # Assert Release carries no driving-surface impl or API.
 audit-config:
@@ -31,6 +32,11 @@ check:
     just lint
     just audit-config
     just smoke-consumer
+
+# Run the Gallery demo journey (drives a GUI app) and write its transcript into the README.
+demo-transcript:
+    swift test --filter GalleryJourneyTests/demoJourney
+    bash scripts/demo-transcript.sh "$(ls -d .latch-trace/gallery-demo-* | tail -1)"
 
 # Print the CLI usage.
 cli-help:

@@ -9,6 +9,7 @@ just test            # unit tests
 just check           # tests + swift-format lint + shellcheck
 just demo            # launch examples/Notes
 just demo gallery    # launch examples/Gallery
+just demo-transcript # rerun the Gallery demo journey, rewrite the README transcript
 just release minor   # dry-run the next tag; agents stop here
 ```
 

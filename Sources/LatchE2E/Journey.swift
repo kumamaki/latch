@@ -7,6 +7,7 @@ import Foundation
 ///         diffs/        catalog added/removed/changed per mutating action
 ///         shots/        screenshots, copied next to the evidence
 ///         junit.xml     CI reporting
+///         transcript.txt  the run as plain text: steps, actions with what they changed
 ///         failure.json  error, recent diffs, catalog values, shot on first failure
 ///         app.log       the app's own stdout + stderr
 public actor Journey {
@@ -17,6 +18,7 @@ public actor Journey {
     private var lastDiff: CatalogDiff?
     private var lastCatalogIds: [String] = []
     private var recentDiffs: [String] = []
+    private var transcript: [String] = []
     private var failureRecorded = false
     private var diffCounter = 0
     private var shotCounter = 0
@@ -71,6 +73,7 @@ public actor Journey {
     /// marker that keeps a trace readable.
     public func step(_ label: String, _ body: @Sendable () async throws -> Void) async throws {
         let started = Date()
+        transcript.append(transcript.isEmpty ? label : "\n\(label)")
         do {
             try await body()
             steps.append(
@@ -131,6 +134,11 @@ public actor Journey {
             atomically: true,
             encoding: .utf8
         )
+        try (transcript.joined(separator: "\n") + "\n").write(
+            to: directory.appendingPathComponent("transcript.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
     }
 
     // MARK: - Harness recording (internal; LatchApp calls these)
@@ -146,6 +154,7 @@ public actor Journey {
         ]
         if let error {
             event["error"] = .string(error)
+            transcript.append("  \(command)  refused: \(error)")
         }
         try append(event)
     }
@@ -157,6 +166,7 @@ public actor Journey {
         recentDiffs = Array(recentDiffs.suffix(Self.recentDiffLimit))
         lastCatalogIds = after.ids
         diffCounter += 1
+        transcript.append("  \(action) \(id)  ->  \(diff.summary)")
         let fileID = id.replacingOccurrences(of: "/", with: "_")
         let destination =
             directory
@@ -194,6 +204,7 @@ public actor Journey {
         if let detail {
             event["detail"] = .string(detail)
         }
+        transcript.append("  expect \(label)  \(outcome)")
         try append(event)
     }
 

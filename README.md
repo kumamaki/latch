@@ -21,6 +21,30 @@ NotesRoot()
     .latchWindow("main")
 ```
 
+A real run against `examples/Gallery`, recorded by `LatchE2E` (generated
+by `just demo-transcript`, never edited by hand):
+
+<!-- demo:start -->
+```text
+Select a row in the AppKit list
+  expect item.row.7 to appear  pass
+  axPress item.row.7  ->  changed inspector.title, selection.card
+  expect selection.card value Item 7  pass
+
+Drop a file onto the tray, no pointer involved
+  axDrag tray.source->tray.target  ->  changed tray.target
+  expect tray.target value report.pdf  pass
+
+Open the context menu and try a disabled row
+  mouseClick selection.card  ->  added menu, menu.row.copy, menu.row.delete, menu.row.move, menu.row.open
+  expect menu to appear  pass
+  axPress  refused: Latch server error (unavailable): Catalog entry menu.row.delete is disabled.
+  axPress menu.row.move  ->  added menu.row.archive, menu.row.inbox, menu.submenu; removed menu, menu.row.copy, menu.row.delete, menu.row.move, menu.row.open
+  keyPress main:escape  ->  removed menu.row.archive, menu.row.inbox, menu.submenu
+  expect menu.submenu to be absent  pass
+```
+<!-- demo:end -->
+
 From this repo, with Notes running (`just demo`):
 
 ```sh

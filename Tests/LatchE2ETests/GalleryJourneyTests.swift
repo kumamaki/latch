@@ -13,6 +13,40 @@ struct GalleryJourneyTests {
         )
     }
 
+    /// The README's demo is this run's `transcript.txt`; `just demo-transcript`
+    /// regenerates it. Keep the steps few and readable, and free of animations: a diff taken
+    /// while a sheet is still closing would differ from run to run.
+    @Test("the README demo: a sheet, a drop and a context menu")
+    func demoJourney() async throws {
+        let journey = try Journey(scenario: "gallery-demo")
+        let app = LatchApp(
+            config: LatchApp.Config(
+                executableURL: try Fixture.binary("Gallery"), slug: "gallery"),
+            journey: journey
+        )
+        try await app.run { app in
+            try await journey.step("Select a row in the AppKit list") {
+                try await app.expect("item.row.7").toAppear(timeout: 15)
+                try await app.press("item.row.7")
+                try await app.expect("selection.card").value("Item 7")
+            }
+            try await journey.step("Drop a file onto the tray, no pointer involved") {
+                try await app.drop("tray.source", onto: "tray.target")
+                try await app.expect("tray.target").value("report.pdf")
+            }
+            try await journey.step("Open the context menu and try a disabled row") {
+                try await app.click("selection.card", button: "right")
+                try await app.expect("menu").toAppear()
+                await #expect(throws: LatchE2EError.self) {
+                    try await app.press("menu.row.delete")
+                }
+                try await app.press("menu.row.move")
+                try await app.key("escape", in: "main")
+                try await app.expect("menu.submenu").toBeAbsent()
+            }
+        }
+    }
+
     @Test("a sheet adds an item that both windows show")
     func sheetJourney() async throws {
         try await Self.app("gallery-sheet").run { app in
