@@ -27,7 +27,7 @@ app without computer-use or Screen Recording.
 4. **File token.** `0600` sibling of the socket. No Keychain, no pairing.
 5. **Socket is DEBUG-only.** `Latch.start` is a no-op in Release. `.latch` and the catalog API compile in every build; the socket, AX, screenshot, token, and catalog-registry impl compile only under `DEBUG` — Release registration is a no-op and in-process queries return empty / `notFound`.
 6. **Fail loud.** Bool is `true` / `false`. No synonym encodings.
-7. **Kernel verbs only.** ping, boot, windows, ax \*, `mouseClick`, `mouseDrag`, `mouseDragSession`, screenshot. Product verbs stay in the app.
+7. **Kernel verbs only.** ping, boot, windows, ax \*, `mouseClick`, `keyPress`, `mouseDrag`, `mouseDragSession`, screenshot. Product verbs stay in the app.
 8. **No out-of-process AX.** No System Events. No `screencapture`. Screenshot is `cacheDisplay` on this app's windows.
    Element crops resolve live view geometry in the selected window and respect current visible bounds; do not cache screen-space frames from layout callbacks.
 9. **One product: the dev harness.** A production in-process catalog is a future explicit opt-in product — never an env var, an adopter flag, or a consumer's `DEBUG` convention.

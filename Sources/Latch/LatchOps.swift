@@ -53,6 +53,7 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
     func mouseClick(id: String, button: String?) async throws
     func mouseClickPoint(window: String, x: Double, y: Double, button: String?)
         async throws
+    func keyPress(window: String, key: String, modifiers: [String]) async throws
     func mouseDrag(from: String, to: String) async throws
     func mouseDragPoint(
         window: String, x: Double, y: Double,
@@ -69,6 +70,12 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
 }
 
 extension LatchOpsProviding {
+    /// Older custom ops providers cannot post key events. Providers opt in
+    /// by implementing this verb.
+    public func keyPress(window: String, key: String, modifiers: [String]) async throws {
+        throw LatchError.actionUnavailable(id: window, action: "keyPress")
+    }
+
     /// Older custom ops providers cannot measure coverage. Providers opt in
     /// by implementing this verb.
     public func axCoverage(window: String?) async throws -> LatchCoverageReply {
@@ -204,6 +211,10 @@ extension LatchOpsProviding {
             window: String, x: Double, y: Double, button: String?
         ) async throws {
             try LatchAX.clickPoint(window: window, x: x, y: y, button: button)
+        }
+
+        public func keyPress(window: String, key: String, modifiers: [String]) async throws {
+            try LatchAX.keyPress(window: window, key: key, modifiers: modifiers)
         }
 
         public func mouseDrag(from: String, to: String) async throws {

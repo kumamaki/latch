@@ -188,6 +188,9 @@
             case .mouseClickPoint(let window, let x, let y, let button):
                 try await ops.mouseClickPoint(window: window, x: x, y: y, button: button)
                 return .success()
+            case .keyPress(let window, let key, let modifiers):
+                try await ops.keyPress(window: window, key: key, modifiers: modifiers)
+                return .success()
             case .mouseDrag(let from, let to):
                 try await ops.mouseDrag(from: from, to: to)
                 return .success()

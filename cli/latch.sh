@@ -41,6 +41,8 @@ Commands:
   ax set <id> <value>
   ax drag <from-id> <to-id>
   ax dismiss [button]
+  key <window> <key> [command] [shift] [option] [control]
+    key is a letter, a digit, return, tab, space, delete, escape, left, right, up or down
   mouse click <id> [left|right]
   mouse click-point <window> <x> <y> [left|right]
   mouse drag <from-id> <to-id>
@@ -775,6 +777,17 @@ case "$command" in
                 ;;
             *) usage ;;
         esac
+        ;;
+    key)
+        [[ $# -ge 2 ]] || usage
+        key_window="$1"
+        key_name="$2"
+        shift 2
+        key_modifiers="[]"
+        if [[ $# -gt 0 ]]; then
+            key_modifiers="$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "$@")"
+        fi
+        query keyPress "$(printf '{"window":%s,"key":%s,"modifiers":%s}' "$(json_escape "$key_window")" "$(json_escape "$key_name")" "$key_modifiers")"
         ;;
     mouse)
         verb="${1-}"

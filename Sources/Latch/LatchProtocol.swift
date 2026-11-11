@@ -37,6 +37,7 @@ import Foundation
         case axDismiss(button: String?)
         case mouseClick(id: String, button: String?)
         case mouseClickPoint(window: String, x: Double, y: Double, button: String?)
+        case keyPress(window: String, key: String, modifiers: [String])
         case mouseDrag(from: String, to: String)
         case mouseDragPoint(
             window: String, x: Double, y: Double,
@@ -95,6 +96,10 @@ import Foundation
                 let button = args.button.flatMap { $0.isEmpty ? nil : $0 }
                 return .mouseClickPoint(
                     window: args.window, x: args.x, y: args.y, button: button)
+            case "keyPress":
+                let args = try container.decode(KeyPressArgs.self, forKey: .args)
+                return .keyPress(
+                    window: args.window, key: args.key, modifiers: args.modifiers ?? [])
             case "mouseDrag":
                 let args = try container.decode(MouseDragArgs.self, forKey: .args)
                 return .mouseDrag(from: args.from, to: args.to)
@@ -178,6 +183,12 @@ import Foundation
             let x: Double
             let y: Double
             let button: String?
+        }
+
+        private struct KeyPressArgs: Decodable {
+            let window: String
+            let key: String
+            let modifiers: [String]?
         }
 
         private struct MouseDragArgs: Decodable {

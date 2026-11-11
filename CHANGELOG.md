@@ -15,6 +15,13 @@ All notable changes to Latch live here.
 
 ### Kernel
 
+- `keyPress` posts a key down and up to a named window's responder chain,
+  with optional `command`, `shift`, `option`, `control`. A fixed key table
+  (letters, digits, `return`, `tab`, `space`, `delete`, `escape`, arrows)
+  means an unknown name fails loud. `latch.sh key <window> <key> [mods…]`
+  and `LatchApp.key(_:in:modifiers:)` expose it.
+- `docs/recipes/context-menus.md` shows how to drive a custom context
+  menu with registrations alone.
 - `axCoverage` measures the registration gap: the controls the AX probe
   finds that no catalog id covers, each with the nearest registered id.
   `latch.sh coverage [window] [--fail-under <percent>]` exposes it and

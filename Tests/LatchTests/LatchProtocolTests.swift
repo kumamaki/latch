@@ -208,6 +208,26 @@ struct LatchProtocolTests {
         #expect(toY == 40)
     }
 
+    @Test("decodes keyPress with and without modifiers")
+    func keyPressDecodes() throws {
+        for (json, modifiers) in [
+            (
+                #"{"token":"abc","command":"keyPress","args":{"window":"main","key":"k","modifiers":["command","shift"]}}"#,
+                ["command", "shift"]
+            ),
+            (#"{"token":"abc","command":"keyPress","args":{"window":"main","key":"escape"}}"#, []),
+        ] {
+            let request = try decoder.decode(LatchRequest.self, from: Data(json.utf8))
+            guard case .keyPress(let window, let key, let decoded) = request.command else {
+                Issue.record("expected .keyPress, got \(request.command)")
+                return
+            }
+            #expect(window == "main")
+            #expect(["k", "escape"].contains(key))
+            #expect(decoded == modifiers)
+        }
+    }
+
     @Test("decodes axDrag between ids")
     func axDragIDs() throws {
         let json = Data(

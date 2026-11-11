@@ -27,6 +27,7 @@ final class DragFixtureModel {
     var dest = ""
     var row = "idle"
     var flip = "a"
+    var chord = "idle"
 
     func receive(_ item: String) {
         dest = item
@@ -85,6 +86,17 @@ private struct FlipPanel: View {
                 .latch("flip.slow", window: "main") { model.runFlip(gap: .milliseconds(400)) }
             // Unregistered on purpose: the control `ax coverage` must report.
             Button("Stray") {}
+            Text(model.chord)
+                .latch(
+                    "chord.state", role: "label", title: "Chord", value: model.chord,
+                    window: "main"
+                )
+                .background {
+                    // Hidden, so the shortcut fires without adding a control.
+                    Button("Chord") { model.chord = "fired" }
+                        .keyboardShortcut("k", modifiers: .command)
+                        .hidden()
+                }
         }
     }
 }

@@ -63,6 +63,10 @@
             try await inner.mouseClickPoint(window: window, x: x, y: y, button: button)
         }
 
+        func keyPress(window: String, key: String, modifiers: [String]) async throws {
+            try await inner.keyPress(window: window, key: key, modifiers: modifiers)
+        }
+
         func mouseDrag(from: String, to: String) async throws {
             try await inner.mouseDrag(from: from, to: to)
         }

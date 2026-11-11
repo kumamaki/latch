@@ -137,7 +137,7 @@ guessing synonyms.
 
 Product verbs (`add-note`, `seed`) stay in your app. The kernel knows
 ping, boot, windows, `ax *` (`ax find <id> --history` returns the values an
-opted-in id published), `mouseClick`, `mouseDrag`, `mouseDragSession`, and
+opted-in id published), `mouseClick`, `keyPress`, `mouseDrag`, `mouseDragSession`, and
 screenshot, and nothing else.
 
 ## Quick start

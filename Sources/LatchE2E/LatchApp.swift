@@ -252,6 +252,20 @@ public actor LatchApp {
         }
     }
 
+    /// Presses a key in the named window's responder chain, with optional
+    /// modifiers (`command`, `shift`, `option`, `control`). For shortcuts
+    /// and key handling; text entry is `set`.
+    public func key(_ key: String, in window: String, modifiers: [String] = []) async throws {
+        try await withDiff(action: "keyPress", id: "\(window):\(key)") {
+            _ = try await self.send(
+                "keyPress",
+                args: [
+                    "window": .string(window), "key": .string(key),
+                    "modifiers": .array(modifiers.map(JSONValue.string)),
+                ])
+        }
+    }
+
     /// Moves the payload of `source` into the drop handler of `dest`
     /// through the catalog. The pointer stays put and the app can stay
     /// in the background.

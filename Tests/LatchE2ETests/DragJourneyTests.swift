@@ -73,6 +73,27 @@ struct DragJourneyTests {
         }
     }
 
+    @Test("keyPress fires a window shortcut")
+    func keyJourney() async throws {
+        let journey = try Journey(scenario: "key-press")
+        let app = LatchApp(
+            config: LatchApp.Config(
+                executableURL: try Self.fixtureBinary(),
+                slug: "drag-fixture"
+            ),
+            journey: journey
+        )
+        try await app.run { app in
+            try await app.poll("chord mounted", timeout: 15) { app in
+                try await app.node("chord.state")?.value == "idle"
+            }
+            try await app.key("k", in: "main", modifiers: ["command"])
+            try await app.poll("shortcut fired", timeout: 5) { app in
+                try await app.node("chord.state")?.value == "fired"
+            }
+        }
+    }
+
     @Test(
         "coverage reports the control nobody registered",
         .enabled(
