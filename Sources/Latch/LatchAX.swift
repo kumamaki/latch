@@ -1134,9 +1134,25 @@
             "closebutton", "minimizebutton", "zoombutton", "fullscreenbutton",
         ]
 
+        @MainActor private static var accessibilityRequested = false
+
+        /// SwiftUI builds its accessibility tree only while an AX client is
+        /// attached, and a probe that runs in the app itself is not one. This
+        /// is the switch such clients flip from outside, so the controls
+        /// show up. The lighter flag: `AXEnhancedUserInterface` also changes
+        /// how AppKit animates windows.
+        @MainActor
+        static func requestAccessibilityTree() {
+            guard !accessibilityRequested else { return }
+            accessibilityRequested = true
+            NSApplication.shared.accessibilitySetValue(
+                true, forAttribute: NSAccessibility.Attribute(rawValue: "AXManualAccessibility"))
+        }
+
         /// Windows a coverage run walks: the named one, or every visible one.
         @MainActor
         static func coverageWindows(named name: String?) throws -> [NSWindow] {
+            requestAccessibilityTree()
             let windows = targetWindows(named: name)
             guard !windows.isEmpty else {
                 if let name { throw LatchError.unknownWindow(name: name) }
