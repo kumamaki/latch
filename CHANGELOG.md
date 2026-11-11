@@ -27,7 +27,10 @@ All notable changes to Latch live here.
   `latch.sh coverage [window] [--fail-under <percent>]` exposes it and
   exits 1 below the threshold, so an adopter can gate CI on it.
   `LatchApp.coverage(window:)` reads it in E2E.
-  `LatchOpsProviding.axCoverage` has a default that refuses.
+  `LatchOpsProviding.axCoverage` has a default that refuses. The same
+  control reached over several AX paths counts once, and `unprobed`
+  lists registered press or set ids the probe could not see (a
+  glass-effect container hides its buttons from AX).
 - `axDrag` moves a drag between two catalog ids without touching the
   pointer or needing the app in front. The source declares its payload
   with `.latchDragSource(id) { … }`, the destination its drop with

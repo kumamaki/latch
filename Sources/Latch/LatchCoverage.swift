@@ -22,10 +22,15 @@ public struct LatchCoverageGap: Sendable, Encodable, Equatable {
 public struct LatchCoverageReply: Sendable, Encodable, Equatable {
     public let covered: Int
     public let uncovered: [LatchCoverageGap]
+    /// Registered press or set ids the probe never found a control for. The
+    /// probe cannot see every control (a glass-effect container hides its
+    /// buttons from AX), so `uncovered` may be short by at least these.
+    public let unprobed: [String]
 
-    public init(covered: Int, uncovered: [LatchCoverageGap]) {
+    public init(covered: Int, uncovered: [LatchCoverageGap], unprobed: [String] = []) {
         self.covered = covered
         self.uncovered = uncovered
+        self.unprobed = unprobed
     }
 }
 
@@ -52,6 +57,7 @@ public struct LatchCoverageReply: Sendable, Encodable, Equatable {
             let ids = Set(LatchCatalog.snapshot().map(\.id))
             var covered = 0
             var uncovered: [LatchCoverageGap] = []
+            var unprobed: [String] = []
             for window in try LatchAX.coverageWindows(named: name) {
                 let probe = LatchAX.actionableControls(in: window)
                 let registered = registeredFrames(in: window)
@@ -70,8 +76,9 @@ public struct LatchCoverageReply: Sendable, Encodable, Equatable {
                     registeredIDs: ids)
                 covered += result.covered
                 uncovered += result.uncovered
+                unprobed += result.unprobed
             }
-            return LatchCoverageReply(covered: covered, uncovered: uncovered)
+            return LatchCoverageReply(covered: covered, uncovered: uncovered, unprobed: unprobed)
         }
 
         @MainActor
@@ -90,7 +97,7 @@ public struct LatchCoverageReply: Sendable, Encodable, Equatable {
         ) -> LatchCoverageReply {
             var covered = 0
             var uncovered: [LatchCoverageGap] = []
-            for control in controls {
+            for control in unique(controls) {
                 if control.identifier.map(registeredIDs.contains) == true
                     || registered.contains(where: {
                         overlap($0.frame, control.frame) >= minimumOverlap
@@ -106,7 +113,21 @@ public struct LatchCoverageReply: Sendable, Encodable, Equatable {
                         frame: LatchAXFrame(control.frame),
                         near: smallest(containing: control.frame, in: registered)?.id))
             }
-            return LatchCoverageReply(covered: covered, uncovered: uncovered)
+            let unprobed = registered.filter { entry in
+                entry.drivable
+                    && !controls.contains { overlap(entry.frame, $0.frame) >= minimumOverlap }
+            }.map(\.id)
+            return LatchCoverageReply(covered: covered, uncovered: uncovered, unprobed: unprobed)
+        }
+
+        /// The AX walk reaches one control over several paths, so the same
+        /// role, title, and frame is one control.
+        private static func unique(_ controls: [LatchAXControl]) -> [LatchAXControl] {
+            var seen: [LatchAXControl] = []
+            for control in controls where !seen.contains(control) {
+                seen.append(control)
+            }
+            return seen
         }
 
         /// Intersection over union.

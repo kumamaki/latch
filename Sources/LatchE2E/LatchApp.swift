@@ -439,6 +439,8 @@ public actor LatchApp {
     public struct Coverage: Sendable, Equatable {
         public let covered: Int
         public let uncovered: [String]
+        /// Registered ids the probe found no control for.
+        public let unprobed: [String]
     }
 
     public func coverage(window: String? = nil) async throws -> Coverage {
@@ -455,7 +457,8 @@ public actor LatchApp {
             uncovered: gaps.map { gap in
                 [gap["role"]?.stringValue, gap["title"]?.stringValue]
                     .compactMap { $0 }.joined(separator: " ")
-            })
+            },
+            unprobed: data["unprobed"]?.arrayValue?.compactMap(\.stringValue) ?? [])
     }
 
     public struct WindowStatus: Sendable, Equatable {

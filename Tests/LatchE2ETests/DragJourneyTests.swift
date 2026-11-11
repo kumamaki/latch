@@ -94,11 +94,7 @@ struct DragJourneyTests {
         }
     }
 
-    @Test(
-        "coverage reports the control nobody registered",
-        .enabled(
-            if: ProcessInfo.processInfo.environment["CI"] == nil,
-            "CI has no AX client, so SwiftUI gives the probe no controls"))
+    @Test("coverage reports the control nobody registered")
     func coverageJourney() async throws {
         let journey = try Journey(scenario: "coverage")
         let app = LatchApp(
@@ -119,7 +115,9 @@ struct DragJourneyTests {
                 try await Task.sleep(for: .milliseconds(200))
                 coverage = try await app.coverage(window: "main")
             }
-            #expect(coverage == LatchApp.Coverage(covered: 2, uncovered: ["button Stray"]))
+            #expect(
+                coverage == LatchApp.Coverage(covered: 2, uncovered: ["button Stray"], unprobed: [])
+            )
         }
     }
 

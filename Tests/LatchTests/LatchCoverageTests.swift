@@ -65,4 +65,29 @@ struct LatchCoverageTests {
             registeredIDs: ["window.body", "toolbar"])
         #expect(reply.uncovered.map(\.near) == ["toolbar"])
     }
+
+    @Test("one control reached over several paths counts once")
+    func duplicatesCollapse() {
+        let reply = LatchCoverage.classify(
+            controls: [control("Menu"), control("Menu"), control("Menu")],
+            registered: [], registeredIDs: [])
+        #expect(reply.uncovered.count == 1)
+    }
+
+    @Test("a registered press id with no control in the probe is reported as unprobed")
+    func unprobedIDs() {
+        let reply = LatchCoverage.classify(
+            controls: [control("Save")],
+            registered: [
+                .init(id: "save", frame: Self.button, drivable: true),
+                .init(
+                    id: "glass.add", frame: NSRect(x: 300, y: 300, width: 40, height: 20),
+                    drivable: true),
+                .init(
+                    id: "label", frame: NSRect(x: 500, y: 500, width: 40, height: 20),
+                    drivable: false),
+            ],
+            registeredIDs: ["save", "glass.add", "label"])
+        #expect(reply.unprobed == ["glass.add"])
+    }
 }

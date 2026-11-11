@@ -1149,10 +1149,28 @@
         /// screen space. Whether any of them is registered is for the caller.
         @MainActor
         static func actionableControls(in window: NSWindow) -> LatchAXProbe {
-            var controls: [LatchAXControl] = []
-            var remaining = maxNodes
-            collectControls(.window(window), depth: 0, remaining: &remaining, into: &controls)
-            return LatchAXProbe(controls: controls, visited: maxNodes - remaining)
+            withAccessibilityTree {
+                var controls: [LatchAXControl] = []
+                var remaining = maxNodes
+                collectControls(.window(window), depth: 0, remaining: &remaining, into: &controls)
+                return LatchAXProbe(controls: controls, visited: maxNodes - remaining)
+            }
+        }
+
+        /// SwiftUI builds its accessibility tree only while an AX client is
+        /// attached, and a probe that runs in the app itself is not one. This
+        /// is the flag such clients set from outside. It is held only for the
+        /// walk, because AppKit also reads it to skip window animations.
+        @MainActor
+        private static func withAccessibilityTree<Result>(_ walk: () -> Result) -> Result {
+            let app = NSApplication.shared
+            let attribute = NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface")
+            guard (app.accessibilityAttributeValue(attribute) as? Bool) != true else {
+                return walk()
+            }
+            app.accessibilitySetValue(true, forAttribute: attribute)
+            defer { app.accessibilitySetValue(false, forAttribute: attribute) }
+            return walk()
         }
 
         @MainActor

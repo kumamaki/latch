@@ -120,7 +120,8 @@ With the Debug app running, measure the gap instead of hunting for it:
 bash <latch>/cli/latch.sh --app <slug> coverage <window>
 ```
 
-Each `uncovered` row is a button, field, or switch the app shows that no
+`unprobed` lists registered ids the probe cannot see, so trust `uncovered`
+only as a lower bound while that list is not empty. Each `uncovered` row is a button, field, or switch the app shows that no
 id drives. `near` names the smallest registered id around it, which is
 often the parent stack that was registered by mistake. Register the
 control, rebuild, and run it again until the list holds only chrome the

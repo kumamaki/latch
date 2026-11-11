@@ -279,9 +279,10 @@ by pasting that path into every command.
 - You register controls by hand. That is deliberate; the catalog is an
   allow-list, and the agent can only touch what you put on it. `latch.sh
   coverage` lists the controls you have not registered yet.
-- `coverage` reads SwiftUI controls through the in-process AX tree, which
-  SwiftUI builds only while an AX client is attached. Without one it
-  fails with `unavailable` instead of reporting a number.
+- `coverage` reads SwiftUI controls through the in-process AX tree. Some
+  containers (glass effects) hide their buttons from AX; `unprobed`
+  lists the registered ids the probe could not see, and a window where
+  it sees nothing fails with `unavailable` instead of reporting a number.
 - Screenshots include the title bar and toolbar. Metal-backed layers
   may still render blank. Element shots crop the same window bitmap to
   a registered id's frame, so they do not fix material layers. The
