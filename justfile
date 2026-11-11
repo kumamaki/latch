@@ -36,9 +36,15 @@ check:
 cli-help:
     bash cli/latch.sh --help
 
-# Build and launch the Notes demo (GUI, Debug).
-demo:
-    swift run --package-path examples/Notes Notes
+# Build and launch an example app (GUI, Debug): notes or gallery.
+demo name="notes":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{name}}" in
+      notes) swift run --package-path examples/Notes Notes ;;
+      gallery) swift run Gallery ;;
+      *) echo "usage: just demo [notes|gallery]" >&2; exit 2 ;;
+    esac
 
 # Next X.Y.Z from the latest v* tag (fallback v0.0.0). Unprefixed tags do not count.
 [private]

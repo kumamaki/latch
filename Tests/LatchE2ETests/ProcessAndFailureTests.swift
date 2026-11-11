@@ -10,7 +10,7 @@ struct ProcessAndFailureTests {
     private func app(journey: Journey? = nil) throws -> LatchApp {
         LatchApp(
             config: LatchApp.Config(
-                executableURL: try DragJourneyTests.fixtureBinary(), slug: "drag-fixture"),
+                executableURL: try Fixture.binary("DragFixture"), slug: "drag-fixture"),
             journey: journey)
     }
 

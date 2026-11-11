@@ -11,7 +11,7 @@ struct DragJourneyTests {
         let journey = try Journey(scenario: "drag-bins")
         let app = LatchApp(
             config: LatchApp.Config(
-                executableURL: try Self.fixtureBinary(),
+                executableURL: try Fixture.binary("DragFixture"),
                 slug: "drag-fixture"
             ),
             journey: journey
@@ -54,7 +54,7 @@ struct DragJourneyTests {
         let journey = try Journey(scenario: "drop-bins")
         let app = LatchApp(
             config: LatchApp.Config(
-                executableURL: try Self.fixtureBinary(),
+                executableURL: try Fixture.binary("DragFixture"),
                 slug: "drag-fixture"
             ),
             journey: journey
@@ -78,7 +78,7 @@ struct DragJourneyTests {
         let journey = try Journey(scenario: "key-press")
         let app = LatchApp(
             config: LatchApp.Config(
-                executableURL: try Self.fixtureBinary(),
+                executableURL: try Fixture.binary("DragFixture"),
                 slug: "drag-fixture"
             ),
             journey: journey
@@ -99,7 +99,7 @@ struct DragJourneyTests {
         let journey = try Journey(scenario: "coverage")
         let app = LatchApp(
             config: LatchApp.Config(
-                executableURL: try Self.fixtureBinary(),
+                executableURL: try Fixture.binary("DragFixture"),
                 slug: "drag-fixture"
             ),
             journey: journey
@@ -119,30 +119,6 @@ struct DragJourneyTests {
                 coverage == LatchApp.Coverage(covered: 2, uncovered: ["button Stray"], unprobed: [])
             )
         }
-    }
-
-    static func fixtureBinary() throws -> URL {
-        let repo = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let candidates = [
-            repo.appendingPathComponent(".build/out/Products/Debug/DragFixture"),
-            repo.appendingPathComponent(".build/debug/DragFixture"),
-            Bundle.main.bundleURL.deletingLastPathComponent().appendingPathComponent(
-                "DragFixture"),
-        ]
-        guard
-            let candidate = candidates.first(where: {
-                FileManager.default.isExecutableFile(atPath: $0.path)
-            })
-        else {
-            throw LatchE2EError.invalidConfig(
-                reason:
-                    "DragFixture binary not built (\(candidates.map(\.path).joined(separator: ", ")))."
-            )
-        }
-        return candidate
     }
 }
 

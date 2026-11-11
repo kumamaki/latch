@@ -22,6 +22,11 @@ let package = Package(
             dependencies: ["Latch"],
             path: "Sources/DragFixture"
         ),
+        .executableTarget(
+            name: "Gallery",
+            dependencies: ["Latch"],
+            path: "examples/Gallery/Sources/Gallery"
+        ),
         .testTarget(
             name: "LatchTests",
             dependencies: ["Latch"],
@@ -29,7 +34,7 @@ let package = Package(
         ),
         .testTarget(
             name: "LatchE2ETests",
-            dependencies: ["LatchE2E", "DragFixture"],
+            dependencies: ["LatchE2E", "DragFixture", "Gallery"],
             path: "Tests/LatchE2ETests"
         ),
     ],

@@ -8,6 +8,7 @@ Latch is a small kernel. Keep it one.
 just test            # unit tests
 just check           # tests + swift-format lint + shellcheck
 just demo            # launch examples/Notes
+just demo gallery    # launch examples/Gallery
 just release minor   # dry-run the next tag; agents stop here
 ```
 

@@ -193,7 +193,9 @@ screenshot, and nothing else.
    examples/Notes/latch.sh ax press editor.new
    ```
 
-`just demo` launches `examples/Notes`, a one-window host. For a guided
+`just demo` launches `examples/Notes`, a one-window host. `just demo
+gallery` launches `examples/Gallery`: two windows, a sheet, an AppKit list
+whose rows recycle, drag and drop, and a custom context menu. For a guided
 install, point your agent at [docs/agent-setup.md](docs/agent-setup.md).
 
 ## In-app assistants
@@ -317,6 +319,7 @@ and any other coding agent can follow them. Shared rules live in
 just test            # unit tests
 just check           # tests + swift-format lint + shellcheck
 just demo            # launch examples/Notes
+just demo gallery    # launch examples/Gallery
 just release minor   # dry-run the next tag; agents stop here
 ```
 

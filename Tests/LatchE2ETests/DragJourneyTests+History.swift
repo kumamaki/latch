@@ -10,7 +10,7 @@ extension DragJourneyTests {
     func historyJourney() async throws {
         let app = LatchApp(
             config: LatchApp.Config(
-                executableURL: try DragJourneyTests.fixtureBinary(),
+                executableURL: try Fixture.binary("DragFixture"),
                 slug: "drag-fixture"
             ),
             journey: try Journey(scenario: "value-history")

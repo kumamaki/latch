@@ -42,6 +42,10 @@ latch.sh key main escape                       # dismissal by keyboard
 - Disabled rows report `enabled: false`; `ax press` refuses them.
 - `mouse click … right` proves the opener, including never-key panels
   that only a real event reaches.
+- `mouse click` finds its target through the accessibility tree, which
+  SwiftUI builds only for an attached client. Give the opener an
+  `NSView` that returns the catalog id from `accessibilityIdentifier()`
+  (Gallery's `RightClickCatcher`), so the click does not depend on it.
 - Keyboard selection (`up`, `down`, `return`) goes through
   `latch.sh key <window> <key>`. Whether a panel that never becomes key
   receives it depends on the app's own event routing.
@@ -50,7 +54,15 @@ latch.sh key main escape                       # dismissal by keyboard
 
 The catalog reports final state. A selected-row flash before dismissal
 lasts a few frames, and in-process window capture can miss animation
-frames. Record the flash as a value instead: publish `flash` on the row
-while it is on, and opt the id into value history with
-`Latch.start(app:history:)`. Then assert the recorded sequence, which a
+frames. Record the flash as a value instead. Publish it on an id that outlives
+the menu (a hidden label), because history of an unmounted row cannot
+be read. Opt that id into value history with
+`Latch.start(app:history:)`, then assert the recorded sequence, which a
 poll would miss.
+
+`examples/Gallery` runs this recipe end to end:
+`examples/Gallery/Sources/Gallery/GalleryViews.swift` builds the menu and
+`Tests/LatchE2ETests/GalleryJourneyTests.swift` drives it. The menu
+there is plain SwiftUI inside the window. A never-key `NSPanel` takes
+the same registrations, but whether it receives `key` depends on your
+own event routing.

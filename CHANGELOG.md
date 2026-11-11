@@ -4,6 +4,13 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Examples
+
+- `examples/Gallery` (`just demo gallery`): two windows, a sheet, an
+  AppKit list whose rows recycle through `LatchCatalog.Binding`, drag and
+  drop, and a custom context menu. `GalleryJourneyTests` drives each of
+  them; the menu journey is the proof for `docs/recipes/context-menus.md`.
+
 ### LatchE2E
 
 - `failure.json` now carries the catalog values at the moment of failure
