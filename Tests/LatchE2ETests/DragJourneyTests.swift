@@ -87,14 +87,14 @@ struct DragJourneyTests {
             try await app.poll("buttons mounted", timeout: 15) { app in
                 try await app.node("flip.slow") != nil
             }
-            // The AX probe can trail the catalog by a layout pass.
-            try await app.poll("probe sees the buttons", timeout: 15) { app in
-                let coverage = try await app.coverage(window: "main")
-                return coverage.covered + coverage.uncovered.count == 3
+            // The AX probe can trail the catalog, so wait for it to see all three.
+            var coverage = try await app.coverage(window: "main")
+            let deadline = Date().addingTimeInterval(15)
+            while coverage.covered + coverage.uncovered.count < 3, Date() < deadline {
+                try await Task.sleep(for: .milliseconds(200))
+                coverage = try await app.coverage(window: "main")
             }
-            let coverage = try await app.coverage(window: "main")
-            #expect(coverage.covered == 2)
-            #expect(coverage.uncovered == ["button Stray"])
+            #expect(coverage == LatchApp.Coverage(covered: 2, uncovered: ["button Stray"]))
         }
     }
 
