@@ -275,7 +275,7 @@ by pasting that path into every command.
 
 ## Limits
 
-- macOS 15+, Swift 6. CI runs `just check` on one macOS machine.
+- macOS 15+, Swift 6. `just check` runs on every push to `main`, on one macOS machine. Pull requests are not built; run it locally.
 - You register controls by hand. That is deliberate; the catalog is an
   allow-list, and the agent can only touch what you put on it. `latch.sh
   coverage` lists the controls you have not registered yet.
