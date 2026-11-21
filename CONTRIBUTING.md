@@ -19,6 +19,12 @@ The journeys warp the real pointer, so `just test` skips them and
 see `scripts/vm/`. `just demo-transcript` still drives the GUI app on
 this machine by hand.
 
+Mini host setup: the runner needs Removable Volumes (or Full Disk
+Access) for `~/.tart`, which lives on the T7. Local Network is not
+needed — the guest is driven over Tart's virtio share and guest agent,
+never the LAN, so launchd-agent CI cannot be blocked by the Local
+Network prompt macOS never shows agents.
+
 `just ship` is USER-only. It stamps the changelog and SwiftPM pins,
 pushes `main`, tags `vX.Y.Z`, and creates the GitHub Release.
 

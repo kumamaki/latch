@@ -357,9 +357,11 @@ windows off-screen, and the `LatchE2ETests` journeys — which inject real
 pointer and keyboard events — are skipped. `just test-journeys` runs them
 inside a disposable Tart VM cloned from `e2e-base` on the mini
 (`scripts/vm/image.sh` builds the image once; `scripts/vm/journeys.sh`
-takes a shared lock, syncs the tree, runs `swift test`, and destroys the
-VM). From a desk it syncs the checkout to `server.local` first, so the
-journeys can run from any Mac.
+takes a shared lock, shares the checkout into the VM over virtiofs,
+runs `swift test` through the Tart guest agent, and destroys the
+VM — no SSH or LAN involved, so CI agents need no Local Network
+permission). From a desk it syncs the checkout to `server.local` first,
+so the journeys can run from any Mac.
 
 `just ship` is USER-only. It stamps, tags `vX.Y.Z`, and creates the
 GitHub Release.

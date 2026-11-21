@@ -70,10 +70,14 @@ All notable changes to Latch live here.
   covers the screen. The `LatchE2ETests` journeys — real pointer moves,
   real keyboard — moved to `just test-journeys`, which clones the
   `e2e-base` Tart image on the mini into a disposable VM under the
-  shared `/Volumes/T7/tart-vms/e2e.lock`, syncs the tree in, runs the
-  suite, copies `.latch-trace` back, and always destroys the VM.
+  shared `/Volumes/T7/tart-vms/e2e.lock`, copies the tree in over a
+  virtiofs share, runs the suite through the Tart guest agent, copies
+  `.latch-trace` back through the same share, and always destroys the
+  VM. No SSH, no bridged network, no LAN access — CI runners are
+  launchd agents and macOS never prompts them for Local Network.
   `scripts/vm/image.sh` builds the image; it auto-logs-in to Aqua,
-  keeps sleep and screen lock off, and trusts the mini user's SSH key.
+  keeps sleep and screen lock off, trusts the mini user's SSH key for
+  provisioning, and installs the host's own Xcode.
 - Fixtures no longer activate themselves on appear. `mouseDragSession`
   is the one verb that requires the app in front, so its journey presses
   the fixture's own `app.activate` catalog action first; every other

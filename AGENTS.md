@@ -52,7 +52,10 @@ windows off-screen, and `LatchE2ETests` (which drive real apps) is skipped.
 build it once with `scripts/vm/image.sh` — under the shared lock
 `/Volumes/T7/tart-vms/e2e.lock`. From a desk it syncs the tree to
 `server.local:~/Work/latch-e2e` first; on the mini it runs the local
-checkout. CI runs `check` and `journeys` as two jobs on the mini runner.
+checkout. The guest is driven over Tart's virtio share and guest agent —
+no SSH, no LAN — so CI needs only Removable Volumes for `~/.tart` on the
+T7, never Local Network. CI runs `check` and `journeys` as two jobs on
+the mini runner.
 
 `just ship` is USER-only. It pushes `main`, tags `vX.Y.Z`, and creates
 the GitHub Release. Agents never run it.

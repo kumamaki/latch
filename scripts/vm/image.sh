@@ -8,6 +8,10 @@
 # Runs on the mini host — the machine with tart and the T7 volume. Safe to
 # re-run: an existing e2e-base is booted and re-provisioned in place.
 #
+# This script is the one place LAN access is fine: it is run by hand or from
+# an agent shell (Terminal/SSH), where macOS allows Local Network. CI never
+# runs it — journeys.sh reaches the guest over Tart's virtio channels only.
+#
 # What the image guarantees for guests:
 #   - macOS 27 with the host's own Xcode (xcode-select points there, and
 #     xcodebuild/swift versions are verified identical to the host's)

@@ -1,8 +1,11 @@
 #!/bin/bash
 # Run LatchE2ETests inside a disposable Tart VM cloned from e2e-base.
 #
-# /bin/bash on purpose: under Homebrew bash, `tart ip --resolver arp` (and
-# `arp -an` itself) returns an empty table, so the guest IP never resolves.
+# The guest never touches the LAN: the checkout enters through a virtiofs
+# share (--dir), commands run through the Tart guest agent (tart exec), and
+# traces leave through the same share. CI runners are launchd agents, which
+# macOS denies Local Network access to without a prompt (Apple TN3179), so
+# bridged networking and SSH would hang there — this lane uses neither.
 #
 # GUI journeys warp the pointer and post real events, so they never run on a
 # desk — this script runs them on the mini host inside a VM that is always
@@ -13,14 +16,20 @@
 # Extra args are appended to `swift test --no-parallel --filter LatchE2ETests`.
 #
 # Exit code is the guest test run's.
+#
+# e2e-base must have the Tart guest agent — every non-vanilla Cirrus Labs
+# image ships it. A guest without it never answers the readiness poll below,
+# so the run fails loud instead of hanging.
 
 set -euo pipefail
 
 IMAGE="${E2E_IMAGE:-e2e-base}"
-BRIDGE="${E2E_NET_BRIDGE:-en0}"
 GUEST_USER="admin"
-LOCK_DIR="${E2E_LOCK_DIR:-/Volumes/T7/tart-vms/e2e.lock}"
 GUEST_DIR="latch"
+SHARE="latch"
+SHARE_PATH="/Volumes/My Shared Files/$SHARE"
+GUEST_HOME="/Users/$GUEST_USER"
+LOCK_DIR="${E2E_LOCK_DIR:-/Volumes/T7/tart-vms/e2e.lock}"
 
 SRC="$(cd "$(dirname "$0")/../.." && pwd)"
 STAMP="$(date +%Y%m%d-%H%M%S)-$$"
@@ -37,21 +46,7 @@ if [[ -z "$TART" ]]; then
     exit 1
 fi
 
-SSH="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5"
-RSYNC_SSH="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5"
-
 log() { echo "==> $*"; }
-
-# `tart ip --resolver arp` sees a bridged guest only after the guest has
-# talked enough to land in the host ARP table — an idle guest looks absent.
-# Ping the bridge's /24 so the guest's reply refreshes the entry.
-warm_arp() {
-    local addr subnet
-    addr="$(ipconfig getifaddr "$BRIDGE" 2>/dev/null || true)"
-    [[ "$addr" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || return 0
-    subnet="${addr%.*}"
-    seq 1 254 | xargs -P 64 -I{} ping -c 1 -t 1 "$subnet.{}" >/dev/null 2>&1 || true
-}
 
 # shellcheck disable=SC2329 # invoked via trap
 release_lock() {
@@ -100,6 +95,9 @@ cleanup() {
     release_lock
 }
 
+# tart exec takes argv, not a shell string — remote work goes through sh -c.
+guest() { "$TART" exec "$VM" sh -c "$1"; }
+
 acquire_lock
 trap cleanup EXIT
 trap 'exit 130' INT
@@ -111,55 +109,43 @@ mkdir -p "$LOGDIR"
 log "cloning $IMAGE -> $VM"
 "$TART" clone "$IMAGE" "$VM"
 
-log "booting $VM (--net-bridged=$BRIDGE --no-graphics)"
-nohup "$TART" run "$VM" --net-bridged="$BRIDGE" --no-graphics \
+log "booting $VM (--no-graphics, share $SHARE)"
+nohup "$TART" run "$VM" --no-graphics --dir="$SHARE:$SRC" \
     >"$LOGDIR/tart-run.log" 2>&1 &
 
-log "waiting for guest IP"
-ip=""
+log "waiting for the guest agent"
+agent_ready=""
 for _ in $(seq 1 90); do
-    ip="$("$TART" ip "$VM" --resolver arp --wait 5 2>/dev/null || true)"
-    [[ -n "$ip" ]] && break
-    warm_arp
-    sleep 5
-done
-if [[ -z "$ip" ]]; then
-    echo "journeys.sh: no guest IP ($LOGDIR/tart-run.log)" >&2
-    exit 1
-fi
-log "guest at $ip — waiting for SSH"
-
-for _ in $(seq 1 60); do
-    if $SSH "$GUEST_USER@$ip" true 2>/dev/null; then
+    if "$TART" exec "$VM" true 2>/dev/null; then
+        agent_ready=1
         break
     fi
     sleep 5
 done
-if ! $SSH "$GUEST_USER@$ip" true 2>/dev/null; then
-    echo "journeys.sh: SSH never came up on $ip" >&2
+if [[ -z "$agent_ready" ]]; then
+    echo "journeys.sh: guest agent never came up ($LOGDIR/tart-run.log)" >&2
     exit 1
 fi
 
 # --- Source in, tests, traces out ----------------------------------------
 
-log "syncing checkout to guest:$GUEST_DIR"
-rsync -az --delete \
+log "copying checkout into the guest"
+guest "mkdir -p $GUEST_HOME/$GUEST_DIR"
+guest "rsync -a --delete \
     --exclude .git --exclude .build --exclude .latch-trace --exclude build \
-    -e "$RSYNC_SSH" \
-    "$SRC/" "$GUEST_USER@$ip:$GUEST_DIR/"
+    '$SHARE_PATH/' '$GUEST_HOME/$GUEST_DIR/'"
 
 log "running LatchE2ETests in guest"
 set +e
-$SSH "$GUEST_USER@$ip" \
-    "cd ~/$GUEST_DIR && swift test --no-parallel --filter LatchE2ETests $*" \
+guest "cd $GUEST_HOME/$GUEST_DIR && swift test --no-parallel --filter LatchE2ETests $*" \
     2>&1 | tee "$LOGDIR/swift-test.log"
 status=${PIPESTATUS[0]}
 set -e
 
-log "syncing .latch-trace back"
-mkdir -p "$SRC/.latch-trace"
-rsync -az -e "$RSYNC_SSH" \
-    "$GUEST_USER@$ip:$GUEST_DIR/.latch-trace/" "$SRC/.latch-trace/" \
-    || log "warning: trace sync failed (tests may have left none)"
+log "copying .latch-trace back through the share"
+guest "if [ -d $GUEST_HOME/$GUEST_DIR/.latch-trace ]; then \
+    mkdir -p '$SHARE_PATH/.latch-trace' && \
+    rsync -a $GUEST_HOME/$GUEST_DIR/.latch-trace/ '$SHARE_PATH/.latch-trace/'; \
+fi" || log "warning: trace sync failed (tests may have left none)"
 
 exit "$status"
