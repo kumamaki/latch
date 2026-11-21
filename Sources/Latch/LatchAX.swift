@@ -171,9 +171,24 @@
         /// `NSApp.sendEvent`. Unlike catalog `press`, this runs the whole
         /// dispatch path — hit-testing, local event monitors, window
         /// ordering — so drives can reach behavior that only real clicks
-        /// exercise (outside-click dismissal, right-click menus).
+        /// exercise (outside-click dismissal, right-click menus). The
+        /// frame is the `.latch` view's live geometry when the id has a
+        /// probe — the same source element screenshots use, which reaches
+        /// rows inside floating panels — else the accessibility frame.
         @MainActor
         public static func click(id: String, button: String?) throws {
+            switch LatchCatalog.clickTarget(id: id) {
+            case .visible(let window, let screenRect):
+                let types = try clickTypes(button: button, id: id)
+                try postClick(
+                    types, in: window,
+                    atScreen: CGPoint(x: screenRect.midX, y: screenRect.midY))
+                return
+            case .clipped:
+                throw LatchError.actionUnavailable(id: id, action: "click")
+            case .unavailable:
+                break
+            }
             let hits = findAll(id: id)
             guard let hit = preferredHit(hits) else {
                 throw LatchError.elementNotFound(id: id)

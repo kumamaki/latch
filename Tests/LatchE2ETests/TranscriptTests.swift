@@ -38,4 +38,21 @@ struct TranscriptTests {
 
                 """)
     }
+
+    @Test("a step returns its body's value and still records the step")
+    func stepReturnsValue() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("latch-step-value-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let journey = try Journey(scenario: "step-value", root: root)
+
+        let produced = try await journey.step("Produce a value") { "the handle" }
+        #expect(produced == "the handle")
+        try await journey.finish()
+
+        let transcript = try String(
+            contentsOf: await journey.directory.appendingPathComponent("transcript.txt"),
+            encoding: .utf8)
+        #expect(transcript.contains("Produce a value"))
+    }
 }

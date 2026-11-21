@@ -41,6 +41,9 @@ final class GalleryModel {
     var flash: String?
     var composing = false
     var draft = ""
+    var panelPings = 0
+    /// The floating panel is AppKit; the model only flips its published state.
+    @ObservationIgnored var panel: FloatingPanel?
     /// Set by the list view; there is no catalog verb for scrolling.
     @ObservationIgnored var scrollToEnd: () -> Void = {}
 
@@ -68,6 +71,15 @@ final class GalleryModel {
 
     func dismissMenu() {
         menu = .closed
+    }
+
+    func openPanel() {
+        if panel == nil { panel = FloatingPanel(model: self) }
+        panel?.show()
+    }
+
+    func panelPing() {
+        panelPings += 1
     }
 
     /// A row flashes for a moment, then the menu closes. The flash is too

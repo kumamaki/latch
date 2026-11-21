@@ -180,6 +180,12 @@ public enum LatchCatalog {
             case needsAccessibility
         }
 
+        enum ClickTarget {
+            case visible(window: NSWindow, screenRect: CGRect)
+            case clipped
+            case unavailable
+        }
+
         /// Owners of one catalog id. A second window of the same scene
         /// registers beside the one already on screen; reads follow the
         /// on-screen owner instead of the latest mount.
@@ -480,6 +486,28 @@ public enum LatchCatalog {
             let visible = view.visibleRect.intersection(view.bounds)
             guard visible.width >= 1, visible.height >= 1 else { return .clipped }
             return .visible(window.convertToScreen(view.convert(visible, to: nil)))
+        }
+
+        /// Live frame of the winning `.latch` view's probe, in whichever
+        /// window hosts it — panels included. `mouseClick` aims here
+        /// first because rows inside a floating panel never reach the AX
+        /// walk. `.unavailable` sends the id down the accessibility path
+        /// (`Binding` registrations, a probe with no window); `.clipped`
+        /// means a probe exists but nothing visible remains, or its window
+        /// is ordered out, which must fail rather than click a stale AX
+        /// element.
+        static func clickTarget(id: String) -> ClickTarget {
+            guard let entry = active(id: id),
+                let view = frameSources[id]?[entry.token]?.view,
+                let window = view.window
+            else { return .unavailable }
+            let visible = view.visibleRect.intersection(view.bounds)
+            guard window.isVisible, visible.width >= 1, visible.height >= 1 else {
+                return .clipped
+            }
+            return .visible(
+                window: window,
+                screenRect: window.convertToScreen(view.convert(visible, to: nil)))
         }
 
         static func setFrameSource(id: String, token: Token, view: NSView?) {

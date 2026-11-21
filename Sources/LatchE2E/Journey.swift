@@ -70,12 +70,15 @@ public actor Journey {
     }
 
     /// Named scenario step with timing and failure capture. The DSL
-    /// marker that keeps a trace readable.
-    public func step(_ label: String, _ body: @Sendable () async throws -> Void) async throws {
+    /// marker that keeps a trace readable. Returns the body's value, so
+    /// a step can hand a produced handle to the next one.
+    public func step<T: Sendable>(
+        _ label: String, _ body: @Sendable () async throws -> T
+    ) async throws -> T {
         let started = Date()
         transcript.append(transcript.isEmpty ? label : "\n\(label)")
         do {
-            try await body()
+            let result = try await body()
             steps.append(
                 StepRecord(
                     label: label, seconds: Date().timeIntervalSince(started),
@@ -86,6 +89,7 @@ public actor Journey {
                 "phase": .string("end"),
                 "seconds": .number(Date().timeIntervalSince(started)),
             ])
+            return result
         } catch {
             let message = String(describing: error)
             steps.append(
@@ -237,16 +241,20 @@ public actor Journey {
         var payload: [String: JSONValue] = [
             "error": .string(String(describing: error)),
             "lastDiff": .string(lastDiff?.summary ?? "none"),
-            "catalogIds": .array(lastCatalogIds.map(JSONValue.string)),
             "recentDiffs": .array(recentDiffs.map(JSONValue.string)),
             "appLog": .string(appLogURL.path),
         ]
         if let catalog {
+            // The live dump is the truth at failure time; the last diff's
+            // ids are only a fallback for when the app is already gone.
+            payload["catalogIds"] = .array(catalog.ids.map(JSONValue.string))
             payload["catalog"] = .object(
                 Dictionary(
                     uniqueKeysWithValues: catalog.ids.compactMap { id in
                         catalog.node(id).map { (id, $0.failureEntry) }
                     }))
+        } else {
+            payload["lastKnownCatalogIds"] = .array(lastCatalogIds.map(JSONValue.string))
         }
         if let shotPath {
             payload["shot"] = .string(shotPath.path)

@@ -10,6 +10,9 @@ All notable changes to Latch live here.
   AppKit list whose rows recycle through `LatchCatalog.Binding`, drag and
   drop, and a custom context menu. `GalleryJourneyTests` drives each of
   them; the menu journey is the proof for `docs/recipes/context-menus.md`.
+- `examples/Gallery` gains a never-key floating `NSPanel`
+  (`panel.open` → `panel.row` / `panel.pings`): `mouseClick` proves a
+  real click reaches `.latch` rows the AX walk cannot see.
 
 ### LatchE2E
 
@@ -18,8 +21,12 @@ All notable changes to Latch live here.
   `just demo-transcript` regenerates it from the Gallery journey.
 - `just test` runs serially, so one E2E app cannot take the front from
   another mid-drag.
+- `Journey.step` returns the body's value, so a step can hand a produced
+  handle to the next one — no side-channel `Ref`.
 - `failure.json` now carries the catalog values at the moment of failure
-  and the last five action diffs.
+  and the last five action diffs. `catalogIds` lists the live catalog;
+  when the app is already gone the last diff's ids appear as
+  `lastKnownCatalogIds` instead.
 - `LatchApp.killNow()` sends SIGKILL to the spawned app, and `isRunning`
   and `waitForTermination(timeout:)` read the process handle. `terminate()`
   polls for exit instead of calling `waitUntilExit`, which could hang the
@@ -27,6 +34,12 @@ All notable changes to Latch live here.
 
 ### Kernel
 
+- `mouseClick` resolves its target through the `.latch` view's live
+  geometry — the same source element screenshots use — so real clicks
+  reach rows inside floating panels and other SwiftUI chrome the AX walk
+  cannot see. Ids registered without the modifier keep the in-process
+  accessibility frame, and a fully clipped `.latch` view fails
+  `actionUnavailable` rather than falling through to a stale AX element.
 - `keyPress` posts a key down and up to a named window's responder chain,
   with optional `command`, `shift`, `option`, `control`. A fixed key table
   (letters, digits, `return`, `tab`, `space`, `delete`, `escape`, arrows)

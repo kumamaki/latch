@@ -129,8 +129,11 @@ itself.
 - **AX is a probe.** An unlabeled `ax dump` walks the in-process AX tree
   for orientation. Press, set, and find never fall through to it. A miss
   means register the control. `mouse click` and `mouse drag` are the
-  third channel: the id is registered, the frame is that id's
-  accessibility frame, and they send a real `NSEvent`, so behavior
+  third channel: the id is registered, and they send a real `NSEvent` —
+  a click aims at the `.latch` view's live geometry (the same source
+  element screenshots use, so rows inside floating panels resolve) or
+  the accessibility frame when there is no probe; a drag aims at the
+  accessibility frame — so behavior
   that only lives in event dispatch —
   outside-click dismissal, right-click menus, drags — is testable.
   `mouse drag` aims at an inset clear of labeled children and leaves
@@ -278,7 +281,8 @@ try await app.run { app in
 everything recorded when it fails.
 
 When a run fails, the journey's `failure.json` holds the error, the
-catalog values at that moment, the last five action diffs, and a
+catalog values at that moment — or the last known ids when the app is
+already gone — the last five action diffs, and a
 screenshot. For crash-resume scenarios, `app.killNow()` sends SIGKILL to
 the spawned process, and `app.isRunning` and
 `app.waitForTermination(timeout:)` read the process handle instead of

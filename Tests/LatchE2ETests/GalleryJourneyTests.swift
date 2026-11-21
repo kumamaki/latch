@@ -112,6 +112,18 @@ struct GalleryJourneyTests {
         }
     }
 
+    @Test("a real click reaches a .latch row inside a floating panel")
+    func panelJourney() async throws {
+        try await Self.app("gallery-panel").run { app in
+            try await app.expect("panel.open").toAppear(timeout: 15)
+            try await app.press("panel.open")
+            try await app.expect("panel.row").toAppear()
+            try await app.expect("panel.pings").value("0")
+            try await app.click("panel.row")
+            try await app.expect("panel.pings").value("1")
+        }
+    }
+
     @Test("a row's flash is recorded even though it is too short to poll")
     func flashJourney() async throws {
         try await Self.app("gallery-flash").run { app in

@@ -31,8 +31,32 @@ struct ProcessAndFailureTests {
         let report = try JSONDecoder().decode(JSONValue.self, from: data)
         #expect(report["catalog"]?["flip.state"]?["value"]?.stringValue != nil)
         #expect(
+            report["catalogIds"]?.arrayValue?.contains { $0.stringValue == "flip.state" }
+                == true)
+        #expect(
             report["recentDiffs"]?.arrayValue?.first?.stringValue?.hasPrefix("axPress flip.fast")
                 == true)
+    }
+
+    @Test("failure.json names the last known ids when the app is already gone")
+    func failureLastKnownIds() async throws {
+        let journey = try Journey(scenario: "failure-last-known")
+        let before = CatalogSnapshot(dump: .object([:]))
+        let after = CatalogSnapshot(
+            dump: .object([
+                "id": .string("row.1"),
+                "role": .string("row"),
+                "value": .string("on"),
+            ]))
+        try await journey.recordDiff(
+            after.diffed(from: before), action: "axPress", id: "row.1", after: after)
+        try await journey.recordFailure(Boom(), shotPath: nil, catalog: nil)
+
+        let data = try Data(
+            contentsOf: await journey.directory.appendingPathComponent("failure.json"))
+        let report = try JSONDecoder().decode(JSONValue.self, from: data)
+        #expect(report["catalogIds"] == nil)
+        #expect(report["lastKnownCatalogIds"]?.arrayValue?.map(\.stringValue) == ["row.1"])
     }
 
     @Test("killNow ends the app and waitForTermination sees it")

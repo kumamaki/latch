@@ -22,6 +22,10 @@ struct GalleryRoot: View {
                         .latch("item.bottom", title: "Bottom", window: "main") {
                             model.scrollToEnd()
                         }
+                    Button("Panel") { model.openPanel() }
+                        .latch("panel.open", title: "Panel", window: "main") {
+                            model.openPanel()
+                        }
                 }
             }
         }
