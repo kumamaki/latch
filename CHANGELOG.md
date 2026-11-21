@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.8.0 — 2026-11-21
+
 ### Examples
 
 - `examples/Gallery` (`just demo gallery`): two windows, a sheet, an
