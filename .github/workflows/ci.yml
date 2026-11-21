@@ -17,8 +17,10 @@ permissions:
   contents: read
 
 jobs:
+  # Desk-safe: unit tests never open a visible window, plus lint and the
+  # config audits. Runs directly on the mini host.
   check:
-    name: check (mini)
+    name: check
     runs-on: [self-hosted, macOS, mini]
     timeout-minutes: 30
     steps:
@@ -27,3 +29,16 @@ jobs:
         run: swift --version
       - name: Check
         run: just check
+
+  # GUI journeys warp the pointer, so they run inside a disposable Tart VM
+  # cloned from e2e-base — never on the runner's own desktop.
+  journeys:
+    name: journeys
+    runs-on: [self-hosted, macOS, mini]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - name: Swift version
+        run: swift --version
+      - name: Journeys
+        run: just test-journeys

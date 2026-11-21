@@ -5,13 +5,19 @@ Latch is a small kernel. Keep it one.
 ## Develop
 
 ```sh
-just test            # unit tests
-just check           # tests + swift-format lint + shellcheck
+just test            # unit tests — desk-safe, no GUI
+just test-journeys   # GUI journeys in a Tart VM on the mini
+just check           # unit tests + swift-format lint + shellcheck
 just demo            # launch examples/Notes
 just demo gallery    # launch examples/Gallery
 just demo-transcript # rerun the Gallery demo journey, rewrite the README transcript
 just release minor   # dry-run the next tag; agents stop here
 ```
+
+The journeys warp the real pointer, so `just test` skips them and
+`just test-journeys` runs them in a disposable Tart VM on the mini —
+see `scripts/vm/`. `just demo-transcript` still drives the GUI app on
+this machine by hand.
 
 `just ship` is USER-only. It stamps the changelog and SwiftPM pins,
 pushes `main`, tags `vX.Y.Z`, and creates the GitHub Release.

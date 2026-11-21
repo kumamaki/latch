@@ -193,6 +193,48 @@ if [[ "$STATUS_COUNT" -ne 1 ]]; then
   exit 1
 fi
 
+# --- CI gate ---------------------------------------------------------------
+# Ship only what CI already proved: every check run for HEAD on GitHub must
+# have concluded success. An unpushed HEAD has no runs — push, let CI
+# finish, then ship.
+
+GH_REPO=""
+_repo_url="$(git remote get-url "$REMOTE" 2>/dev/null || true)"
+_repo_url="${_repo_url%.git}"
+case "$_repo_url" in
+  *github.com/*) GH_REPO="${_repo_url#*github.com/}" ;;
+  *:*) GH_REPO="${_repo_url#*:}" ;;  # scp-like or SSH-alias remote: host:owner/repo
+esac
+
+# Latest check run per expected job for HEAD: "check=completed/success
+# journeys=completed/success". Empty when nothing ran; "gh failed: ..." when
+# the API call itself fails, so the gate error keeps the reason.
+ci_states() {
+  local sha="$1" out errf
+  [[ -n "$GH_REPO" ]] || return 0
+  errf="$(mktemp)"
+  if out="$(gh api "repos/$GH_REPO/commits/$sha/check-runs" --jq '
+    [.check_runs[] | {name, status, conclusion, started_at}]
+    | group_by(.name) | map(sort_by(.started_at) | last)
+    | map(select(.name == "check" or .name == "journeys"))
+    | map(.name + "=" + .status + "/" + (.conclusion // "pending"))
+    | join(" ")' 2>"$errf")"; then
+    rm -f "$errf"
+    printf '%s' "$out"
+  else
+    printf 'gh failed: %s' "$(head -n 1 "$errf")"
+    rm -f "$errf"
+  fi
+}
+
+HEAD_SHA="$(git rev-parse HEAD)"
+CI_STATES="$(ci_states "$HEAD_SHA")"
+CI_OK=1
+for ci_job in check journeys; do
+  ci_token="$(printf '%s\n' "$CI_STATES" | tr ' ' '\n' | grep "^$ci_job=" || true)"
+  [[ "$ci_token" == "$ci_job=completed/success" ]] || CI_OK=0
+done
+
 NOTES_FILE="$(mktemp)"
 TAG_MSG_FILE="$(mktemp)"
 cleanup() { rm -f "$NOTES_FILE" "$TAG_MSG_FILE"; }
@@ -239,6 +281,7 @@ echo "  tag     : $TAG"
 echo "  remote  : $REMOTE"
 echo "  prev tag: ${LAST_TAG:-<none>}"
 echo "  ahead   : $AHEAD commit(s)"
+echo "  ci      : ${CI_STATES:-<no check runs for HEAD>}"
 echo "  status  : Status: $STATUS"
 if [[ "$DELETE_LOCAL_UNPREFIXED" -eq 1 || "$DELETE_REMOTE_UNPREFIXED" -eq 1 ]]; then
   echo "  delete  : $UNPREFIXED_TAG (local=$DELETE_LOCAL_UNPREFIXED remote=$DELETE_REMOTE_UNPREFIXED)"
@@ -263,6 +306,12 @@ if [[ "$DO_CONFIRM" -ne 1 ]]; then
   echo "Dry-run only. Tree is clean."
   echo "Re-run with --confirm (or just ship) to stamp, push, tag, and release."
   exit 0
+fi
+
+if [[ "$CI_OK" -ne 1 ]]; then
+  echo "release.sh: CI gate — HEAD $HEAD_SHA does not have green 'check' and" >&2
+  echo "  'journeys' runs on GitHub (${CI_STATES:-none}). Push and wait for CI." >&2
+  exit 1
 fi
 
 read -r -p "Stamp, push $REMOTE/main, tag $TAG, and create the GitHub Release? [y/N] " reply </dev/tty

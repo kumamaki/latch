@@ -28,6 +28,7 @@ final class DragFixtureModel {
     var row = "idle"
     var flip = "a"
     var chord = "idle"
+    var active = "false"
 
     func receive(_ item: String) {
         dest = item
@@ -65,9 +66,33 @@ private struct DragFixtureRoot: View {
         }
         .padding(24)
         .latchWindow("main")
+        // Journeys stay in the background; only verbs that require the app
+        // in front (mouseDragSession, key-window shortcuts) press this first.
+        // NSApp.activate() is the polite request and yields to the frontmost
+        // app; the deprecated ignoringOtherApps flag is still the only
+        // forceful path, which the pointer verbs need.
+        .latch("app.activate", window: "main") {
+            NSRunningApplication.current.activate(
+                options: [.activateAllWindows, .activateIgnoringOtherApps])
+        }
+        .latch(
+            "app.active", role: "label", title: "Active", value: model.active,
+            window: "main"
+        )
         .onAppear {
             NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
+            model.active = NSApp.isActive ? "true" : "false"
+            // Activation is a WindowServer round trip, so verbs that need the
+            // app in front poll this value instead of racing the press.
+            let center = NotificationCenter.default
+            center.addObserver(
+                forName: NSApplication.didBecomeActiveNotification, object: nil,
+                queue: .main
+            ) { _ in MainActor.assumeIsolated { model.active = "true" } }
+            center.addObserver(
+                forName: NSApplication.didResignActiveNotification, object: nil,
+                queue: .main
+            ) { _ in MainActor.assumeIsolated { model.active = "false" } }
         }
     }
 }

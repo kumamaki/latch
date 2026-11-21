@@ -37,13 +37,22 @@ app without computer-use or Screen Recording.
 ## Commands
 
 ```sh
-just test
-just check            # tests + lint; GitHub CI is this
-just demo             # launch examples/Notes (GUI, this machine)
-just demo gallery     # launch examples/Gallery
-just release minor    # dry-run plan; agents stop here
+just test              # unit tests only — desk-safe, no GUI
+just test-journeys     # GUI journeys in a Tart VM on the mini, never on a desk
+just check             # unit tests + lint; GitHub CI is this + journeys
+just demo              # launch examples/Notes (GUI, this machine)
+just demo gallery      # launch examples/Gallery
+just release minor     # dry-run plan; agents stop here
 bash cli/latch.sh --help
 ```
+
+`just test` never takes focus or moves the pointer: unit tests park their
+windows off-screen, and `LatchE2ETests` (which drive real apps) is skipped.
+`just test-journeys` clones `e2e-base` on the mini into a disposable VM —
+build it once with `scripts/vm/image.sh` — under the shared lock
+`/Volumes/T7/tart-vms/e2e.lock`. From a desk it syncs the tree to
+`server.local:~/Work/latch-e2e` first; on the mini it runs the local
+checkout. CI runs `check` and `journeys` as two jobs on the mini runner.
 
 `just ship` is USER-only. It pushes `main`, tags `vX.Y.Z`, and creates
 the GitHub Release. Agents never run it.

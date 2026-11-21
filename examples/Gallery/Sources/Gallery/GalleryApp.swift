@@ -18,7 +18,6 @@ struct GalleryApp: App {
                 .latchWindow("main")
                 .onAppear {
                     NSApp.setActivationPolicy(.regular)
-                    NSApp.activate(ignoringOtherApps: true)
                 }
         }
         .defaultSize(width: 640, height: 420)

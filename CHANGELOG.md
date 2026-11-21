@@ -19,8 +19,6 @@ All notable changes to Latch live here.
 - Every `Journey` writes `transcript.txt`: its steps, each action with
   what it changed in the catalog, and refusals. The README demo is one.
   `just demo-transcript` regenerates it from the Gallery journey.
-- `just test` runs serially, so one E2E app cannot take the front from
-  another mid-drag.
 - `Journey.step` returns the body's value, so a step can hand a produced
   handle to the next one — no side-channel `Ref`.
 - `failure.json` now carries the catalog values at the moment of failure
@@ -64,6 +62,26 @@ All notable changes to Latch live here.
   `LatchOpsProviding.axDrag` has a default that refuses, so existing
   providers compile. `mouseDragSession` stays for proving the real
   `draggable` / `NSDraggingSession` wiring.
+
+### Infrastructure
+
+- `just test` is desk-safe: it runs `LatchTests` only, with the
+  window-opening fixtures parked off-screen, so nothing takes focus or
+  covers the screen. The `LatchE2ETests` journeys — real pointer moves,
+  real keyboard — moved to `just test-journeys`, which clones the
+  `e2e-base` Tart image on the mini into a disposable VM under the
+  shared `/Volumes/T7/tart-vms/e2e.lock`, syncs the tree in, runs the
+  suite, copies `.latch-trace` back, and always destroys the VM.
+  `scripts/vm/image.sh` builds the image; it auto-logs-in to Aqua,
+  keeps sleep and screen lock off, and trusts the mini user's SSH key.
+- Fixtures no longer activate themselves on appear. `mouseDragSession`
+  is the one verb that requires the app in front, so its journey presses
+  the fixture's own `app.activate` catalog action first; every other
+  journey passes with the app in the background.
+- CI is two jobs on the mini runner: `check` (`just check`) and
+  `journeys` (`just test-journeys` in the VM). `just ship` now fails
+  closed unless both check runs for HEAD concluded success on GitHub;
+  the dry run prints their status.
 
 ## 0.7.0 — 2026-11-09
 

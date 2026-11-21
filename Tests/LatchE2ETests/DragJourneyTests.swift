@@ -6,7 +6,7 @@ import Testing
 
 @Suite(.serialized)
 struct DragJourneyTests {
-    @Test("drag moves a token and a short drag stays a click")
+    @Test("drag distance registers and a short drag stays a click")
     func dragJourney() async throws {
         let journey = try Journey(scenario: "drag-bins")
         let app = LatchApp(
@@ -26,6 +26,13 @@ struct DragJourneyTests {
             let startX = frame.x + 12
             let startY = frame.y + frame.height / 2
 
+            // A drag gesture, like a user's, starts from the app in front;
+            // backgrounded, the tracking never engages.
+            try await app.press("app.activate")
+            try await app.poll("fixture active", timeout: 15) { app in
+                try await app.node("app.active")?.value == "true"
+            }
+
             try await app.dragPoint(
                 window: "main", x: startX, y: startY, toX: startX + 4, toY: startY)
             #expect(try await app.node("gesture.well")?.value == "0")
@@ -36,7 +43,30 @@ struct DragJourneyTests {
                 let raw = try await app.node("gesture.well")?.value ?? "0"
                 return (Int(raw) ?? 0) >= 10
             }
+        }
+    }
 
+    /// `mouseDragSession` moves the real pointer, so the fixture has to be in
+    /// front. It activates through its own catalog action rather than a
+    /// kernel verb.
+    @Test("a drag session moves a token")
+    func dragSessionJourney() async throws {
+        let journey = try Journey(scenario: "drag-session")
+        let app = LatchApp(
+            config: LatchApp.Config(
+                executableURL: try Fixture.binary("DragFixture"),
+                slug: "drag-fixture"
+            ),
+            journey: journey
+        )
+        try await app.run { app in
+            try await app.poll("bins mounted", timeout: 15) { app in
+                try await app.node("bin.dest") != nil
+            }
+            try await app.press("app.activate")
+            try await app.poll("fixture active", timeout: 15) { app in
+                try await app.node("app.active")?.value == "true"
+            }
             let started = Date()
             try await app.dragSession(from: "bin.source", to: "bin.dest")
             #expect(Date().timeIntervalSince(started) < 5)
@@ -116,7 +146,10 @@ struct DragJourneyTests {
                 coverage = try await app.coverage(window: "main")
             }
             #expect(
-                coverage == LatchApp.Coverage(covered: 2, uncovered: ["button Stray"], unprobed: [])
+                coverage
+                    == LatchApp.Coverage(
+                        covered: 2, uncovered: ["button Stray"],
+                        unprobed: ["app.activate"])
             )
         }
     }

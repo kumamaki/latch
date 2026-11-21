@@ -177,6 +177,12 @@ is. `DragGesture` and `mouseDragged` read the event location. A path
 shorter than `DragGesture`'s 10-point minimum is a click.
 `mouseDragPoint` is the same sequence aimed at window points.
 
+The events post even while this app is in the background, but a
+`DragGesture` only tracks them while the app is in front — the same
+rule a user's drag follows, since the first mouse-down activates the
+window's app. Aim `mouseDrag` at an active app (or activate through a
+catalog action first); `mouseDragSession` checks and refuses instead.
+
 `axDrag` is the drag that needs none of this: it never posts an event, so
 prefer it unless the point is the real dragging machinery.
 

@@ -1353,7 +1353,7 @@ private final class NamedWindowFixture {
         }
         self.name = name
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 200, height: 120),
+            contentRect: offscreenRect(width: 200, height: 120),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -1372,4 +1372,10 @@ private final class NamedWindowFixture {
         window.orderOut(nil)
         window.close()
     }
+}
+
+/// Parked past every display edge: window ops and `cacheDisplay` screenshots
+/// work on ordered windows, but a unit test must never cover the user's screen.
+private func offscreenRect(width: CGFloat, height: CGFloat) -> NSRect {
+    NSRect(x: -20000, y: -20000, width: width, height: height)
 }

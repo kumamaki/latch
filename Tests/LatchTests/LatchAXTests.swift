@@ -205,7 +205,7 @@ private final class ChromeWindowFixture {
     init() {
         _ = NSApplication.shared
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 240),
+            contentRect: offscreenRect(width: 420, height: 240),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -219,7 +219,7 @@ private final class ChromeWindowFixture {
         toolbar.delegate = owner
         toolbar.displayMode = .iconAndLabel
         window.toolbar = toolbar
-        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
         window.layoutIfNeeded()
         window.contentView?.superview?.layoutSubtreeIfNeeded()
         self.window = window
@@ -328,7 +328,7 @@ private final class CopyFixture {
     init() {
         _ = NSApplication.shared
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 240),
+            contentRect: offscreenRect(width: 420, height: 240),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -338,7 +338,7 @@ private final class CopyFixture {
         window.isReleasedWhenClosed = false
         window.contentView = CopyView(
             frame: NSRect(x: 0, y: 0, width: 420, height: 240))
-        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
         window.layoutIfNeeded()
         window.contentView?.superview?.layoutSubtreeIfNeeded()
         self.window = window
@@ -378,7 +378,7 @@ private final class SwiftUIAlertFixture {
     init() {
         _ = NSApplication.shared
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 240),
+            contentRect: offscreenRect(width: 420, height: 240),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -387,7 +387,7 @@ private final class SwiftUIAlertFixture {
         window.title = "Notes"
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: AlertHost())
-        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
         window.layoutIfNeeded()
         window.contentView?.superview?.layoutSubtreeIfNeeded()
         self.window = window
@@ -400,4 +400,10 @@ private final class SwiftUIAlertFixture {
         window.orderOut(nil)
         window.close()
     }
+}
+
+/// Parked past every display edge: AX reads and `cacheDisplay` screenshots
+/// work on ordered windows, but a unit test must never cover the user's screen.
+private func offscreenRect(width: CGFloat, height: CGFloat) -> NSRect {
+    NSRect(x: -20000, y: -20000, width: width, height: height)
 }

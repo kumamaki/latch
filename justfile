@@ -8,15 +8,34 @@ set shell := ["bash", "-uc", "-o", "pipefail"]
 default:
     @just --list
 
-# Type-check and run unit tests. Serial: the E2E apps take the front, and a
-# real-pointer drag fails if another app activates mid-gesture.
+# Unit tests only — desk-safe: no GUI journeys, no windows on screen.
+# The E2E journeys drive real apps and run in a VM: `just test-journeys`.
 test:
-    swift test --no-parallel
+    swift test --no-parallel --skip LatchE2ETests
+
+# GUI journeys in a disposable Tart VM on the mini — never on this desk.
+# On the mini it runs this checkout; elsewhere it syncs the tree to
+# server.local:~/Work/latch-e2e first. Extra args reach `swift test`,
+# e.g. `just test-journeys --filter DragJourneyTests/dragSessionJourney`.
+test-journeys *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ -x "$HOME/.local/bin/tart" ]] || command -v tart >/dev/null 2>&1; then
+        # /bin/bash: Homebrew bash hides the ARP table from `tart ip`.
+        exec /bin/bash scripts/vm/journeys.sh "$@"
+    fi
+    remote="server.local"
+    rsync -az --delete \
+        --exclude .git --exclude .build --exclude .latch-trace --exclude build \
+        ./ "$remote:Work/latch-e2e/"
+    cmd='cd ~/Work/latch-e2e && exec /bin/bash scripts/vm/journeys.sh'
+    for arg in "$@"; do printf -v q ' %q' "$arg"; cmd+="$q"; done
+    exec ssh "$remote" "$cmd"
 
 # Lint Swift sources and the CLI / release / check scripts.
 lint:
     swift format lint --strict --recursive Sources Tests examples Package.swift
-    shellcheck cli/latch.sh examples/Notes/latch.sh scripts/release.sh scripts/audit-config.sh scripts/smoke-consumer.sh scripts/demo-transcript.sh
+    shellcheck cli/latch.sh examples/Notes/latch.sh scripts/release.sh scripts/audit-config.sh scripts/smoke-consumer.sh scripts/demo-transcript.sh scripts/vm/image.sh scripts/vm/journeys.sh
 
 # Assert Release carries no driving-surface impl or API.
 audit-config:
@@ -26,7 +45,7 @@ audit-config:
 smoke-consumer:
     bash scripts/smoke-consumer.sh
 
-# Tests, lint, and config audits. The full pre-ship gate.
+# Unit tests, lint, and config audits. The full pre-ship gate — desk-safe.
 check:
     just test
     just lint

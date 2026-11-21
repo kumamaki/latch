@@ -344,12 +344,22 @@ and any other coding agent can follow them. Shared rules live in
 ## Develop
 
 ```sh
-just test            # unit tests
-just check           # tests + swift-format lint + shellcheck
+just test            # unit tests — desk-safe, no GUI
+just test-journeys   # GUI journeys in a Tart VM on the mini
+just check           # unit tests + swift-format lint + shellcheck
 just demo            # launch examples/Notes
 just demo gallery    # launch examples/Gallery
 just release minor   # dry-run the next tag; agents stop here
 ```
+
+`just test` never steals focus: the window-opening unit tests park their
+windows off-screen, and the `LatchE2ETests` journeys — which inject real
+pointer and keyboard events — are skipped. `just test-journeys` runs them
+inside a disposable Tart VM cloned from `e2e-base` on the mini
+(`scripts/vm/image.sh` builds the image once; `scripts/vm/journeys.sh`
+takes a shared lock, syncs the tree, runs `swift test`, and destroys the
+VM). From a desk it syncs the checkout to `server.local` first, so the
+journeys can run from any Mac.
 
 `just ship` is USER-only. It stamps, tags `vX.Y.Z`, and creates the
 GitHub Release.
