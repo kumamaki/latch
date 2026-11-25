@@ -4,6 +4,8 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+## 0.9.0 — 2026-11-25
+
 ### Kernel
 
 - `render` rasterizes a registered SwiftUI subtree offscreen through
