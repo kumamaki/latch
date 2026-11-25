@@ -19,6 +19,7 @@ public struct LatchControl: ViewModifier {
     private let press: ((String?) throws -> Void)?
     private let set: ((String) throws -> Void)?
     #if DEBUG
+        @Environment(\.isLatchRendering) private var isLatchRendering
         @State private var token = LatchCatalog.Token()
         @State private var mount = Mount()
 
@@ -63,29 +64,33 @@ public struct LatchControl: ViewModifier {
     /// pass-through — the catalog impl is compiled out.
     public func body(content: Content) -> some View {
         #if DEBUG
-            let isEnabled = enabled()
-            let currentValue = value()
-            content
-                .background {
-                    LatchControlProbe { window, probe in
-                        report(host: window, probe: probe)
+            if isLatchRendering {
+                content
+            } else {
+                let isEnabled = enabled()
+                let currentValue = value()
+                content
+                    .background {
+                        LatchControlProbe { window, probe in
+                            report(host: window, probe: probe)
+                        }
+                        .accessibilityHidden(true)
                     }
-                    .accessibilityHidden(true)
-                }
-                .onAppear { publish(host: nil) }
-                .onChange(of: id) { _, _ in publish(host: nil) }
-                .onChange(of: role) { _, _ in publish(host: nil) }
-                .onChange(of: title) { _, _ in publish(host: nil) }
-                .onChange(of: description) { _, _ in publish(host: nil) }
-                .onChange(of: actions) { _, _ in publish(host: nil) }
-                .onChange(of: window) { _, _ in publish(host: nil) }
-                .onChange(of: parent) { _, _ in publish(host: nil) }
-                .onChange(of: isEnabled) { _, _ in publish(host: nil) }
-                .onChange(of: currentValue) { _, _ in publish(host: nil) }
-                .onDisappear {
-                    LatchCatalog.unregister(id: mount.registeredID ?? id, token: token)
-                    mount.registeredID = nil
-                }
+                    .onAppear { publish(host: nil) }
+                    .onChange(of: id) { _, _ in publish(host: nil) }
+                    .onChange(of: role) { _, _ in publish(host: nil) }
+                    .onChange(of: title) { _, _ in publish(host: nil) }
+                    .onChange(of: description) { _, _ in publish(host: nil) }
+                    .onChange(of: actions) { _, _ in publish(host: nil) }
+                    .onChange(of: window) { _, _ in publish(host: nil) }
+                    .onChange(of: parent) { _, _ in publish(host: nil) }
+                    .onChange(of: isEnabled) { _, _ in publish(host: nil) }
+                    .onChange(of: currentValue) { _, _ in publish(host: nil) }
+                    .onDisappear {
+                        LatchCatalog.unregister(id: mount.registeredID ?? id, token: token)
+                        mount.registeredID = nil
+                    }
+            }
         #else
             content
         #endif
@@ -144,7 +149,7 @@ public struct LatchControl: ViewModifier {
 }
 
 #if DEBUG
-    private struct LatchControlProbe: NSViewRepresentable {
+    struct LatchControlProbe: NSViewRepresentable {
         var onReport: (NSWindow?, NSView?) -> Void
 
         func makeNSView(context: Context) -> ProbeView {

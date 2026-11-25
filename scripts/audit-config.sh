@@ -9,7 +9,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
-impl='Latch\.(LatchServer|UnixSocketServer|LatchAX|LatchScreenshot|LatchToken|LatchPaths|LatchCatalogDump|LatchBootGatedOps|LatchSocketPhase|LatchValueHistory|LatchHistoryReply)(\.| |$)'
+impl='Latch\.(LatchServer|UnixSocketServer|LatchAX|LatchScreenshot|LatchRender|LatchToken|LatchPaths|LatchCatalogDump|LatchBootGatedOps|LatchSocketPhase|LatchValueHistory|LatchHistoryReply)(\.| |$)'
 
 impl_count() {
     nm "$@" | xcrun swift-demangle | grep -cE "$impl" || true
@@ -89,7 +89,11 @@ import SwiftUI
 
 // Surface every adopter relies on. Must compile in both configs.
 func labeled(_ v: some View) -> some View {
-    v.latch("audit.button", press: {}).latchWindow("main")
+    LatchRenderable("audit.specimen", window: "main") {
+        v.latch("audit.button", press: {})
+            .latchRenderable("audit.button") { v }
+            .latchWindow("main")
+    }
 }
 @MainActor
 func calls() {
@@ -100,6 +104,7 @@ func calls() {
     _ = Latch.updates()
     let _: (any LatchOpsProviding)? = nil
     _ = LatchCatalog.formatBool(true)
+    _ = \EnvironmentValues.isLatchRendering
 }
 SWIFT
 

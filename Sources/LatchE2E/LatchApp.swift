@@ -391,6 +391,41 @@ public actor LatchApp {
         return try await journey?.recordShot(url) ?? url
     }
 
+    @discardableResult
+    public func render(
+        _ id: String,
+        scale: Double? = nil,
+        frame: ScreenshotFrame? = nil,
+        padding: Double? = nil,
+        sweep: (scrub: String, from: Double, to: Double, steps: Int)? = nil
+    ) async throws -> URL {
+        var args: [String: JSONValue] = ["id": .string(id)]
+        if let scale {
+            args["scale"] = .number(scale)
+        }
+        if let frame {
+            args["frame"] = .string(frame.rawValue)
+        }
+        if let padding {
+            args["padding"] = .number(padding)
+        }
+        if let sweep {
+            args["sweep"] = .object([
+                "scrub": .string(sweep.scrub),
+                "from": .number(sweep.from),
+                "to": .number(sweep.to),
+                "steps": .number(Double(sweep.steps)),
+            ])
+        }
+        let data = try await send("render", args: args)
+        guard let path = data["path"]?.stringValue else {
+            throw LatchE2EError.server(
+                code: "protocol", message: "render response without path")
+        }
+        let url = URL(fileURLWithPath: path)
+        return try await journey?.recordShot(url) ?? url
+    }
+
     /// Labeled dump flattened to id+value+enabled. The diff baseline
     /// and the stall detector's input.
     public func snapshot() async throws -> CatalogSnapshot {

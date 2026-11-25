@@ -56,6 +56,7 @@ commands follow the window on screen.
 | Named row actions | `.latch("id", actions: […], press: { action in … })` | `action` |
 | Sheet / popover / alert chrome | `.latch("id", role: "sheet", window:)` | `label` |
 | Interior of that surface | `.latch("id", parent: "sheet.compose", …)` | same as the control |
+| Shader-true renderable subtree | `LatchRenderable("id", window:) { … }` or `.latchRenderable("id") { … }` | `label` (`render`) |
 
 `parent:` is a catalog id. Labeled dump nests the child under that
 node. A missing parent stays at the window until it registers. Do not

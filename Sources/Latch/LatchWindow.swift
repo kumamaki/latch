@@ -8,6 +8,7 @@ import SwiftUI
 public struct LatchWindow: ViewModifier {
     private let name: String
     #if DEBUG
+        @Environment(\.isLatchRendering) private var isLatchRendering
         @State private var token = LatchCatalog.Token()
     #endif
 
@@ -17,26 +18,30 @@ public struct LatchWindow: ViewModifier {
 
     public func body(content: Content) -> some View {
         #if DEBUG
-            content
-                .background {
-                    LatchWindowProbeRepresentable(name: name)
-                        .frame(width: 0, height: 0)
-                        .accessibilityHidden(true)
-                }
-                .onAppear { publish() }
-                .onChange(of: name) { oldName, _ in
-                    LatchCatalog.unregister(
-                        id: LatchWindowIdentity.catalogID(name: oldName),
-                        token: token
-                    )
-                    publish()
-                }
-                .onDisappear {
-                    LatchCatalog.unregister(
-                        id: LatchWindowIdentity.catalogID(name: name),
-                        token: token
-                    )
-                }
+            if isLatchRendering {
+                content
+            } else {
+                content
+                    .background {
+                        LatchWindowProbeRepresentable(name: name)
+                            .frame(width: 0, height: 0)
+                            .accessibilityHidden(true)
+                    }
+                    .onAppear { publish() }
+                    .onChange(of: name) { oldName, _ in
+                        LatchCatalog.unregister(
+                            id: LatchWindowIdentity.catalogID(name: oldName),
+                            token: token
+                        )
+                        publish()
+                    }
+                    .onDisappear {
+                        LatchCatalog.unregister(
+                            id: LatchWindowIdentity.catalogID(name: name),
+                            token: token
+                        )
+                    }
+            }
         #else
             content
         #endif

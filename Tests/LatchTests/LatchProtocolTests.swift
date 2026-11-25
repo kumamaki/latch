@@ -81,6 +81,48 @@ struct LatchProtocolTests {
         #expect(options.id == "")
     }
 
+    @Test("decodes render with optional scale, frame, padding, and sweep")
+    func renderDecodes() throws {
+        let json = Data(
+            #"""
+            {"token":"abc","command":"render","args":{"id":"showroom.specimen","scale":2,"frame":"black","padding":24,"sweep":{"scrub":"showroom.scrub","from":0.4,"to":0.6,"steps":6}}}
+            """#.utf8)
+        let request = try decoder.decode(LatchRequest.self, from: json)
+        guard case .render(let id, let options) = request.command else {
+            Issue.record("expected .render, got \(request.command)")
+            return
+        }
+        #expect(id == "showroom.specimen")
+        #expect(options.scale == 2)
+        #expect(options.presentation?.frameColor == .black)
+        #expect(options.presentation?.padding == 24)
+        #expect(
+            options.sweep
+                == LatchRenderSweep(scrub: "showroom.scrub", from: 0.4, to: 0.6, steps: 6)
+        )
+    }
+
+    @Test("render reply encodes path, dimensions, scale, frames, and note")
+    func renderEncodes() throws {
+        let result = LatchRenderResult(
+            path: "/tmp/specimen.png",
+            width: 800,
+            height: 600,
+            scale: 2,
+            frames: 6,
+            note: LatchRender.renderNote
+        )
+        let encoded = try JSONEncoder().encode(LatchResponse.success(.render(result)))
+        let object = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        let data = try #require(object?["data"] as? [String: Any])
+        #expect(data["path"] as? String == "/tmp/specimen.png")
+        #expect(data["width"] as? Int == 800)
+        #expect(data["height"] as? Int == 600)
+        #expect(data["scale"] as? Double == 2)
+        #expect(data["frames"] as? Int == 6)
+        #expect(data["note"] as? String == LatchRender.renderNote)
+    }
+
     @Test("decodes axPress with named action")
     func axPressNamed() throws {
         let json = Data(

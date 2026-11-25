@@ -47,6 +47,7 @@ import Foundation
             window: String, x: Double, y: Double,
             toWindow: String?, toX: Double, toY: Double)
         case screenshot(window: String, options: LatchScreenshotOptions)
+        case render(id: String, options: LatchRenderOptions)
 
         fileprivate static func decode(
             name: String,
@@ -121,6 +122,9 @@ import Foundation
             case "screenshot":
                 let args = try container.decode(ScreenshotArgs.self, forKey: .args)
                 return .screenshot(window: args.window, options: args.options)
+            case "render":
+                let args = try container.decode(RenderArgs.self, forKey: .args)
+                return .render(id: args.id, options: args.options)
             default:
                 throw LatchError.unknownCommand(name: name)
             }
@@ -137,15 +141,27 @@ import Foundation
             let padding: Double?
 
             var options: LatchScreenshotOptions {
-                let presentation: LatchScreenshotPresentation?
-                if frame != nil || padding != nil {
-                    presentation = LatchScreenshotPresentation(
-                        frameColor: frame ?? .white,
-                        padding: padding ?? LatchScreenshotPresentation.defaultPadding)
-                } else {
-                    presentation = nil
-                }
-                return LatchScreenshotOptions(id: id, presentation: presentation)
+                LatchScreenshotOptions(
+                    id: id,
+                    presentation: LatchScreenshotPresentation.resolved(
+                        frame: frame, padding: padding))
+            }
+        }
+
+        private struct RenderArgs: Decodable {
+            let id: String
+            let scale: Double?
+            let frame: LatchScreenshotPresentation.FrameColor?
+            let padding: Double?
+            let sweep: LatchRenderSweep?
+
+            var options: LatchRenderOptions {
+                LatchRenderOptions(
+                    scale: scale,
+                    presentation: LatchScreenshotPresentation.resolved(
+                        frame: frame, padding: padding),
+                    sweep: sweep
+                )
             }
         }
 
@@ -243,6 +259,7 @@ import Foundation
         case axNode(LatchAXNode, history: LatchHistoryReply?)
         case coverage(LatchCoverageReply)
         case screenshot(path: String, note: String)
+        case render(LatchRenderResult)
 
         func encode(to encoder: Encoder) throws {
             switch self {
@@ -275,6 +292,8 @@ import Foundation
                 var container = encoder.container(keyedBy: ScreenshotKeys.self)
                 try container.encode(path, forKey: .path)
                 try container.encode(note, forKey: .note)
+            case .render(let result):
+                try result.encode(to: encoder)
             }
         }
 

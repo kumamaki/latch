@@ -21,6 +21,14 @@ public struct LatchScreenshotPresentation: Sendable, Equatable {
         self.frameColor = frameColor
         self.padding = padding
     }
+
+    static func resolved(frame: FrameColor?, padding: Double?) -> Self? {
+        guard frame != nil || padding != nil else { return nil }
+        return Self(
+            frameColor: frame ?? .white,
+            padding: padding ?? defaultPadding
+        )
+    }
 }
 
 /// Options for a whole-window screenshot or a registered element crop.
@@ -67,6 +75,7 @@ public protocol LatchOpsProviding: AnyObject, Sendable {
     func screenshot(window: String) async throws -> String
     func screenshot(window: String, id: String?) async throws -> String
     func screenshot(window: String, options: LatchScreenshotOptions) async throws -> String
+    func render(id: String, options: LatchRenderOptions) async throws -> LatchRenderResult
 }
 
 extension LatchOpsProviding {
@@ -105,6 +114,12 @@ extension LatchOpsProviding {
                 id: options.id ?? window, action: "framed screenshot")
         }
         return try await screenshot(window: window, id: options.id)
+    }
+
+    /// Older custom ops providers cannot render subtrees offscreen. Providers
+    /// opt in by implementing this verb.
+    public func render(id: String, options: LatchRenderOptions) async throws -> LatchRenderResult {
+        throw LatchError.actionUnavailable(id: id, action: "render")
     }
 }
 
@@ -253,6 +268,12 @@ extension LatchOpsProviding {
             -> String
         {
             try LatchScreenshot.capture(windowName: window, options: options, app: appName)
+        }
+
+        public func render(id: String, options: LatchRenderOptions) async throws
+            -> LatchRenderResult
+        {
+            try await LatchRender.capture(id: id, options: options, app: appName)
         }
 
         public static func liveWindows() -> [LatchWindowStatus] {

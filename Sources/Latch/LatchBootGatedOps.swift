@@ -102,5 +102,9 @@
         func screenshot(window: String, options: LatchScreenshotOptions) async throws -> String {
             try await inner.screenshot(window: window, options: options)
         }
+
+        func render(id: String, options: LatchRenderOptions) async throws -> LatchRenderResult {
+            try await inner.render(id: id, options: options)
+        }
     }
 #endif

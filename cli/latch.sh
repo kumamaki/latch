@@ -57,6 +57,10 @@ Commands:
   screenshot <window> [id] [--frame white|black] [--padding <points>]
     --frame adds rounded screenshot corners and a white or black matte
     --padding uses points (0–256); frame-only default is 32, padding alone uses white
+  render <id> [--scale <factor>] [--frame white|black] [--padding <points>]
+  render <id> --sweep <from> <to> <steps> --scrub <scrub-id> [--scale <factor>] [--frame white|black] [--padding <points>]
+    renders a LatchRenderable SwiftUI subtree via ImageRenderer (includes Metal shaders)
+    --sweep steps <scrub-id> across <from>..<to> (2–24 steps) into one contact-sheet PNG
 EOF
     exit 64
 }
@@ -82,6 +86,51 @@ if not math.isfinite(value) or not 0 <= value <= 256:
     print("error: screenshot padding must be a number from 0 to 256 points.", file=sys.stderr)
     sys.exit(64)
 print(json.dumps(value))
+PY
+}
+
+json_render_scale() {
+    python3 - "$1" <<'PY'
+import json, math, sys
+
+try:
+    value = float(sys.argv[1])
+except ValueError:
+    print("error: render scale must be a positive number up to 4.", file=sys.stderr)
+    sys.exit(64)
+if not math.isfinite(value) or not 0 < value <= 4:
+    print("error: render scale must be a positive number up to 4.", file=sys.stderr)
+    sys.exit(64)
+print(json.dumps(value))
+PY
+}
+
+json_render_sweep() {
+    python3 - "$1" "$2" "$3" "$4" <<'PY'
+import json, math, sys
+
+scrub, raw_from, raw_to, raw_steps = sys.argv[1:5]
+if not scrub:
+    print("error: --scrub requires a non-empty catalog id.", file=sys.stderr)
+    sys.exit(64)
+try:
+    start = float(raw_from)
+    end = float(raw_to)
+except ValueError:
+    print("error: --sweep bounds must be numbers.", file=sys.stderr)
+    sys.exit(64)
+if not math.isfinite(start) or not math.isfinite(end):
+    print("error: --sweep bounds must be finite numbers.", file=sys.stderr)
+    sys.exit(64)
+try:
+    steps = int(raw_steps)
+except ValueError:
+    print("error: --sweep steps must be an integer from 2 to 24.", file=sys.stderr)
+    sys.exit(64)
+if not 2 <= steps <= 24:
+    print("error: --sweep steps must be an integer from 2 to 24.", file=sys.stderr)
+    sys.exit(64)
+print(json.dumps({"scrub": scrub, "from": start, "to": end, "steps": steps}))
 PY
 }
 
@@ -899,6 +948,94 @@ case "$command" in
         fi
         screenshot_args+="}"
         query screenshot "$screenshot_args"
+        ;;
+    render)
+        [[ $# -ge 1 ]] || usage
+        render_id="$1"
+        shift
+        render_scale=""
+        render_frame=""
+        render_padding=""
+        render_sweep_from=""
+        render_sweep_to=""
+        render_sweep_steps=""
+        render_scrub=""
+        render_has_scale=0
+        render_has_frame=0
+        render_has_padding=0
+        render_has_sweep=0
+        render_has_scrub=0
+
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --scale)
+                    [[ $# -ge 2 ]] || usage
+                    [[ "$render_has_scale" -eq 0 ]] || usage
+                    render_scale="$(json_render_scale "$2")"
+                    render_has_scale=1
+                    shift 2
+                    ;;
+                --frame)
+                    [[ $# -ge 2 ]] || usage
+                    [[ "$render_has_frame" -eq 0 ]] || usage
+                    case "$2" in
+                        white|black) render_frame="$2" ;;
+                        *) echo "error: render frame must be white or black." >&2; exit 64 ;;
+                    esac
+                    render_has_frame=1
+                    shift 2
+                    ;;
+                --padding)
+                    [[ $# -ge 2 ]] || usage
+                    [[ "$render_has_padding" -eq 0 ]] || usage
+                    render_padding="$(json_screenshot_padding "$2")"
+                    render_has_padding=1
+                    shift 2
+                    ;;
+                --sweep)
+                    [[ $# -ge 4 ]] || usage
+                    [[ "$render_has_sweep" -eq 0 ]] || usage
+                    render_sweep_from="$2"
+                    render_sweep_to="$3"
+                    render_sweep_steps="$4"
+                    render_has_sweep=1
+                    shift 4
+                    ;;
+                --scrub)
+                    [[ $# -ge 2 ]] || usage
+                    [[ "$render_has_scrub" -eq 0 ]] || usage
+                    render_scrub="$2"
+                    render_has_scrub=1
+                    shift 2
+                    ;;
+                *) usage ;;
+            esac
+        done
+
+        if [[ "$render_has_sweep" -ne "$render_has_scrub" ]]; then
+            echo "error: --sweep and --scrub must be passed together." >&2
+            exit 64
+        fi
+
+        render_args="$(printf '{"id":%s' "$(json_escape "$render_id")")"
+        if [[ "$render_has_scale" -eq 1 ]]; then
+            render_args+=",\"scale\":$render_scale"
+        fi
+        if [[ "$render_has_frame" -eq 1 || "$render_has_padding" -eq 1 ]]; then
+            if [[ "$render_has_frame" -eq 0 ]]; then
+                render_frame="white"
+            fi
+            render_args+=",\"frame\":$(json_escape "$render_frame")"
+        fi
+        if [[ "$render_has_padding" -eq 1 ]]; then
+            render_args+=",\"padding\":$render_padding"
+        fi
+        if [[ "$render_has_sweep" -eq 1 ]]; then
+            render_sweep_json="$(json_render_sweep "$render_scrub" "$render_sweep_from" "$render_sweep_to" "$render_sweep_steps")"
+            render_args+=",\"sweep\":$render_sweep_json"
+        fi
+        render_args+="}"
+        query render "$render_args"
         ;;
     *) usage ;;
 esac

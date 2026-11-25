@@ -164,8 +164,8 @@ guessing synonyms.
 
 Product verbs (`add-note`, `seed`) stay in your app. The kernel knows
 ping, boot, windows, `ax *` (`ax find <id> --history` returns the values an
-opted-in id published), `mouseClick`, `keyPress`, `mouseDrag`, `mouseDragSession`, and
-screenshot, and nothing else.
+opted-in id published), `mouseClick`, `keyPress`, `mouseDrag`, `mouseDragSession`,
+screenshot, and `render`, and nothing else.
 
 ## Quick start
 
@@ -315,8 +315,13 @@ by pasting that path into every command.
   it sees nothing fails with `unavailable` instead of reporting a number.
 - Screenshots include the title bar and toolbar. Metal-backed layers
   may still render blank. Element shots crop the same window bitmap to
-  a registered id's frame, so they do not fix material layers. The
-  catalog and the AX probe stay the source of truth there.
+  a registered id's frame, so they do not fix material layers. For
+  SwiftUI `.layerEffect` / `.colorEffect` / `.distortionEffect` shaders,
+  wrap the subtree in `LatchRenderable` (or attach `.latchRenderable`)
+  and use `render <id>` (with optional `--sweep` for a scrubbed
+  contact sheet). AppKit-backed subviews (`NSTextField`, `NSScrollView`,
+  custom `NSViewRepresentable`) render blank or as placeholders in
+  `render`, so `screenshot` stays the tool for whole-window chrome.
 - Latch is a development harness. The socket serves one local user in
   Debug builds, and Release builds carry none of the driving surface.
 

@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SwiftUI
 
 /// Scene catalog. `.latch` registers here in every build. The DEBUG
 /// socket reads the same table; it does not own it.
@@ -221,8 +222,17 @@ public enum LatchCatalog {
             let drop: (String) throws -> Void
         }
 
+        struct RenderSource {
+            let token: ObjectIdentifier
+            let makeView: @MainActor () -> AnyView
+            let environment: @MainActor () -> EnvironmentValues?
+            let measuredSize: @MainActor () -> CGSize
+            let window: @MainActor () -> NSWindow?
+        }
+
         private static var dragSources: [String: DragSource] = [:]
         private static var dropTargets: [String: DropTarget] = [:]
+        private static var renderSources: [String: [ObjectIdentifier: RenderSource]] = [:]
 
         private struct Owner: Hashable {
             let id: String
@@ -242,6 +252,7 @@ public enum LatchCatalog {
             children.removeAll()
             dragSources.removeAll()
             dropTargets.removeAll()
+            renderSources.removeAll()
             nextGeneration = 0
             valueHistory.removeAll()
             historyPrefixes = []
@@ -392,6 +403,43 @@ public enum LatchCatalog {
             if dropTargets[id]?.token == owner { dropTargets.removeValue(forKey: id) }
         #endif
     }
+
+    #if DEBUG
+        static func registerRenderSource(id: String, token: Token, source: RenderSource) {
+            let owner = ObjectIdentifier(token)
+            renderSources[id, default: [:]][owner] = source
+        }
+
+        static func unregisterRenderSource(id: String, token: Token) {
+            let owner = ObjectIdentifier(token)
+            renderSources[id]?.removeValue(forKey: owner)
+            if renderSources[id]?.isEmpty == true {
+                renderSources.removeValue(forKey: id)
+            }
+        }
+
+        static func renderSource(id: String) throws -> RenderSource {
+            guard let activeEntry = active(id: id) else { throw missing(id: id) }
+            guard let group = renderSources[id], !group.isEmpty else {
+                throw Error.actionUnavailable(id: id, action: "render")
+            }
+            if let exact = group[activeEntry.token] {
+                return exact
+            }
+            if let activeWindow = hostWindow(of: activeEntry),
+                let windowMatch = group.values.first(where: { $0.window() === activeWindow })
+            {
+                return windowMatch
+            }
+            if let visibleMatch = group.values.first(where: { $0.window()?.isVisible == true }) {
+                return visibleMatch
+            }
+            guard let first = group.values.first else {
+                throw Error.actionUnavailable(id: id, action: "render")
+            }
+            return first
+        }
+    #endif
 
     /// Hands the payload of `source` to the drop handler of `destination`.
     /// Nothing touches the system pointer or the drag pasteboard.

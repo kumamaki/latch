@@ -100,6 +100,61 @@ struct LatchServerTests {
         #expect(await ops.screenshotIDs == ["note.row"])
     }
 
+    @Test("render forwards options and returns render metadata")
+    func renderRoundTrip() async throws {
+        let ops = FakeLatchOps()
+        await ops.setRenderResult(
+            LatchRenderResult(
+                path: "/tmp/render.png",
+                width: 640,
+                height: 480,
+                scale: 2,
+                frames: 3,
+                note: LatchRender.renderNote
+            )
+        )
+        let (server, socketURL, token) = try await Self.makeServer(ops: ops)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: socketURL)
+        }
+
+        let response = try Self.roundTrip(
+            socketPath: socketURL.path,
+            request:
+                #"{"token":"\#(token)","command":"render","args":{"id":"stage.card","scale":2,"sweep":{"scrub":"stage.scrub","from":0,"to":1,"steps":3}}}"#
+        )
+        let json = try #require(Self.parse(response))
+        #expect(json["ok"] as? Bool == true)
+        let data = try #require(json["data"] as? [String: Any])
+        #expect(data["path"] as? String == "/tmp/render.png")
+        #expect(data["frames"] as? Int == 3)
+        let recorded = try #require(await ops.lastRender)
+        #expect(recorded.id == "stage.card")
+        #expect(recorded.options.scale == 2)
+        #expect(recorded.options.sweep?.steps == 3)
+    }
+
+    @Test("renderFailed maps to unavailable")
+    func renderFailedMapsToUnavailable() async throws {
+        let ops = FakeLatchOps()
+        await ops.setRenderError(.renderFailed(reason: "empty"))
+        let (server, socketURL, token) = try await Self.makeServer(ops: ops)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: socketURL)
+        }
+
+        let response = try Self.roundTrip(
+            socketPath: socketURL.path,
+            request: #"{"token":"\#(token)","command":"render","args":{"id":"stage.card"}}"#
+        )
+        let json = try #require(Self.parse(response))
+        #expect(json["ok"] as? Bool == false)
+        let error = try #require(json["error"] as? [String: Any])
+        #expect(error["code"] as? String == "unavailable")
+    }
+
     @Test("axPress forwards the named action")
     func axPressNamed() async throws {
         let ops = FakeLatchOps()
@@ -379,6 +434,11 @@ actor FakeLatchOps: LatchOpsProviding {
         )?
     var didDismiss = false
     var dismissError: LatchError?
+    var renderResult = LatchRenderResult(
+        path: "/tmp/render.png", width: 100, height: 100, scale: 2, frames: 1,
+        note: LatchRender.renderNote)
+    var renderError: LatchError?
+    var lastRender: (id: String, options: LatchRenderOptions)?
     var dumpCalls: [(window: String?, labeled: Bool)] = []
     var bootState = "ready"
     var windowItems = [
@@ -416,6 +476,8 @@ actor FakeLatchOps: LatchOpsProviding {
     func setDumpRoot(_ root: LatchAXNode) { dumpRoot = root }
     func setPressError(_ error: LatchError?) { pressError = error }
     func setDismissError(_ error: LatchError?) { dismissError = error }
+    func setRenderResult(_ result: LatchRenderResult) { renderResult = result }
+    func setRenderError(_ error: LatchError?) { renderError = error }
 
     func queryBoot() async -> String { bootState }
     func queryWindows() async -> [LatchWindowStatus] { windowItems }
@@ -482,6 +544,12 @@ actor FakeLatchOps: LatchOpsProviding {
         screenshotWindows.append(window)
         screenshotIDs.append(id)
         return screenshotPath
+    }
+
+    func render(id: String, options: LatchRenderOptions) async throws -> LatchRenderResult {
+        lastRender = (id, options)
+        if let renderError { throw renderError }
+        return renderResult
     }
 }
 

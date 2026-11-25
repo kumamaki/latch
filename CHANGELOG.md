@@ -4,6 +4,27 @@ All notable changes to Latch live here.
 
 ## Unreleased
 
+### Kernel
+
+- `render` rasterizes a registered SwiftUI subtree offscreen through
+  `ImageRenderer`, so Metal `.layerEffect`, `.colorEffect`, and
+  `.distortionEffect` shaders appear in the PNG where `cacheDisplay`
+  screenshots skip them. Wrap a subtree with `LatchRenderable(id)` (or
+  attach `.latchRenderable(id) { ... }`) to capture its live
+  `EnvironmentValues` and geometry without duplicating view code.
+  `EnvironmentValues.isLatchRendering` lets `.latch` probes and adopter
+  `NSViewRepresentable` hooks step aside during offscreen passes.
+- `latch.sh render <id>` exposes single-frame captures (`--scale`,
+  `--frame`, `--padding`) and timeline contact sheets
+  (`--sweep <from> <to> <steps> --scrub <scrub-id>`, 2 to 24 labeled
+  frames). `LatchOpsProviding.render(id:options:)` has a default
+  implementation that refuses with `actionUnavailable`.
+
+### LatchE2E
+
+- `LatchApp.render(_:scale:frame:padding:sweep:)` drives the `render`
+  verb in E2E journeys.
+
 ## 0.8.0 — 2026-11-21
 
 ### Examples

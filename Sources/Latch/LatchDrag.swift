@@ -9,18 +9,23 @@ private struct LatchDragSource: ViewModifier {
     let id: String
     let payload: () throws -> String
     #if DEBUG
+        @Environment(\.isLatchRendering) private var isLatchRendering
         @State private var token = LatchCatalog.Token()
     #endif
 
     func body(content: Content) -> some View {
         #if DEBUG
-            content
-                .onAppear { publish() }
-                .onChange(of: id) { previous, _ in
-                    LatchCatalog.unregisterDrag(id: previous, token: token)
-                    publish()
-                }
-                .onDisappear { LatchCatalog.unregisterDrag(id: id, token: token) }
+            if isLatchRendering {
+                content
+            } else {
+                content
+                    .onAppear { publish() }
+                    .onChange(of: id) { previous, _ in
+                        LatchCatalog.unregisterDrag(id: previous, token: token)
+                        publish()
+                    }
+                    .onDisappear { LatchCatalog.unregisterDrag(id: id, token: token) }
+            }
         #else
             content
         #endif
@@ -40,18 +45,23 @@ private struct LatchDropTarget: ViewModifier {
     let id: String
     let drop: (String) throws -> Void
     #if DEBUG
+        @Environment(\.isLatchRendering) private var isLatchRendering
         @State private var token = LatchCatalog.Token()
     #endif
 
     func body(content: Content) -> some View {
         #if DEBUG
-            content
-                .onAppear { publish() }
-                .onChange(of: id) { previous, _ in
-                    LatchCatalog.unregisterDrag(id: previous, token: token)
-                    publish()
-                }
-                .onDisappear { LatchCatalog.unregisterDrag(id: id, token: token) }
+            if isLatchRendering {
+                content
+            } else {
+                content
+                    .onAppear { publish() }
+                    .onChange(of: id) { previous, _ in
+                        LatchCatalog.unregisterDrag(id: previous, token: token)
+                        publish()
+                    }
+                    .onDisappear { LatchCatalog.unregisterDrag(id: id, token: token) }
+            }
         #else
             content
         #endif

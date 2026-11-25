@@ -208,6 +208,8 @@
             case .screenshot(let window, let options):
                 let path = try await ops.screenshot(window: window, options: options)
                 return .success(.screenshot(path: path, note: LatchScreenshot.captureNote))
+            case .render(let id, let options):
+                return .success(.render(try await ops.render(id: id, options: options)))
             }
         }
 
@@ -227,8 +229,8 @@
                 return .notFound
             case .invalidValue:
                 return .protocol
-            case .windowNotVisible, .windowEmpty, .screenshotFailed, .actionUnavailable,
-                .disabled, .coreNotReady, .opsUnavailable, .historyNotRecorded:
+            case .windowNotVisible, .windowEmpty, .screenshotFailed, .renderFailed,
+                .actionUnavailable, .disabled, .coreNotReady, .opsUnavailable, .historyNotRecorded:
                 return .unavailable
             default:
                 return .ipc

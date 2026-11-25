@@ -19,6 +19,7 @@ public enum LatchError: Error, Sendable, CustomStringConvertible {
     case windowNotVisible(name: String)
     case windowEmpty(name: String)
     case screenshotFailed(reason: String)
+    case renderFailed(reason: String)
     case elementNotFound(id: String, nearby: [String] = [])
     case noSystemDialog
     case dialogButtonNotFound(wanted: String?, available: [String])
@@ -65,6 +66,8 @@ public enum LatchError: Error, Sendable, CustomStringConvertible {
             return "Window \(name) has no content to photograph."
         case .screenshotFailed(let reason):
             return "Screenshot failed: \(reason)."
+        case .renderFailed(let reason):
+            return "Render failed: \(reason)."
         case .elementNotFound(let id, let nearby):
             return LatchCatalog.notFoundMessage(id: id, nearby: nearby)
         case .noSystemDialog:

@@ -88,7 +88,10 @@ public struct LatchCoverageReply: Sendable, Encodable, Equatable {
                 guard
                     case .visible(let frame) = LatchCatalog.screenshotFrame(id: node.id, in: window)
                 else { return nil }
-                return Registered(id: node.id, frame: frame, drivable: !node.actions.isEmpty)
+                return Registered(
+                    id: node.id,
+                    frame: frame,
+                    drivable: node.actions.contains { $0 != "render" })
             }
         }
 

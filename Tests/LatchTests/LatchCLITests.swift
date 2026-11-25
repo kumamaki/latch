@@ -346,6 +346,53 @@ struct LatchCLITests {
         #expect(result.stdout.contains("slug_from: LATCH_APP"))
     }
 
+    @Test("render CLI forwards sweep and validates paired flags")
+    func renderCLI() async throws {
+        let app = uniqueApp()
+        let (server, ops, dataDirectory) = try await startServer(app: app)
+        defer {
+            Task { await server.stop() }
+            try? FileManager.default.removeItem(at: dataDirectory)
+        }
+        await ops.setRenderResult(
+            LatchRenderResult(
+                path: "/tmp/cli-render.png",
+                width: 400,
+                height: 200,
+                scale: 2,
+                frames: 4,
+                note: LatchRender.renderNote
+            )
+        )
+
+        let ok = try runCLI(arguments: [
+            "--app", app, "render", "showroom.specimen",
+            "--scale", "2", "--frame", "white", "--padding", "16",
+            "--sweep", "0.2", "0.8", "4", "--scrub", "showroom.scrub",
+        ])
+        #expect(ok.status == 0)
+        let json = try #require(parseJSON(ok.stdout))
+        #expect(json["path"] as? String == "/tmp/cli-render.png")
+        let recorded = try #require(await ops.lastRender)
+        #expect(recorded.id == "showroom.specimen")
+        #expect(recorded.options.scale == 2)
+        #expect(recorded.options.presentation?.frameColor == .white)
+        #expect(recorded.options.presentation?.padding == 16)
+        #expect(recorded.options.sweep?.steps == 4)
+
+        let missingScrub = try runCLI(arguments: [
+            "--app", app, "render", "showroom.specimen", "--sweep", "0", "1", "4",
+        ])
+        #expect(missingScrub.status == 64)
+        #expect(missingScrub.stderr.contains("--sweep and --scrub"))
+
+        let badSteps = try runCLI(arguments: [
+            "--app", app, "render", "showroom.specimen",
+            "--sweep", "0", "1", "1", "--scrub", "showroom.scrub",
+        ])
+        #expect(badSteps.status == 64)
+    }
+
     private func uniqueApp() -> String {
         let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(8)
         return "latch-cli-\(suffix)"

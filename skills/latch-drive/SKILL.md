@@ -128,6 +128,8 @@ bash <latch>/cli/latch.sh --app <app> screenshot main
 bash <latch>/cli/latch.sh --app <app> screenshot main <id>
 bash <latch>/cli/latch.sh --app <app> screenshot main --frame black
 bash <latch>/cli/latch.sh --app <app> screenshot main <id> --padding 48
+bash <latch>/cli/latch.sh --app <app> render <id>
+bash <latch>/cli/latch.sh --app <app> render <id> --sweep 0.4 0.6 6 --scrub <scrub-id>
 ```
 
 `screenshot <window> <id>` crops the window bitmap to that catalog
@@ -143,6 +145,13 @@ padding without `--frame` selects white. Styling also works without an id.
 Screenshots skip material layers — Liquid Glass, vibrancy, and
 Metal-backed content may not composite. The response `note` repeats
 this. Verify that UI by eye or via AX, not from the image.
+
+For SwiftUI `.layerEffect` / `.colorEffect` / `.distortionEffect` shaders,
+use `render <id>` (on `LatchRenderable` / `.latchRenderable` views) to
+rasterize offscreen via `ImageRenderer` with captured live environment
+values. AppKit-backed subviews (`NSTextField`, `NSScrollView`, custom
+`NSViewRepresentable`) render blank or as placeholders in `render`, so
+keep using `screenshot` for whole-window AppKit chrome.
 
 ## When a control is missing
 

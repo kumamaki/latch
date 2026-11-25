@@ -104,16 +104,7 @@
             let directory = try LatchPaths.screenshotDirectory(app: app)
             try FileManager.default.createDirectory(
                 at: directory, withIntermediateDirectories: true)
-            let stamp = ISO8601DateFormatter.string(
-                from: Date(),
-                timeZone: .current,
-                formatOptions: [
-                    .withInternetDateTime,
-                    .withDashSeparatorInDate,
-                    .withColonSeparatorInTime,
-                ]
-            )
-            let safeStamp = stamp.replacingOccurrences(of: ":", with: "")
+            let stamp = safeTimestamp()
             let windowComponent = fileComponent(windowName)
             let elementSuffix = options.id.map { "-\(fileComponent($0))" } ?? ""
             let presentationSuffix =
@@ -121,7 +112,7 @@
                     "-frame-\($0.frameColor.rawValue)-\(fileComponent(String($0.padding)))pt"
                 } ?? ""
             let url = directory.appendingPathComponent(
-                "\(windowComponent)\(elementSuffix)\(presentationSuffix)-\(safeStamp).png")
+                "\(windowComponent)\(elementSuffix)\(presentationSuffix)-\(stamp).png")
             do {
                 try png.write(to: url, options: .atomic)
             } catch {
@@ -175,7 +166,7 @@
             return cropped
         }
 
-        private static func framedImage(
+        static func framedImage(
             _ image: CGImage,
             presentation: LatchScreenshotPresentation,
             backingScale: CGFloat
@@ -230,7 +221,7 @@
             return framed
         }
 
-        private static func pngData(from image: CGImage) throws -> Data {
+        static func pngData(from image: CGImage) throws -> Data {
             guard
                 let png = NSBitmapImageRep(cgImage: image).representation(
                     using: .png, properties: [:])
@@ -240,9 +231,22 @@
             return png
         }
 
+        static func safeTimestamp() -> String {
+            ISO8601DateFormatter.string(
+                from: Date(),
+                timeZone: .current,
+                formatOptions: [
+                    .withInternetDateTime,
+                    .withDashSeparatorInDate,
+                    .withColonSeparatorInTime,
+                ]
+            )
+            .replacingOccurrences(of: ":", with: "")
+        }
+
         /// One path-safe filename component. Catalog ids use dots; a slash
         /// or colon would escape the screenshot directory.
-        private static func fileComponent(_ value: String) -> String {
+        static func fileComponent(_ value: String) -> String {
             let allowed = Set(
                 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
             let mapped = String(value.map { allowed.contains($0) ? $0 : "-" })
