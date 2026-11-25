@@ -71,6 +71,16 @@ Window-point forms are `mouse click-point`, `mouse drag-point`, and
 instead of a catalog id. Wire arguments live in the Latch repo's
 `docs/protocol.md`.
 
+Window coordinates: origin at the window's outer top-left (the titlebar
+counts), x grows right, y grows down. To aim at a point, take a
+`screenshot` of the window and measure in the image — points are pixels
+divided by the backing scale (image px width ÷ window pt width; 2 on
+Retina, so halve pixel readings). Do not convert `ax dump` frames: they
+are screen-space, not window-space, and the conversion needs the primary
+screen height. Injected clicks run real dispatch, so a click into a
+non-key window is eaten by activation — click twice when the window is
+not front.
+
 A control is driveable only when it is registered.
 `.accessibilityIdentifier` alone is not enough. Do not pin AX.
 System alerts are chrome: `ax dismiss`, not `ax press action-button-1`.
